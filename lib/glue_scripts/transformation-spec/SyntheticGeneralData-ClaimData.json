@@ -1,0 +1,10 @@
+{
+	"transform_spec": {
+		"decimal": [
+			{
+				"field": "AccidentYearTotalIncurredAmount",
+				"format": "10,2"
+			}
+		]
+	}
+}

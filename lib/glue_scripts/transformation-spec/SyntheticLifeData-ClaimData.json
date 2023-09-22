@@ -1,0 +1,25 @@
+{
+	"transform_spec": {
+		"date": [
+		   	{
+				"field": "claimsreporteddate",
+				"format": "M/d/yyyy"
+			},
+			{
+				"field": "policyeffectivedate",
+				"format": "yyyy/M/d"
+			},
+			{
+				"field": "adjudicationdate",
+				"format": "M/d/yyyy"
+			},
+			{
+				"field": "paymentdate",
+				"format": "M/d/yyyy"
+			}
+		]
+	}
+}
+
+
+

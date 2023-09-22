@@ -1,0 +1,27 @@
+SELECT	
+    policyeffectivedate,
+    adjudicationdescription, 
+    claimsreporteddate, 
+    claimdescription, 
+    checkno, 
+    adjudicationstatus, 
+    adjudicationdate, 
+    claimno, 
+    claimamount, 
+    beneficiarypct, 
+    paidamount, 
+    beneficiaryname, 
+    paymentdate, 
+    lastupdated, 
+    lastname, 
+    policyid, 
+    beneficiaryrelationship, 
+    eobgenerated, 
+    claimstatus, 
+    firstname,
+    execution_id,
+    year,
+    month,
+	day
+FROM	syntheticlifedata.claimdata
+ORDER BY policyid ASC

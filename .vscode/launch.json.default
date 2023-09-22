@@ -1,0 +1,65 @@
+{
+	// Use IntelliSense to learn about possible attributes.
+	// Hover to view descriptions of existing attributes.
+	// For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+	"version": "0.2.0",
+	"configurations": [
+
+		{
+			"name": "CDK Synth",
+			"type": "python",
+			"request": "launch",
+			"program": "app.py",
+			"console": "integratedTerminal",
+			"justMyCode": true
+		},
+		{
+			"name": "Python: Glue pySpark collect_to_cleanse",
+			"type": "python",
+			"request": "launch",
+			"program": "${file}",
+			"console": "integratedTerminal",
+			"justMyCode": true,
+			"args": [
+				"--JOB_NAME=VisualCode",
+				"--enable-glue-datacatalog=true",
+				"--TempDir=s3://dev-insurancelake-AWSACCOUNTID-us-east-2-glue-temp/etl/collect-to-cleanse/",
+				"--enable-metrics=true",
+				"--enable-spark-ui=true",
+				"--spark-event-logs-path=s3://dev-insurancelake-AWSACCOUNTID-us-east-2-glue-temp/etl/collect-to-cleanse/",
+				"--enable-job-insights=true",
+				"--enable-continuous-cloudwatch-log=true",
+				"--target_database_name=SyntheticData",
+				"--target_bucketname=dev-insurancelake-AWSACCOUNTID-us-east-2-cleanse",
+				"--source_bucketname=dev-insurancelake-AWSACCOUNTID-us-east-2-collect",
+				"--source_key=/SyntheticData/PolicyData/",
+				"--base_file_name=synthetic-policy-only-raw-data.csv",
+				"--p_year=2022",
+				"--p_month=12",
+				"--p_day=6",
+				"--table_name=PolicyData",
+				"--target_table_name=PolicyData",
+				"--txn_bucketname=dev-insurancelake-AWSACCOUNTID-us-east-2-etl-scripts",
+				"--txn_spec_prefix_path=/etl/transformation-spec/",
+				"--hash_value_table=dev-insurancelake-etl-hash-values",
+				"--value_lookup_table=dev-insurancelake-etl-value-lookup"
+			]
+		},
+		{
+			"name": "Python: load_dynamodb_lookup_table.py",
+			"type": "python",
+			"request": "launch",
+			"program": "resources/load_dynamodb_lookup_table.py",
+			"console": "integratedTerminal",
+			"justMyCode": true,
+			"args": [
+				"SyntheticData",
+				"dev-insurancelake-etl-value-lookup",
+				"resources/lookup_data.json"
+			],
+			"env": {
+				"AWS_DEFAULT_REGION": "us-east-2"
+			}
+		}
+	]
+}

@@ -1,0 +1,18 @@
+{
+	"dq_rules": {
+		"warn_rules": [
+			"Completeness 'EarnedPremium' > 0.80",
+			"ColumnValues \"WrittenPremiumAmount\" >= 0",
+			"ColumnValues 'WrittenPremiumAmount' < 10000000",
+			"ColumnValues 'NewOrRenewal' in [ 'New', 'Renewal' ]"
+		],
+		"quarantine_rules": [
+			"ColumnValues 'WrittenPremiumAmount' <= 1500000"
+		],
+		"halt_rules": [
+			"(ColumnExists 'StartDate') and (IsComplete 'StartDate')",
+			"(ColumnExists 'PolicyNumber') and (IsComplete 'PolicyNumber')",
+			"CustomSql 'SELECT COUNT(*) FROM primary WHERE EffectiveDate > ExpirationDate' = 0"
+		]
+	}
+}

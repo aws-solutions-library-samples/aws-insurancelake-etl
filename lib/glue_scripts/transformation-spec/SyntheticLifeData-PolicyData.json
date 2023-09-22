@@ -1,0 +1,80 @@
+{
+	"transform_spec": {
+		"columnfromcolumn": [
+			{
+				"field": "username",
+				"source": "emailid",
+				"pattern": "(\\S+)@\\S+"
+			},
+			{
+				"field": "policyyear",
+				"source": "policyeffectivedate",
+				"pattern": "(\\d\\d\\d\\d)/\\d\\d/\\d\\d"
+			},
+			{
+				"field": "producer",
+				"pattern": "P(\\d+)"
+			}
+		],
+
+		"date": [
+			{
+				"field": "policyquotationdate",
+				"format": "yyyy-MM-dd"
+			},
+			{
+				"field": "policyeffectivedate",
+				"format": "yyyy/M/d"
+			},
+			{
+				"field": "customerdob",
+				"format": "yyyy/M/d"
+			}
+		],
+
+		"redact": {
+			"customerno": "****"
+		},
+
+		"hash": [
+			"phoneno",
+            "emailid"
+		],
+
+		"tokenize": [
+			"personalid"
+		],
+
+		"decimal":  [
+			{
+				"field": "monthlypremium",
+				"format": "10,2"
+			},
+			{
+				"field": "producercommision",
+				"format": "10,2"
+			},
+			{
+				"field": "producer",
+				"format": "10,0"
+			}
+		],
+
+		"lookup": [
+			{
+				"field": "smokingclass",
+				"lookup": "smokingclass"
+			},
+			{
+				"field": "issuestatename",
+				"source": "issuestate",
+				"lookup": "StateCd",
+				"nomatch": "N/A"
+			}
+		],
+
+		"literal": {
+			"source": "syntheticdata"
+		}
+	}
+}

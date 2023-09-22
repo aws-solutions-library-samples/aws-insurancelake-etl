@@ -1,0 +1,9 @@
+-e .
+aws-cdk-lib
+boto3
+cdk-nag
+pytest
+pytest-cov
+moto
+pyparsing>=3.1
+rapidfuzz

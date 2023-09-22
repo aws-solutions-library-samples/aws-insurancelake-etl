@@ -1,0 +1,2 @@
+[bandit]
+targets: ./lib/state_machine_trigger/,./lib/etl_job_auditor/,./lib/glue_scripts/,./resources/

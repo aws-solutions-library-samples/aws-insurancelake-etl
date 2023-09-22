@@ -1,0 +1,241 @@
+{
+	"input_spec": {
+
+		"allow_schema_change": "permissive",
+
+		"csv": {
+			"header": true
+		},
+
+		"tsv": {
+			"header": true
+		},
+
+		"excel": {
+				"sheet_names": [ "Sheet1" ],
+				"data_address": "A2",
+				"header": true,
+				"password": ""
+		},
+
+		"fixed": {}
+
+	},
+
+	"transform_spec": {
+
+		"filename": [
+			{
+				"field": "valuationdate",
+				"pattern": "\\S+-(\\d{8})\\.csv",
+				"required": true
+			},
+			{
+				"field": "program",
+				"pattern": "([A-Za-z0-9]+)\\S+\\.csv",
+				"required": true
+			}
+		],
+
+		"columnfromcolumn": [
+			{
+				"field": "username",
+				"source": "emailaddress",
+				"pattern": "(\\S+)@\\S+"
+
+			},
+			{
+				"field": "policyyear",
+				"source": "policyeffectivedate",
+				"pattern": "(\\d\\d\\d\\d)/\\d\\d/\\d\\d"
+			}
+		],
+
+		"date": [
+		   	{
+				"field": "StartDate",
+				"format": "M/d/yy"
+			},
+			{
+				"field": "EndDate",
+				"format": "yy-MM-dd"
+			},
+			{
+				"field": "valuationdate",
+				"format": "yyyyMMdd"
+			}
+		],
+
+		"timestamp": [
+			{
+				"field": "GenerationDate",
+				"format": "yyyy-MM-dd HH:mm:ss.SSS+0000"
+			}
+		],
+
+		"decimal": [
+			{
+				"field": "ExpiringPremiumAmount",
+				"format": "10,2"
+			},
+			{
+				"field": "WrittenPremiumAmount",
+				"format": "10,2"
+			},
+			{
+				"field": "EarnedPremium",
+				"format": "10,2"
+			}
+		],
+
+		"implieddecimal": [
+			{
+				"field": "indemnity_paid_current_period",
+				"format": "16,2"
+			}
+		],
+
+		"currency": [
+			{
+				"field": "SmallDollars",
+				"format": "6,2"
+			},
+			{
+				"field": "EuroValue",
+				"euro": true
+			}
+		],
+
+		"redact": {
+			"CustomerNo": "****"
+		},
+
+		"hash": [
+			"InsuredContactCellPhone",
+			"InsuredContactEmail"
+		],
+
+		"tokenize": [
+		    "EIN"
+		],
+
+		"lookup": [
+			{
+				"field": "smokingclass",
+				"lookup": "smokingclass"
+			},
+			{
+				"field": "issuestatename",
+				"source": "issuestate",
+				"lookup": "StateCd",
+				"nomatch": "N/A"
+			}
+		],
+
+		"multivaluelookup": [
+			{
+				"lookup_group": "LOBCoverage",
+				"match_columns": [
+					"program",
+					"coverage"
+				],
+				"return_attributes": [
+					"coveragenormalized",
+					"lob"
+				],
+				"nomatch": "N/A"
+			}
+		],
+
+		"merge": [
+			{
+				"field": "insuredstatemerge",
+				"source_list": [
+					"insuredstatename", "insuredstatecode"
+				],
+				"default": "Unknown"
+			}
+		],
+
+		"literal": {
+			"source": "syntheticdata"
+		},
+
+		"addcolumns": [
+			{
+				"field": "TotalWrittenPremium",
+				"source_columns": [ "WrittenPremiumAmount" ]
+			}
+		],
+
+		"flipsign": [
+			{
+				"field": "Balance"
+			},
+			{
+				"field": "NewAccountBalance",
+				"source": "AccountBalance"
+			}
+		],
+
+		"enddate": [
+			{
+				"field": "CalcExpirationDate",
+				"start_date": "EffectiveDate",
+				"num_months": "Term"
+			}
+		],
+
+		"policymonths": [
+			{
+				"field": "CalcNumMonths",
+				"written_premium_list": [
+					"WrittenPremiumAmount"
+				],
+				"policy_effective_date": "EffectiveDate",
+				"policy_expiration_date": "ExpirationDate",
+				"normalized": true
+			}
+		],
+
+		"expandpolicymonths": {
+			"uniqueid": "generated_policy_number",
+			"policy_month_start_field": "StartDate",
+			"policy_month_end_field": "EndDate",
+			"policy_effective_date": "EffectiveDate",
+			"policy_expiration_date": "ExpirationDate"
+		},
+
+		"earnedpremium": [
+			{
+				"field": "CalcEarnedPremium",
+				"written_premium_list": [
+					"WrittenPremiumAmount"
+				],
+				"policy_effective_date": "EffectiveDate",
+				"policy_expiration_date": "ExpirationDate",
+				"period_start_date": "StartDate",
+				"period_end_date": "EndDate",
+				"byday": true
+			}
+		],
+
+		"combinecolumns": [
+			{
+				"field": "RowKey",
+				"format": "{}-{}-{}",
+				"source_columns": [ "LOBCode", "PolicyNumber", "StartDate" ]
+			}
+		],
+
+		"filterrows": [
+			{
+				"condition": "claim_number is not null or file_number is not null"
+			},
+			{
+				"condition": "`startdate` >= cast('1970-01-01' as date)"
+			}
+		]
+
+	}
+}

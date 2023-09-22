@@ -1,0 +1,13 @@
+{
+	"dq_rules": {
+		"warn_rules": [
+			"Completeness 'sumassured' > 0.80",
+			"ColumnValues \"sumassured\" >= 0",
+			"ColumnValues 'sumassured' < 100000000"
+		],
+		"halt_rules": [
+			"(ColumnExists 'policyid') and (IsComplete 'policyid')",
+			"(ColumnExists 'policyeffectivedate') and (IsComplete 'policyeffectivedate')"
+		]
+	}
+}

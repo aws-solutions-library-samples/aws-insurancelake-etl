@@ -1,0 +1,82 @@
+{
+	"transform_spec": {
+		"date": [
+		   	{
+				"field": "StartDate",
+				"format": "M/d/yy"
+			},
+			{
+				"field": "EndDate",
+				"format": "yy-MM-dd"
+			},
+			{
+				"field": "EffectiveDate",
+				"format": "yyyy-MM-dd"
+			},
+			{
+				"field": "ExpirationDate",
+				"format": "yyyy-MM-dd"
+			}
+		],
+
+		"timestamp": [
+			{
+				"field": "GenerationDate",
+				"format": "yyyy-MM-dd HH:mm:ss.SSS+0000"
+			}
+		],
+
+		"decimal": [
+			{
+				"field": "ExpiringPremiumAmount",
+				"format": "10,2"
+			},
+			{
+				"field": "WrittenPremiumAmount",
+				"format": "10,2"
+			},
+			{
+				"field": "EarnedPremium",
+				"format": "10,2"
+			}
+		],
+
+		"redact": {
+			"CustomerNo": "****"
+		},
+
+		"hash": [
+			"InsuredContactCellPhone",
+			"InsuredContactEmail"
+		],
+
+		"tokenize": [
+			"EIN"
+		],
+
+		"lookup": [
+			{
+				"field": "LOB",
+				"source": "LOBCode",
+				"lookup": "LOB",
+				"nomatch": "N/A"
+			},
+			{
+				"field": "InsuredStateName",
+				"source": "InsuredStateCode",
+				"lookup": "StateCd"
+			}
+		],
+
+		"merge": [
+			{
+				"field": "InsuredStateMerge",
+				"source_list": [
+					"InsuredStateName", "InsuredStateCode"
+				],
+				"default": "Unknown"
+			}
+		]
+
+	}
+}
