@@ -225,7 +225,7 @@ Environment bootstrap is standard CDK process to prepare an AWS environment read
 
 ### Application Configuration
 
-This deployment will depend on both the [Infrastructure](link) and [ETL](link) repositories associated with the project.
+This deployment will depend on both the [Infrastructure](https://github.com/aws-samples/aws-insurancelake-infrastructure) and [ETL](https://github.com/aws-samples/aws-insurancelake-etl) repositories associated with the project.
 
 Before we deploy our resources we must provide the manual variables and upon deployment the CDK Pipelines will programmatically export outputs for managed resources. Follow the below steps to setup your custom configuration:
 
