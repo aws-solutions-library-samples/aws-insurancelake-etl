@@ -217,7 +217,7 @@ If you've determined the AWS CDK Insurance Lake is a good starting point for you
 
 In this section we talk about the overall Insurance Lake architecture and the ETL component.
 
-### InsuranceLake
+### InsuranceLake 3 Cs
 
 As shown in the figure below, we use Amazon S3 for storage. We use three S3 buckets:
    1. Collect bucket to store raw data in its original format
@@ -228,7 +228,7 @@ The Insurance Lake is designed to support a number of source systems with differ
 
 We use AWS Lambda and AWS Step Functions for orchestration and scheduling of ETL workloads. We then use AWS Glue with pySpark for ETL and data cataloging, Amazon DynamoDB for transformation persistence, Amazon Athena for interactive queries and analysis. We use various AWS services for logging, monitoring, security, authentication, authorization, notification, build, and deployment.
 
-**Note:** [AWS Lake Formation](https://aws.amazon.com/lake-formation/) is a service that makes it easy to set up a secure data lake in days. [Amazon QuickSight](https://aws.amazon.com/quicksight/) is a scalable, serverless, embeddable, machine learning-powered business intelligence (BI) service built for the cloud. These two services are not used in this solution.
+**Note:** [AWS Lake Formation](https://aws.amazon.com/lake-formation/) is a service that makes it easy to set up a secure data lake in days. [Amazon QuickSight](https://aws.amazon.com/quicksight/) is a scalable, serverless, embeddable, machine learning-powered business intelligence (BI) service built for the cloud. These two services are not used in this solution but can be added.
 
 ![Conceptual Data Lake](./resources/Aws-cdk-insurancelake-data_lake.png)
 
@@ -284,6 +284,8 @@ In order to allow transform specifications to be matched with source system data
 ## Codebase
 
 ### Source Code Structure
+
+- _TODO: Include more folders, scripts, modules, supporting files_
 
 Table below explains how this source ode structured:
 
@@ -392,14 +394,14 @@ In this section, we provide some additional resources.
 
 The following people are involved in the design, architecture, development, testing, and review of this solution:
 
+1. **Cory Visi**, Senior Solutions Architect, Amazon Web Services
+1. **Ratnadeep Bardhan Roy**, Senioar Solutions Architect, Amazon Web Services
 1. **Isaiah Grant**, Cloud Consultant, 2nd Watch, Inc.
 1. **Muhammad Zahid Ali**, Data Architect, Amazon Web Services
 1. **Ravi Itha**, Senior Data Architect, Amazon Web Services
 1. **Justiono Putro**, Cloud Infrastructure Architect, Amazon Web Services
 1. **Mike Apted**, Principal Solutions Architect, Amazon Web Services
 1. **Nikunj Vaidya**, Senior DevOps Specialist, Amazon Web Services
-1. **Cory Visi**, Senior Solutions Architect, Amazon Web Services
-1. **Ratnadeep Bardhan Roy**, Senioar Solutions Architect, Amazon Web Services
 
 ---
 

@@ -129,7 +129,7 @@ class DataLineageGenerator:
                 'field_total': {
                     # Sum any double or decimal columns; convert to string explicitly to not rely on the JSON parser
                     field[0]: str(df.select(sum(f'`{field[0]}`')).collect()[0][0])
-                        for field in df.dtypes if field[1] == 'double' or 'decimal' in field[1]
+                        for field in df.dtypes if field[1] == 'double' or field[1][:7] == 'decimal'
                 }
             }
             self.insert_table(dataset, operation, lineage_info)

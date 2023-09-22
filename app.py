@@ -58,6 +58,7 @@ if os.environ.get('ENV', DEV) == DEV:
     )
     tag(dev_pipeline_stack, DEPLOYMENT)
 
+# TODO: Check for cross-region or cross-account deployment and explicitly create a replication bucket with naming convention, encryption, access logs
 if os.environ.get('ENV', TEST) == TEST:
     target_environment = TEST
     test_account = raw_mappings[TEST][ACCOUNT_ID]

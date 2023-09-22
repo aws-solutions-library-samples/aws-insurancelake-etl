@@ -200,19 +200,8 @@ def main():
             initial_df, generated_mapping_data = clean_column_names(initial_df)
             put_s3_object(generated_map_path, generated_mapping_data)
 
-    mapped_df = initial_df
-    mapped_df.cache()
-
-    fields_to_add = {
-        # Add State Machine execution ID to DataFrame for lineage tracking
-        'execution_id':  args['execution_id'],
-        # Add partition columns for daily data load partitioning strategy
-        'year': args['p_year'],
-        'month': args['p_month'],
-        'day': args['p_day'],
-    }
-    totransform_df = transform_literal(mapped_df, fields_to_add, args, lineage)
-    print('Added partition columns and State Machine execution_id column')
+    totransform_df = initial_df
+    totransform_df.cache()
 
     # Perform transforms
     if spec_json_data and 'transform_spec' in spec_json_data:
@@ -239,7 +228,17 @@ def main():
         generated_spec_data = generate_spec(totransform_df, ext)
         put_s3_object(generated_spec_path, json.dumps(generated_spec_data, indent=4))
 
-    transformed_df = totransform_df
+    fields_to_add = {
+        # Add State Machine execution ID to DataFrame for lineage tracking
+        'execution_id':  args['execution_id'],
+        # Add partition columns for daily data load partitioning strategy
+        'year': args['p_year'],
+        'month': args['p_month'],
+        'day': args['p_day'],
+    }
+    transformed_df = transform_literal(totransform_df, fields_to_add, args, lineage)
+    transformed_df.cache()
+    print('Added partition columns and State Machine execution_id column')
 
     # Record final DataFrame schema
     transformed_schema = list(transformed_df.schema)
