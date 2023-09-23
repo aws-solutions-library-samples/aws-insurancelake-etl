@@ -6,7 +6,7 @@ with open("README.md") as fp:
     long_description = fp.read()
 
 setuptools.setup(
-    name="aws_insurancelake_etl",
+    name="aws-insurancelake-etl",
     version="2.3.0",
     description="A CDK Python app for deploying ETL jobs that build an Insurance Lake in AWS",
     long_description=long_description,
