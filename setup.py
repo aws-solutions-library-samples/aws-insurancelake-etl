@@ -6,7 +6,7 @@ with open("README.md") as fp:
     long_description = fp.read()
 
 setuptools.setup(
-    name="aws_cdk_insurancelake_etl",
+    name="aws_insurancelake_etl",
     version="2.3.0",
     description="A CDK Python app for deploying ETL jobs that build an Insurance Lake in AWS",
     long_description=long_description,
@@ -18,7 +18,7 @@ setuptools.setup(
         "constructs>=10.1.0",
     ],
     python_requires=">=3.7",
-    keywords='aws_cdk_insurancelake_etl aws cdk insurance datalake etl glue spark',
+    keywords='aws_insurancelake_etl aws cdk insurance datalake etl glue spark',
     license='MIT-0',
     classifiers=[
         "Development Status :: 4 - Beta",
