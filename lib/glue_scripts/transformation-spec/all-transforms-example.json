@@ -91,6 +91,7 @@
 		"implieddecimal": [
 			{
 				"field": "indemnity_paid_current_period",
+				"num_implied": "4",
 				"format": "16,2"
 			}
 		],
@@ -104,6 +105,16 @@
 				"field": "EuroValue",
 				"euro": true
 			}
+		],
+
+		"titlecase": [
+			"CompanyName",
+			"AddressStreet"
+		],
+
+		"bigint": [
+			"PrimaryKeyId",
+			"GrowingCount"
 		],
 
 		"redact": {

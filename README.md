@@ -1,14 +1,14 @@
 # InsuranceLake ETL with CDK Pipeline
 
-The Insurance Lake solution is comprised of two codebases: [Infrastructure](https://github.com/aws-samples/aws-insurancelake-infrastructure) and [ETL](./). This codebase and the documentation that follows is specific to the ETL. For documentation specific to the Infrastructure, refer to the [InsuranceLake Infrastructure with CDK Pipeline README](https://github.com/aws-samples/aws-insurancelake-infrastructure/blob/main/README.md).
+The InsuranceLake solution is comprised of two codebases: [Infrastructure](https://github.com/aws-samples/aws-insurancelake-infrastructure) and [ETL](https://github.com/aws-samples/aws-insurancelake-etl). This codebase and the documentation that follows is specific to the ETL. For documentation specific to the Infrastructure, refer to the [InsuranceLake Infrastructure with CDK Pipeline README](https://github.com/aws-samples/aws-insurancelake-infrastructure/blob/main/README.md).
 
-This solution helps you deploy ETL processes and data storage resources to create an Insurance Lake. It uses Amazon S3 buckets for storage, [AWS Glue](https://docs.aws.amazon.com/glue/) for data transformation, and [AWS CDK Pipelines](https://docs.aws.amazon.com/cdk/latest/guide/cdk_pipeline.html). The solution is originally based on the AWS blog [Deploy data lake ETL jobs using CDK Pipelines](https://aws.amazon.com/blogs/devops/deploying-data-lake-etl-jobs-using-cdk-pipelines/).
+This solution helps you deploy ETL processes and data storage resources to create InsuranceLake. It uses Amazon S3 buckets for storage, [AWS Glue](https://docs.aws.amazon.com/glue/) for data transformation, and [AWS CDK Pipelines](https://docs.aws.amazon.com/cdk/latest/guide/cdk_pipeline.html). The solution is originally based on the AWS blog [Deploy data lake ETL jobs using CDK Pipelines](https://aws.amazon.com/blogs/devops/deploying-data-lake-etl-jobs-using-cdk-pipelines/).
 
 [CDK Pipelines](https://docs.aws.amazon.com/cdk/api/latest/docs/pipelines-readme.html) is a construct library module for painless continuous delivery of CDK applications. CDK stands for Cloud Development Kit. It is an open source software development framework to define your cloud application resources using familiar programming languages.
 
 Specifically, this solution helps you to:
 
-1. Deploy a 3 Cs (Collect, Cleanse, Consume) Insurance Lake
+1. Deploy a 3 Cs (Collect, Cleanse, Consume) InsuranceLake
 1. Deploy ETL jobs needed make common insurance industry data souces available in a data lake
 1. Use pySpark Glue jobs and supporting resoures to perform data transforms in a modular approach
 1. Build and replicate the application in multiple environments quickly
@@ -26,7 +26,7 @@ Specifically, this solution helps you to:
    * [Try out the ETL Process](#try-out-the-etl-process)
 * [Quickstart with CI/CD](#quickstart-with-cicd)
 * [Architecture](#architecture)
-   * [Insurance Lake](#insurance-lake)
+   * [InsuranceLake](#insurance-lake)
    * [ETL](#etl)
 * [Pipeline Usage](#pipeline-usage)
    * [Bucket Layout](#bucket-layout)
@@ -136,7 +136,7 @@ Skip steps in this section as needed if you've worked with CDK and Python before
 
 ## Quickstart with CI/CD
 
-If you've determined the AWS CDK Insurance Lake is a good starting point for your own Insurance Lake, and would like to rapidly iterate through development cycles with one or more teams, we recommend deploying with a CI/CD pipeline. Follow this guide to create your CodePipeline stack and to use it to deploy the Insurance Lake resources:
+If you've determined the AWS CDK InsuranceLake is a good starting point for your own InsuranceLake, and would like to rapidly iterate through development cycles with one or more teams, we recommend deploying with a CI/CD pipeline. Follow this guide to create your CodePipeline stack and to use it to deploy the InsuranceLake resources:
 
 1. If this is your first time using the application, follow the [Python/CDK Basics](#pythoncdk-basics) steps
 1. Use a terminal or command prompt and change the working directory to the location of the infrastruture code
@@ -151,7 +151,7 @@ If you've determined the AWS CDK Insurance Lake is a good starting point for you
    ```bash
    cdk deploy Deploy-InsuranceLakeInfrastructureMirrorRepository
    ```
-   - While this stack is designed for a mirror repository, it can also be used as a main repository for your Insurance Lake code. You can follow links to help setup other repository types here:
+   - While this stack is designed for a mirror repository, it can also be used as a main repository for your InsuranceLake code. You can follow links to help setup other repository types here:
       - [Github](resources/github_guide.md)
       - [Bitbucket](https://complereinfosystem.com/2021/02/26/atlassian-bitbucket-to-aws-codecommit-using-bitbucket-pipelines/)
       - [Gitlab](https://klika-tech.com/blog/2022/07/12/repository-mirroring-gitlab-to-codecommit/)
@@ -215,7 +215,7 @@ If you've determined the AWS CDK Insurance Lake is a good starting point for you
 
 ## Architecture
 
-In this section we talk about the overall Insurance Lake architecture and the ETL component.
+In this section we talk about the overall InsuranceLake architecture and the ETL component.
 
 ### InsuranceLake 3 Cs
 
@@ -224,7 +224,7 @@ As shown in the figure below, we use Amazon S3 for storage. We use three S3 buck
    1. Cleanse/Curate bucket to store the data that meets the quality and consistency requirements of the lake
    1. Consume bucket for data that is used by analysts and data consumers of the lake (e.g. Amazon Quicksight, Amazon Sagemaker)
 
-The Insurance Lake is designed to support a number of source systems with different file formats and data partitions. To demonstrate, we have provided a CSV parser and sample data files for a source system with two data tables, which are uploaded to the Collect bucket.
+InsuranceLake is designed to support a number of source systems with different file formats and data partitions. To demonstrate, we have provided a CSV parser and sample data files for a source system with two data tables, which are uploaded to the Collect bucket.
 
 We use AWS Lambda and AWS Step Functions for orchestration and scheduling of ETL workloads. We then use AWS Glue with pySpark for ETL and data cataloging, Amazon DynamoDB for transformation persistence, Amazon Athena for interactive queries and analysis. We use various AWS services for logging, monitoring, security, authentication, authorization, notification, build, and deployment.
 
@@ -238,7 +238,7 @@ We use AWS Lambda and AWS Step Functions for orchestration and scheduling of ETL
 
 The figure below represents the ETL resources we provision for Data Lake.
 
-1. A file server uploads files to S3 collect bucket of the insurance lake; file server is a data producer/source for the data lake
+1. A file server uploads files to S3 collect bucket of InsuranceLake; file server is a data producer/source for the data lake
 2. Amazon S3 triggers an event notification to AWS Lambda Function
 3. AWS Lambda function inserts job information in DynamoDB table
 4. AWS Lambda function starts an execution of AWS Step Functions State machine

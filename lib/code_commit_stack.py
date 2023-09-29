@@ -52,7 +52,7 @@ class CodeCommitStack(cdk.Stack):
         repo = CodeCommit.Repository(
             self, 
             f'{target_environment}{logical_id_prefix}EtlMirrorRepository',
-            description='Insurance Lake ETL source code repository mirror for CodePipeline integration',
+            description='InsuranceLake ETL source code repository mirror for CodePipeline integration',
             repository_name=self.mappings[target_environment][CODECOMMIT_MIRROR_REPOSITORY_NAME],
         )
 

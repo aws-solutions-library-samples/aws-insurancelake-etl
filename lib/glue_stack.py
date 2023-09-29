@@ -141,25 +141,23 @@ class GlueStack(cdk.Stack):
             connections=glue.CfnJob.ConnectionsListProperty(
                 connections=[ job_connection.connection_input.name for job_connection in job_connections ],
             ) if job_connections else None,
-            # These arguments serve as defaults and base values that are overlayed and/or overriden
-            # by the arguments definition in the calling Step Functions GlueStartJobRun
+            # These arguments are common to all Glue job runs and are overlayed by the arguments
+            # definition in the calling Step Functions GlueStartJobRun
             default_arguments={
                 '--enable-auto-scaling': 'true',
                 '--enable-continuous-cloudwatch-log': 'true',
                 '--enable-metrics': 'true',
                 '--enable-glue-datacatalog': 'true',
                 '--user-jars-first': 'true',
-                '--environment': self.target_environment,
-                '--source_bucket': f's3://{buckets.raw.bucket_name}',
-                '--target_bucket': f's3://{buckets.conformed.bucket_name}',
-                '--database_name_prefix': 'default_cleanse_database',
-                '--table_name': 'default_cleanse_table',
-                '--txn_bucket': f's3://{self.glue_scripts_bucket.bucket_name}',
-                '--txn_spec_prefix_path': '/etl/transformation-spec/',
-                '--TempDir': f's3://{self.glue_scripts_temp_bucket.bucket_name}/etl/collect-to-cleanse',
+                '--extra-jars': ','.join(spark_libraries) if spark_libraries else None,
                 '--additional-python-modules': 'rapidfuzz',
                 '--extra-py-files': ','.join(glue_libraries),
-                '--extra-jars': ','.join(spark_libraries) if spark_libraries else None,
+                '--environment': self.target_environment,
+                '--TempDir': f's3://{self.glue_scripts_temp_bucket.bucket_name}/etl/collect-to-cleanse',
+                '--txn_bucket': f's3://{self.glue_scripts_bucket.bucket_name}',
+                '--txn_spec_prefix_path': '/etl/transformation-spec/',
+                '--source_bucket': f's3://{buckets.raw.bucket_name}',
+                '--target_bucket': f's3://{buckets.conformed.bucket_name}',
                 '--hash_value_table': hash_values_table.table_name,
                 '--value_lookup_table': value_lookup_table.table_name,
                 '--multi_lookup_table': multi_lookup_table.table_name,
@@ -195,24 +193,22 @@ class GlueStack(cdk.Stack):
             connections=glue.CfnJob.ConnectionsListProperty(
                 connections=[ job_connection.connection_input.name for job_connection in job_connections ],
             ) if job_connections else None,
-            # These arguments serve as defaults and base values that are overlayed and/or overriden
-            # by the arguments definition in the calling Step Functions GlueStartJobRun
+            # These arguments are common to all Glue job runs and are overlayed by the arguments
+            # definition in the calling Step Functions GlueStartJobRun
             default_arguments={
                 '--enable-auto-scaling': 'true',
                 '--enable-glue-datacatalog': 'true',
                 '--enable-continuous-cloudwatch-log': 'true',
                 '--enable-metrics': 'true',
                 '--user-jars-first': 'true',
+                '--extra-jars': ','.join(spark_libraries) if spark_libraries else None,
+                '--extra-py-files': ','.join(glue_libraries),
                 '--environment': self.target_environment,
-                '--source_bucket': f's3://{buckets.conformed.bucket_name}',
-                '--target_bucket': f's3://{buckets.purposebuilt.bucket_name}',
-                '--target_database_name': 'default_consume_database',
-                '--target_table_name': 'default_consume_table',
+                '--TempDir': f's3://{self.glue_scripts_temp_bucket.bucket_name}/etl/cleanse_to_consume',
                 '--txn_bucket': f's3://{self.glue_scripts_bucket.bucket_name}',
                 '--txn_sql_prefix_path': '/etl/transformation-sql/',
-                '--TempDir': f's3://{self.glue_scripts_temp_bucket.bucket_name}/etl/cleanse_to_consume',
-                '--extra-py-files': ','.join(glue_libraries),
-                '--extra-jars': ','.join(spark_libraries) if spark_libraries else None,
+                '--source_bucket': f's3://{buckets.conformed.bucket_name}',
+                '--target_bucket': f's3://{buckets.purposebuilt.bucket_name}',
                 '--data_lineage_table': data_lineage_table.table_name if data_lineage_table else None,
             },
             execution_property=glue.CfnJob.ExecutionPropertyProperty(
@@ -400,7 +396,7 @@ class GlueStack(cdk.Stack):
         glue_role = iam.Role(
             self,
             f'{self.target_environment}{self.logical_id_prefix}GlueRole',
-            description='Role for Insurance Lake ETL pipeline Glue Jobs',
+            description='Role for InsuranceLake ETL pipeline Glue Jobs',
             role_name=f'{self.target_environment.lower()}-{self.resource_name_prefix}-{self.region}-glue-role',
             assumed_by=iam.ServicePrincipal('glue.amazonaws.com'),
             inline_policies={

@@ -130,13 +130,13 @@ class PipelineStack(cdk.Stack):
             if self.mappings[DEPLOYMENT][CODECOMMIT_MIRROR_REPOSITORY_NAME] != '':
                 repo = CodeCommit.Repository.from_repository_name(
                     self,
-                    f'{DEPLOYMENT}{logical_id_prefix}InfrastructureMirrorRepository',
+                    f'{DEPLOYMENT}{logical_id_prefix}EtlMirrorRepository',
                     repository_name=self.mappings[DEPLOYMENT][CODECOMMIT_MIRROR_REPOSITORY_NAME],
                 )
             else:
                 repo = CodeCommit.Repository.from_repository_name(
                     self,
-                    f'{DEPLOYMENT}{logical_id_prefix}InfrastructureRepository',
+                    f'{DEPLOYMENT}{logical_id_prefix}EtlRepository',
                     repository_name=self.mappings[DEPLOYMENT][CODECOMMIT_REPOSITORY_NAME],
                 )
 

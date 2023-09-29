@@ -7,11 +7,11 @@ with open("README.md") as fp:
 
 setuptools.setup(
     name="aws-insurancelake-etl",
-    version="2.4.0",
-    description="A CDK Python app for deploying ETL jobs that build an Insurance Lake in AWS",
+    version="2.5.0",
+    description="A CDK Python app for deploying ETL jobs that operate data pipelines for InsuranceLake in AWS",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/aws-samples/aws-cdk-insurancelake-etl",
+    url="https://github.com/aws-samples/aws-insurancelake-etl",
     author="Cory Visi <cvisi@amazon.com>, Ratnadeep Bardhan Roy <rdbroy@amazon.com>, Isaiah Grant <igrant@2ndwatch.com>, Ravi Itha <itharav@amazon.com>, Zahid Muhammad Ali <zhidli@amazon.com>",
     packages=setuptools.find_packages(),
     install_requires=[

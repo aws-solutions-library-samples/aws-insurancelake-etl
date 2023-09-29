@@ -84,13 +84,13 @@ def test_transform_currency_converts_euro_data():
 def test_transform_titlecase_converts_string():
     lineage = mock_lineage([])
     df = spark.createDataFrame([ ( 'test string', ) ], schema='text string')
-    df = transform_titlecase(df, [ { 'field': 'text' } ], mock_args, lineage)
+    df = transform_titlecase(df, [ 'text' ], mock_args, lineage)
     assert df.filter('`text` = "Test String"').count() == 1
 
 def test_transform_bigint_converts_string():
     lineage = mock_lineage([])
     df = spark.createDataFrame([ ( '100', ) ], schema='amount string')
     assert df.schema['amount'].dataType == StringType()
-    df = transform_bigint(df, [ { 'field': 'amount' } ], mock_args, lineage)
+    df = transform_bigint(df, [ 'amount' ], mock_args, lineage)
     assert str(df.schema['amount'].dataType) == 'LongType()'
     assert df.filter('`amount` = 100').count() == 1

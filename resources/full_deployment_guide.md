@@ -98,6 +98,7 @@ NOTE: If using AWS Cloud9, you need only fork the repository, as the other softw
 
 Environment bootstrap is standard CDK process to prepare an AWS environment ready for deployment. Follow the steps:
 
+1. Open a command line interface (terminal)
 1. Go to project root directory where [app.py](app.py) file exists
 
 1. Create Python virtual environment. This is a one-time activity.
@@ -143,16 +144,18 @@ Environment bootstrap is standard CDK process to prepare an AWS environment read
    ```
 
    **Important**:
-   1. This command is based on the feature [Named Profiles](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-profiles.html).
+   1. This command is based on configuration and credential profiles for the AWS CLI ([instructions here](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html)).
    1. If you want to use an alternative option then refer to [Configuring the AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html) and [Environment variables to configure the AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html) for details. Be sure to follow those steps for each configuration step moving forward.
 
-1. Bootstrap central deployment account
+1. Bootstrap central **deployment** account
 
    **Important:** Your configured environment *must* target the central deplopyment account
 
-   Your account(s) may have already been bootstrapped for CDK. If so, you do not need to bootstrap them again. Using the AWS Console for CloudFormation, check if a stack called `CDKToolkit` exists. If it does, you can skip this step.
+   Your account(s) may have already been bootstrapped for CDK. If so, you do not need to bootstrap them again. Using the AWS Console for CloudFormation, check if a stack called `CDKToolkit` exists. If it does, you can skip this step (applies to all accounts).
 
    By default CDK bootstrapping will use the Administrator Access policy attached to the current session's role. If your organization requires a specific policy for CloudFormation deployment, use the `--cloudformation-execution-policies` command line option to specify the policies to attach.
+
+   If your organization requires specific resource tags, you can pass that tag list on the command line using `--tags`.
 
    ```bash
    ./lib/prerequisites/bootstrap_deployment_account.sh
@@ -169,7 +172,7 @@ Environment bootstrap is standard CDK process to prepare an AWS environment read
    ```
 
 1. Expected outputs:
-   1. In your terminal, you see
+   1. In your terminal, you see:
 
    ```bash
    ✅  Environment aws://deployment_account_id/us-east-2 bootstrapped.
@@ -184,42 +187,77 @@ Environment bootstrap is standard CDK process to prepare an AWS environment read
 1. Before you bootstrap the **dev** account, set the AWS_PROFILE environment variable
 
    ```bash
-   export AWS_PROFILE=replace_it_with_dev_account_profile_name_b4_running
+   export AWS_PROFILE=replace_it_with_dev_account_profile_name_before_running
    ```
 
 1. Bootstrap **dev** account
 
+   1. Enter the following command:
    ```bash
-   cdk bootstrap
+   ./lib/prerequisites/bootstrap_target_account.sh <central_deployment_account_id> arn:aws:iam::aws:policy/AdministratorAccess
    ```
+
+   1. When you see the following text, enter y, and press enter
+
+   ```bash
+   Are you sure you want to bootstrap {
+      "UserId": "user_id",
+      "Account": "dev_account_id",
+      "Arn": "arn:aws:iam::dev_account_id:user/user_id"
+   } providing a trust relationship to: deployment_account_id using policy arn:aws:iam::aws:policy/AdministratorAccess? (y/n)
+   ```
+
+   1. In your terminal, you see: ✅ Environment aws://dev_account_id/us-east-2 bootstrapped.
 
 1. Before you bootstrap the **test** account, set the AWS_PROFILE environment variable
 
    ```bash
-   export AWS_PROFILE=replace_it_with_test_account_profile_name_b4_running
+   export AWS_PROFILE=replace_it_with_test_account_profile_name_before_running
    ```
 
-1. Bootstrap test account
+1. Bootstrap **test** account
 
-   **Important:** Your configured environment *must* target the Test account
+   1. Enter the following command:
+   ```bash
+   ./lib/prerequisites/bootstrap_target_account.sh <central_deployment_account_id> arn:aws:iam::aws:policy/AdministratorAccess
+   ```
+
+   1. When you see the following text, enter **y**, and press enter
 
    ```bash
-   cdk bootstrap
+   Are you sure you want to bootstrap {
+      "UserId": "user_id",
+      "Account": "test_account_id",
+      "Arn": "arn:aws:iam::test_account_id:user/user_id"
+   } providing a trust relationship to: deployment_account_id using policy arn:aws:iam::aws:policy/AdministratorAccess? (y/n)
    ```
+
+   1. In your terminal, you see: ✅ Environment aws://test_account_id/us-east-2 bootstrapped.
 
 1. Before you bootstrap the **prod** account, set the AWS_PROFILE environment variable
 
    ```bash
-   export AWS_PROFILE=replace_it_with_prod_account_profile_name_b4_running
+   export AWS_PROFILE=replace_it_with_prod_account_profile_name_before_running
    ```
 
-1. Bootstrap Prod account
+1. Bootstrap **prod** account
 
-   **Important:** Your configured environment *must* target the Prod account
+   1. Enter the following command:
+   ```bash
+   ./lib/prerequisites/bootstrap_target_account.sh <central_deployment_account_id> arn:aws:iam::aws:policy/AdministratorAccess
+   ```
+
+   1. When you see the following text, enter **y**, and press enter
 
    ```bash
-   cdk bootstrap
+   Are you sure you want to bootstrap {
+      "UserId": "user_id",
+      "Account": "prod_account_id",
+      "Arn": "arn:aws:iam::prod_account_id:user/user_id"
+   } providing a trust relationship to: deployment_account_id using policy arn:aws:iam::aws:policy/AdministratorAccess? (y/n)
    ```
+
+   1. In your terminal, you see: ✅ Environment aws://prod_account_id/us-east-2 bootstrapped.
 
 ---
 
@@ -240,16 +278,30 @@ Before we deploy our resources we must provide the manual variables and upon dep
       DEPLOYMENT: {
          ACCOUNT_ID: 'add_your_deployment_account_id_here',
          REGION: 'us-east-2',
+
          # If you use GitHub / GitHub Enterprise, this will be the organization name
-         GITHUB_REPOSITORY_OWNER_NAME: 'aws-projects',
-         # Use your forked repo here!
+         GITHUB_REPOSITORY_OWNER_NAME: 'aws-samples',
+
+         # Use your forked Github repo here!
+         # Leave empty if you do not use Github
          GITHUB_REPOSITORY_NAME: 'aws-insurancelake-infrastructure',
-         # This is used in the Logical Id of CloudFormation resources
-         # We recommend capital case for consistency. e.g. DataLakeCdkBlog
+
+         # Use only if your repository is already in CodecCommit, otherwise leave empty!
+         # Use your CodeCommit repo name here
+         CODECOMMIT_REPOSITORY_NAME: '',
+
+         # Use only if you do NOT use Github or CodeCommit and need to mirror your repository
+         # Name your CodeCommit mirror repo here (recommend matching your external repo)
+         # Leave empty if you use Github or your repository is in CodeCommit already
+         CODECOMMIT_MIRROR_REPOSITORY_NAME: '',
+
+         # This is used in the Logical Id of CloudFormation resources.
+         # We recommend Capital case for consistency, e.g. DataLakeCdkBlog
          LOGICAL_ID_PREFIX: 'InsuranceLake',
-         # This is used in resources that must be globally unique!
-         # It may only contain alphanumeric characters, hyphens, and cannot contain trailing hyphens
-         # E.g. unique-identifier-data-lake
+
+         # Important: This is used as a prefix for resources that must be **globally** unique!
+         # Resource names may only contain alphanumeric characters, hyphens, and cannot contain trailing hyphens.
+         # S3 bucket names from this application must be under the 63 character bucket name limit
          RESOURCE_NAME_PREFIX: 'insurancelake',
       },
       DEV: {
@@ -257,21 +309,24 @@ Before we deploy our resources we must provide the manual variables and upon dep
          REGION: 'us-east-2',
          LINEAGE: True,
          # Comment out if you do not need VPC connectivity
-         VPC_CIDR: '10.20.0.0/24'
+         VPC_CIDR: '10.20.0.0/24',
+         CODE_BRANCH: 'develop',
       },
       TEST: {
          ACCOUNT_ID: 'add_your_test_account_id_here',
          REGION: 'us-east-2',
          LINEAGE: True,
          # Comment out if you do not need VPC connectivity
-         VPC_CIDR: '10.10.0.0/24'
+         VPC_CIDR: '10.10.0.0/24',
+         CODE_BRANCH: 'test',
       },
       PROD: {
-         ACCOUNT_ID: 'add_your_prod_account_id_here',
+         ACCOUNT_ID: 'add_your_production_account_id_here',
          REGION: 'us-east-2',
          LINEAGE: True,
          # Comment out if you do not need VPC connectivity
-         VPC_CIDR: '10.0.0.0/24'
+         VPC_CIDR: '10.0.0.0/24',
+         CODE_BRANCH: 'master',
       }
    }
    ```
@@ -280,6 +335,47 @@ Before we deploy our resources we must provide the manual variables and upon dep
 
    ```bash
    cp lib/configuration.py ../aws-insurancelake-etl/lib/
+   ```
+
+1. Edit the ```configuration.py``` in the ETL repository and modify the repository configuration parameters to reference the ETL code repository.
+
+   **Note:** We recommend that you keep the logical ID prefix and resource name prefix consistent between repositories.
+
+1. Go to [tagging.py](./lib/tagging.py) and adjust the tag names and values in the `tag_map` dictionary within the function `get_tag` as needed by your organization. You can edit the existing tag parameters, or add your own tag parameters.
+
+   If you added any tag parameters, make sure you add them to the `cdk.Tags.of` calls in the `tag` function.
+
+   Example:
+
+   ```python
+   tag_map = {
+      COST_CENTER: [
+         'MyOrg:cost-center',
+         'AnalyticsDepartment',
+      ],
+      TAG_ENVIRONMENT: [
+         f'{resource_name_prefix}:environment',
+         target_environment,
+      ],
+      TEAM: [
+         f'{resource_name_prefix}:team',
+         f'{logical_id_prefix}Admin',
+      ],
+      APPLICATION: [
+         f'{resource_name_prefix}:application',
+         f'{logical_id_prefix}Etl',
+      ],
+      'ASSETID': [
+         'MyOrg:software-asset-id',
+         '123456'
+      ]
+   }
+   ```
+
+1. Copy the ```tagging.py``` file to the ETL repository:
+
+   ```bash
+   cp lib/tagging.py ../aws-insurancelake-etl/lib/
    ```
 
 ### AWS CodePipeline and GitHub Integration
@@ -307,17 +403,19 @@ Integration between AWS CodePipeline and GitHub requires a personal access token
 1. Expected output 2: 
 
    ```bash
-   A secret is added to AWS Secrets Manager with name **/DataLake/GitHubToken**
+   A secret is added to AWS Secrets Manager with name /DataLake/GitHubToken
    ```
 
 ---
 
 ### Deploying CDK Stacks
 
-Configure your AWS profile to target the central deployment account as an Administrator.
-Using AWS CLI profiles is one way to do this ([instructions here](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html)). Perform the following steps:
+1. Configure your AWS profile to target the **central deployment account** as an Administrator; set the AWS_PROFILE environment variable:
 
-1. Open command line (terminal)
+   ```bash
+   export AWS_PROFILE=replace_it_with_deployment_account_profile_name_before_running
+   ```
+
 1. Go to the infrastructure project root directory where ```cdk.json``` and ```app.py``` exist
 1. Run the command ```cdk ls```
 1. Check the following CloudFormation stack names listed on your terminal
@@ -410,3 +508,5 @@ Using AWS CLI profiles is one way to do this ([instructions here](https://docs.a
       ![CDK_deploy_all_dev_output](./cdk_pipelines_deployed_stacks_dev_output_etl.png)
 
 1. You can now begin using InsuranceLake in three environments, and iteratively deploy updates!
+
+   To try out the ETL and start loading synthetic insurance data in the **dev** environment, refer to the [Try out the ETL Process](https://github.com/aws-samples/aws-insurancelake-etl#try-out-the-etl-process) section of the [Quickstart guide](https://github.com/aws-samples/aws-insurancelake-etl#quickstart).

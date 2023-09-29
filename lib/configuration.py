@@ -22,6 +22,7 @@ REGION = 'region'
 VPC_CIDR = 'vpc_cidr'
 LOGICAL_ID_PREFIX = 'logical_id_prefix'
 RESOURCE_NAME_PREFIX = 'resource_name_prefix'
+CODE_BRANCH = 'code_branch'
 LINEAGE='lineage'
 
 # Secrets Manager Inputs
@@ -93,35 +94,37 @@ def get_local_configuration(environment: str, local_mapping: dict = None) -> dic
                 # Use only if you do NOT use Github or CodeCommit and need to mirror your repository
                 # Name your CodeCommit mirror repo here (recommend matching your external repo)
                 # Leave empty if you use Github or your repository is in CodeCommit already
-                CODECOMMIT_MIRROR_REPOSITORY_NAME: 'aws-cdk-insurancelake-etl',
+                CODECOMMIT_MIRROR_REPOSITORY_NAME: 'aws-insurancelake-etl',
 
                 # This is used in the Logical Id of CloudFormation resources.
                 # We recommend Capital case for consistency, e.g. DataLakeCdkBlog
                 LOGICAL_ID_PREFIX: 'InsuranceLake',
 
-                # Important: This is used in resources that must be **globally** unique!
+                # Important: This is used as a prefix for resources that must be **globally** unique!
                 # Resource names may only contain alphanumeric characters, hyphens, and cannot contain trailing hyphens.
                 # S3 bucket names from this application must be under the 63 character bucket name limit
-                # E.g. unique-identifier-data-lake
                 RESOURCE_NAME_PREFIX: 'insurancelake',
             },
             DEV: {
                 ACCOUNT_ID: active_account_id,
                 REGION: 'us-east-2',
                 LINEAGE: True,
-                # VPC_CIDR: '10.20.0.0/24'
+                # VPC_CIDR: '10.20.0.0/24',
+                CODE_BRANCH: 'develop',
             },
             TEST: {
                 ACCOUNT_ID: active_account_id,
                 REGION: 'us-east-2',
                 LINEAGE: True,
-                # VPC_CIDR: '10.10.0.0/24'
+                # VPC_CIDR: '10.10.0.0/24',
+                CODE_BRANCH: 'test',
             },
             PROD: {
                 ACCOUNT_ID: active_account_id,
                 REGION: 'us-east-2',
                 LINEAGE: True,
-                # VPC_CIDR: '10.0.0.0/24'
+                # VPC_CIDR: '10.0.0.0/24',
+                CODE_BRANCH: 'master',
             }
         }
 

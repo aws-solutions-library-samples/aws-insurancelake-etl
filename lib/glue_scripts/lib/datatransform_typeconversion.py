@@ -188,16 +188,15 @@ def transform_currency(df: DataFrame, currency_formats: list, args: dict, lineag
     return df.withColumns(cols_map)
 
 
-def transform_titlecase(df: DataFrame, titlecase_formats: list, args: dict, lineage, *extra):
+def transform_titlecase(df: DataFrame, titlecase_fields: list, args: dict, lineage, *extra):
     """Convert specified string field to title case
 
     Parameters
     ----------
     df
         pySpark DataFrame on which to apply title case conversion
-    titlecase_formats
-        List of fieldnames in the form:
-            field: 'FieldName'
+    titlecase_fields
+        Simple list of fieldnames
     args
         Glue job arguments, from which source_key and base_file_name are used
     lineage
@@ -208,28 +207,24 @@ def transform_titlecase(df: DataFrame, titlecase_formats: list, args: dict, line
     DataFrame
         pySpark DataFrame with title case conversion applied
     """
-    cols_map = {}
-    for conversion in titlecase_formats:
-        cols_map.update({
-            conversion['field']:
-            initcap(col(conversion['field']))
-        })
-
+    cols_map = {
+        field: initcap(col(field))
+            for field in titlecase_fields
+    }
     # No need to unpersist as there is only one reference to the dataframe and it is returned
-    lineage.update_lineage(df, args['source_key'], 'titlecaseconversion', transform=titlecase_formats)
+    lineage.update_lineage(df, args['source_key'], 'titlecaseconversion', transform=titlecase_fields)
     return df.withColumns(cols_map)
 
 
-def transform_bigint(df: DataFrame, bigint_formats: list, args: dict, lineage, *extra):
+def transform_bigint(df: DataFrame, bigint_fields: list, args: dict, lineage, *extra):
     """Convert specified numeric field to bigint
 
     Parameters
     ----------
     df
         pySpark DataFrame on which to apply bigint conversion
-    bigint_formats
-        List of fieldnames in the form:
-            field: 'FieldName'
+    bigint_fields
+        Simple list of fieldnames to covert
     args
         Glue job arguments, from which source_key and base_file_name are used
     lineage
@@ -240,13 +235,10 @@ def transform_bigint(df: DataFrame, bigint_formats: list, args: dict, lineage, *
     DataFrame
         pySpark DataFrame with bigint conversion applied
     """
-    cols_map = {}
-    for conversion in bigint_formats:
-        cols_map.update({
-            conversion['field']:
-            col(conversion['field']).cast('long')
-        })
-
+    cols_map = {
+        field: col(field).cast('long')
+            for field in bigint_fields
+    }
     # No need to unpersist as there is only one reference to the dataframe and it is returned
-    lineage.update_lineage(df, args['source_key'], 'bigintconversion', transform=bigint_formats)
+    lineage.update_lineage(df, args['source_key'], 'bigintconversion', transform=bigint_fields)
     return df.withColumns(cols_map)

@@ -8,7 +8,7 @@ from cdk_nag import AwsSolutionsChecks, NagSuppressions
 from lib.pipeline_stack import PipelineStack
 from lib.code_commit_stack import CodeCommitStack
 from lib.configuration import (
-    ACCOUNT_ID, CODECOMMIT_MIRROR_REPOSITORY_NAME, DEPLOYMENT, DEV, TEST, PROD, REGION,
+    ACCOUNT_ID, CODECOMMIT_MIRROR_REPOSITORY_NAME, DEPLOYMENT, DEV, TEST, PROD, REGION, CODE_BRANCH,
     get_logical_id_prefix, get_all_configurations
 )
 from lib.tagging import tag
@@ -33,7 +33,7 @@ if raw_mappings[DEPLOYMENT][CODECOMMIT_MIRROR_REPOSITORY_NAME] != '':
     mirror_repository_stack = CodeCommitStack(
         app,
         f'{DEPLOYMENT}-{logical_id_prefix}EtlMirrorRepository',
-        description='Insurance Lake stack for ETL repository mirror (uksb-1tu7mtee2)',
+        description='InsuranceLake stack for ETL repository mirror (uksb-1tu7mtee2)',
         target_environment=DEPLOYMENT,
         env=deployment_aws_env,
     )
@@ -50,9 +50,9 @@ if os.environ.get('ENV', DEV) == DEV:
     dev_pipeline_stack = PipelineStack(
         app,
         f'{target_environment}-{logical_id_prefix}EtlPipeline',
-        description=f'Insurance Lake stack for ETL pipeline - {DEV} environment (uksb-1tu7mtee2)',
+        description=f'InsuranceLake stack for ETL pipeline - {DEV} environment (uksb-1tu7mtee2)',
         target_environment=DEV,
-        target_branch='develop',
+        target_branch=raw_mappings[DEV][CODE_BRANCH],
         target_aws_env=dev_aws_env,
         env=deployment_aws_env,
     )
@@ -70,9 +70,9 @@ if os.environ.get('ENV', TEST) == TEST:
     test_pipeline_stack = PipelineStack(
         app,
         f'{target_environment}-{logical_id_prefix}EtlPipeline',
-        description=f'Insurance Lake stack for ETL pipeline - {TEST} environment (uksb-1tu7mtee2)',
+        description=f'InsuranceLake stack for ETL pipeline - {TEST} environment (uksb-1tu7mtee2)',
         target_environment=TEST,
-        target_branch='develop',
+        target_branch=raw_mappings[TEST][CODE_BRANCH],
         target_aws_env=test_aws_env,
         env=deployment_aws_env,
     )
@@ -89,9 +89,9 @@ if os.environ.get('ENV', PROD) == PROD:
     prod_pipeline_stack = PipelineStack(
         app,
         f'{target_environment}-{logical_id_prefix}EtlPipeline',
-        description=f'Insurance Lake stack for ETL pipeline - {PROD} environment (uksb-1tu7mtee2)',
+        description=f'InsuranceLake stack for ETL pipeline - {PROD} environment (uksb-1tu7mtee2)',
         target_environment=PROD,
-        target_branch='main',
+        target_branch=raw_mappings[PROD][CODE_BRANCH],
         target_aws_env=prod_aws_env,
         env=deployment_aws_env,
     )

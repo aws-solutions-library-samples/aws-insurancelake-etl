@@ -21,7 +21,7 @@ class DataLineageGenerator:
              insert_table
              update_lineage
     """
-    def __init__(self, args: list, uniid: str = None):
+    def __init__(self, args: dict, uniid: str = None):
         """
         Parameters
         ----------
@@ -49,7 +49,7 @@ class DataLineageGenerator:
         """
         return(str(uuid.uuid4()))
 
-    def insert_table(self, dataset: str, operation: str, data_dict: dict):
+    def insert_table(self, dataset: str, operation: str, transform_spec: any):
         """Inserts the lineage event to DynamoDB data lineage table
 
         Parameters
@@ -58,7 +58,7 @@ class DataLineageGenerator:
             Name of the dataset on which the operation has been performed
         operation
             Information about the type of operation; e.g. read, write, numericaudit, or other transform name
-        data_dict
+        transform_spec
             Detailed information about the operation
         """
         now = datetime.now(tz=dateutil.tz.gettz('UTC'))
@@ -75,7 +75,7 @@ class DataLineageGenerator:
                 'time_of_operation' : str(now.strftime("%Y-%m-%d %H:%M:%S")),
                 'dataset_operation' : operation,
                 'step_function_name' : self.step_function_name,
-                'info' : json.dumps(data_dict)
+                'info' : json.dumps(transform_spec)
             }
         )
         self.count += 1
@@ -94,6 +94,10 @@ class DataLineageGenerator:
         kwargs: optional
             List of optional keywords used for specific operations; most operations expect 'transform'
         """
+        if not self.table:
+            # No table is defined so no data lineage is possible
+            return
+
         dataset_counts = {
             'row': df.count(),
             'column': len(df.columns),
@@ -145,7 +149,6 @@ class DataLineageGenerator:
                     self.insert_table(dataset, operation, map_record)
 
         # All other transforms (that do not require special handling)
-        # NOTE: Transform spec must be a list
         else:
             for spec in kwargs['transform']:
                 self.insert_table(dataset, operation, { operation: spec })

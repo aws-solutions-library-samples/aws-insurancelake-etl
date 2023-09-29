@@ -35,14 +35,18 @@ except ModuleNotFoundError:
 
 expected_arguments = [
     'JOB_NAME',
-    'state_machine_name',
-    'execution_id',
     'environment',
     'TempDir',
     'txn_bucket',
     'txn_spec_prefix_path',
-    'target_bucket',
     'source_bucket',
+    'target_bucket',
+    'hash_value_table',
+    'value_lookup_table',
+    'multi_lookup_table',
+    'dq_results_table',
+    'state_machine_name',
+    'execution_id',
     'source_key',
     'target_database_name',
     'table_name',
@@ -50,10 +54,6 @@ expected_arguments = [
     'p_year',
     'p_month',
     'p_day',
-    'hash_value_table',
-    'value_lookup_table',
-    'multi_lookup_table',
-    'dq_results_table',
 ]
 
 # Handle optional arguments
@@ -285,8 +285,8 @@ def main():
     allow_schema_change = input_spec.get('allow_schema_change', allow_schema_change)
     upsert_catalog_table(
             filtered_df,
-            args['target_database_name'], 
-            args['table_name'], 
+            args['target_database_name'],
+            args['table_name'],
             ['year', 'month', 'day'],
             storage_location,
             allow_schema_change,

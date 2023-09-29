@@ -51,7 +51,7 @@ class AthenaHelperStack(cdk.Stack):
             self,
             f'{target_environment}{logical_id_prefix}AthenaWorkgroup',
             name=resource_name_prefix,
-            description='Insurance Lake ETL Maintainer helper workgroup ',
+            description='InsuranceLake ETL Maintainer helper workgroup ',
             recursive_delete_option=recursive_delete,
             work_group_configuration=athena.CfnWorkGroup.WorkGroupConfigurationProperty(
                 publish_cloud_watch_metrics_enabled=True,

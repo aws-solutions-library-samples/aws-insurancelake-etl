@@ -69,17 +69,17 @@ class StepFunctionsStack(cdk.Stack):
         buckets = ImportedBuckets(self, logical_id_suffix='StepFunctionsStack')
 
         cloudwatch_step_function_log_group = logs.LogGroup(
-            self, 
+            self,
             f'{target_environment}{self.logical_id_prefix}EtlStateMachineLogGroup',
             retention=self.log_retention,
             removal_policy=self.removal_policy,
         )
 
         notification_topic = sns.Topic(
-            self, 
+            self,
             f'{target_environment}{self.logical_id_prefix}EtlNotificationTopic',
             topic_name=f'{target_environment.lower()}-{self.resource_name_prefix}-etl-notification-topic',
-            display_name='Insurance Lake ETL Notifications Topic',
+            display_name='InsuranceLake ETL Notifications Topic',
             master_key=buckets.s3_kms_key,
         )
 
@@ -146,16 +146,16 @@ class StepFunctionsStack(cdk.Stack):
             glue_job_name=collect_to_cleanse_job.name,
             comment='Collect to Cleanse data load and transform',
             arguments=stepfunctions.TaskInput.from_object({
-                # These arguments overlay and/or override base arguments from the Glue Job definition
+                # These arguments overlay base arguments from the Glue Job definition
                 '--state_machine_name.$': '$$.StateMachine.Name',
                 '--execution_id.$': '$.execution_id',
-                '--target_database_name.$': '$.target_database_name',
                 '--source_key.$': '$.source_key',
+                '--target_database_name.$': '$.target_database_name',
+                '--table_name.$': '$.table_name',
                 '--base_file_name.$': '$.base_file_name',
                 '--p_year.$': '$.p_year',
                 '--p_month.$': '$.p_month',
                 '--p_day.$': '$.p_day',
-                '--table_name.$': '$.table_name',
             }),
             integration_pattern=stepfunctions.IntegrationPattern.RUN_JOB,
             result_path='$.taskresult',
@@ -169,7 +169,7 @@ class StepFunctionsStack(cdk.Stack):
             glue_job_name=cleanse_to_consume_job.name,
             comment='Cleanse to Consume data load and transform',
             arguments=stepfunctions.TaskInput.from_object({
-                # These arguments overlay and/or override base arguments from the Glue Job definition
+                # These arguments overlay base arguments from the Glue Job definition
                 '--state_machine_name.$': '$$.StateMachine.Name',
                 '--execution_id.$': '$.execution_id',
                 '--database_name_prefix.$': '$.target_database_name',
@@ -342,7 +342,7 @@ class StepFunctionsStack(cdk.Stack):
         return iam.Role(
             self,
             f'{self.target_environment}{self.logical_id_prefix}{logical_id_suffix}LambdaRole',
-            description='Role for Insurance Lake ETL Lambda Functions',
+            description='Role for InsuranceLake ETL Lambda Functions',
             role_name=f'{self.target_environment.lower()}-{self.resource_name_prefix}-{self.region}-{resource_name_suffix}-lambda',
             assumed_by=iam.ServicePrincipal('lambda.amazonaws.com'),
             inline_policies=policies,
@@ -387,7 +387,7 @@ class StepFunctionsStack(cdk.Stack):
 
         # Associate the Log group to the Lambda function by giving it the same name
         cloudwatch_log_group = logs.LogGroup(
-            self, 
+            self,
             f'{self.target_environment}{self.logical_id_prefix}{logical_id_suffix}LambdaLogGroup',
             log_group_name=f'/aws/lambda/{lambda_function_name}',
             retention=self.log_retention,

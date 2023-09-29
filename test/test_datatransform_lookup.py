@@ -62,7 +62,7 @@ def dynamodb_table_for_lookup():
             'column_name': 'unittest',
             'lookup_data': json.dumps({ "1": "First", "2": "Second" })
         })
-        return dynamodb
+        return table
     return inner
 
 @mock_dynamodb
@@ -108,7 +108,7 @@ def dynamodb_table_for_multilookup():
             'a': '3',
             'b': '4',
         })
-        return dynamodb
+        return table
     return inner
 
 @mock_dynamodb

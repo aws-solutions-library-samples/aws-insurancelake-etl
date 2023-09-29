@@ -84,7 +84,7 @@ def use_moto():
  
         # KeySchema, AttributeDefinitions, and BillingMode should match
         # dynamodb table creation in dynamodb_stack
-        dynamodb.create_table(
+        table = dynamodb.create_table(
             TableName=test_table_name,
             KeySchema=[
                 { 'AttributeName': 'execution_id', 'KeyType': 'HASH' }
@@ -94,7 +94,7 @@ def use_moto():
             ],
             BillingMode='PAY_PER_REQUEST'
         )
-        return dynamodb
+        return table
     return dynamodb_client_and_audit_table
 
 
@@ -122,16 +122,15 @@ def test_handler_success_event_returns_state(monkeypatch, use_moto):
 def test_handler_success_event_records_state(monkeypatch, use_moto):
     monkeypatch.setenv('AWS_DEFAULT_REGION', mock_region)
     monkeypatch.setenv('DYNAMODB_TABLE_NAME', test_table_name)
-    use_moto()
+    table = use_moto()
 
     lambda_handler(state_machine_success_event, test_context)
 
-    dynamo_client = boto3.client('dynamodb')
-    item = dynamo_client.get_item(
+    item = table.get_item(
         TableName=test_table_name,
-        Key={ 'execution_id': { 'S': test_success_execution_id } }
+        Key={ 'execution_id': test_success_execution_id }
     )
-    assert item['Item']['job_latest_status']['S'] == 'SUCCEEDED'
+    assert item['Item']['job_latest_status'] == 'SUCCEEDED'
 
 
 @mock_dynamodb
@@ -159,16 +158,15 @@ def test_handler_failure_event_returns_state_and_error(monkeypatch, use_moto):
 def test_handler_failure_event_records_error_message(monkeypatch, use_moto):
     monkeypatch.setenv('AWS_DEFAULT_REGION', mock_region)
     monkeypatch.setenv('DYNAMODB_TABLE_NAME', test_table_name)
-    use_moto()
+    table = use_moto()
 
     lambda_handler(state_machine_failure_event, test_context)
 
-    dynamo_client = boto3.client('dynamodb')
-    item = dynamo_client.get_item(
+    item = table.get_item(
         TableName=test_table_name,
-        Key={ 'execution_id': { 'S': test_failure_execution_id } }
+        Key={ 'execution_id': test_failure_execution_id }
     )
-    assert item['Item']['error_message']['S'] == 'RuntimeError: Error for testing'
+    assert item['Item']['error_message'] == 'RuntimeError: Error for testing'
 
 
 @mock_dynamodb

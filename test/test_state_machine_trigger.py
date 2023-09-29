@@ -72,6 +72,13 @@ test_context = {
     'client_context': None
 }
 
+
+def mock_record_etl_job_run(audit_table_name: str, sfn_arn: str, execution_id: str,
+        execution_name: str, execution_input: str, principal_id: str, source_ipaddress: str):
+    # Mock function does not need to do any work
+    pass
+
+
 @pytest.fixture
 def use_moto():
     @mock_dynamodb
@@ -80,7 +87,7 @@ def use_moto():
  
         # KeySchema, AttributeDefinitions, and BillingMode should match
         # dynamodb table creation in dynamodb_stack
-        dynamodb.create_table(
+        table = dynamodb.create_table(
             TableName=test_table_name,
             KeySchema=[
                 { 'AttributeName': 'execution_id', 'KeyType': 'HASH' }
@@ -90,16 +97,11 @@ def use_moto():
             ],
             BillingMode='PAY_PER_REQUEST'
         )
-        return dynamodb
+        return table
     return dynamodb_client_and_audit_table
 
 
-def test_handler_success_returns_200(monkeypatch, caplog):
-
-    def mock_record_etl_job_run(audit_table_name: str, sfn_arn: str, execution_id: str, execution_name: str, execution_input: str, principal_id: str, source_ipaddress: str):
-        # Mock function does not need to do any work
-        pass
-
+def test_handler_success_returns_200(monkeypatch):
     monkeypatch.setattr(lambda_handler.boto3, 'client', mock_boto3_client)
     monkeypatch.setattr(lambda_handler, 'record_etl_job_run', mock_record_etl_job_run)
     monkeypatch.setenv('DYNAMODB_TABLE_NAME', test_table_name)
@@ -109,11 +111,7 @@ def test_handler_success_returns_200(monkeypatch, caplog):
     assert result['statusCode'] == 200
 
 
-def test_handler_bad_file_returns_400(monkeypatch, caplog):
-    def mock_record_etl_job_run(audit_table_name: str, sfn_arn: str, execution_id: str, execution_name: str, execution_input: str, principal_id: str, source_ipaddress: str):
-        # Mock function does not need to do any work
-        pass
-
+def test_handler_bad_file_returns_400(monkeypatch):
     monkeypatch.setattr(lambda_handler.boto3, 'client', mock_boto3_client)
     monkeypatch.setattr(lambda_handler, 'record_etl_job_run', mock_record_etl_job_run)
     monkeypatch.setenv('DYNAMODB_TABLE_NAME', test_table_name)
@@ -127,11 +125,7 @@ def test_handler_bad_file_returns_400(monkeypatch, caplog):
 
 
 
-def test_handler_folder_putobject_returns_400(monkeypatch, caplog):
-    def mock_record_etl_job_run(audit_table_name: str, sfn_arn: str, execution_id: str, execution_name: str, execution_input: str, principal_id: str, source_ipaddress: str):
-        # Mock function does not need to do any work
-        pass
-
+def test_handler_folder_putobject_returns_400(monkeypatch):
     monkeypatch.setattr(lambda_handler.boto3, 'client', mock_boto3_client)
     monkeypatch.setattr(lambda_handler, 'record_etl_job_run', mock_record_etl_job_run)
     monkeypatch.setenv('DYNAMODB_TABLE_NAME', test_table_name)
@@ -144,16 +138,15 @@ def test_handler_folder_putobject_returns_400(monkeypatch, caplog):
 @mock_dynamodb
 def test_record_etl_job_run_records_status(monkeypatch, use_moto):
     monkeypatch.setenv('AWS_DEFAULT_REGION', mock_region)
-    use_moto()
+    table = use_moto()
 
     lambda_handler.record_etl_job_run(test_table_name, test_state_machine_arn, test_execution_id, 'test-execution', '{}', 'testUser', 'testipaddress')
 
-    dynamo_client = boto3.client('dynamodb')
-    item = dynamo_client.get_item(
+    item = table.get_item(
         TableName=test_table_name,
-        Key={ 'execution_id': { 'S': test_execution_id } }
+        Key={ 'execution_id': test_execution_id }
     )
-    assert item['Item']['job_latest_status']['S'] == 'STARTED'
+    assert item['Item']['job_latest_status'] == 'STARTED'
 
 
 @mock_dynamodb

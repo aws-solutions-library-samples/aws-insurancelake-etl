@@ -19,14 +19,14 @@ from datalineage import DataLineageGenerator
 
 expected_arguments = [
     'JOB_NAME',
-    'state_machine_name',
-    'execution_id',
     'environment',
     'TempDir',
     'txn_bucket',
     'txn_sql_prefix_path',
     'source_bucket',
     'target_bucket',
+    'state_machine_name',
+    'execution_id',
     'database_name_prefix',
     'table_name',
     'base_file_name',

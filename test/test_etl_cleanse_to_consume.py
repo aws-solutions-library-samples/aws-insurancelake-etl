@@ -21,6 +21,7 @@ pytestmark = pytest.mark.skipif('pyspark' not in sys.modules, reason='No pySpark
 mock_args = [
     'etl_cleanse-to-consume.py',
     '--JOB_NAME=UnitTest',
+    '--JOB_RUN_ID=jr-unittest',
     f'--state_machine_name={mock_resource_prefix}-etl-state-machine',
     '--execution_id=test_execution_id',
     '--environment=unittest',
