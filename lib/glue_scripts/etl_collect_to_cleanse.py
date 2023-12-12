@@ -9,11 +9,9 @@ from functools import reduce
 from pyspark.context import SparkContext
 from pyspark.sql.functions import trim
 from pyspark.sql.utils import IllegalArgumentException
-
 from awsglue.utils import getResolvedOptions
 from awsglue.context import GlueContext
 from awsglue.job import Job
-from awsglue.dynamicframe import DynamicFrame
 
 # For running in local Glue container
 sys.path.append(os.path.dirname(__file__) + '/lib')
@@ -26,12 +24,8 @@ from datatransform_regex import *
 from datatransform_lookup import *
 from datatransform_premium import *
 from datalineage import DataLineageGenerator
+from dataquality_check import DataQualityCheck
 
-try:
-    # Try/Except block for running in AWS-provided Glue container until Glue DQ support is added
-    from dataquality_check import check_dataquality_warn, check_dataquality_quarantine, check_dataquality_halt
-except ModuleNotFoundError:
-    pass
 
 expected_arguments = [
     'JOB_NAME',
@@ -71,9 +65,11 @@ def main():
     job = Job(glueContext)
     job.init(args['JOB_NAME'], args)
 
-    filename, ext = os.path.splitext(args['base_file_name'])
+    _, ext = os.path.splitext(args['base_file_name'])
     source_path = args['source_bucket'] + '/' + args['source_key'] + '/' + args['base_file_name']
+    source_key_dashes = args['target_database_name'] + '-' + args['table_name']
     print(f'Source path: {source_path}')
+
 
     # Set default schema change detection based on InsuranceLake environment
     if args['environment'] == 'Dev':
@@ -85,18 +81,19 @@ def main():
 
     # Read input/transformation spec file
     txn_spec_prefix = args['txn_spec_prefix_path']
-    txn_spec_key = txn_spec_prefix[1:] + args['target_database_name'] + '-' + args['table_name'] + '.json'
+    txn_spec_key = txn_spec_prefix[1:] + source_key_dashes + '.json'
     print(f'Using input/transformation specification from: {txn_spec_key}')
     try:
         spec_data = sc.textFile(f"{args['txn_bucket']}/{txn_spec_key}")
         spec_json_data = json.loads('\n'.join(spec_data.collect()))
     except Exception as e:
-        print(f'No input/transformation spec file exists or error reading: {e.java_exception.getMessage()}')
-        spec_json_data = None
+        message = e.java_exception.getMessage() if hasattr(e, 'java_exception') else str(e)
+        print(f'No input/transformation spec file exists or error reading: {message}')
+        spec_json_data = {}
 
     # Read schema mapping file
     txn_spec_prefix = args['txn_spec_prefix_path']
-    txn_map_key = txn_spec_prefix[1:] + args['target_database_name'] + '-' + args['table_name'] + '.csv'
+    txn_map_key = txn_spec_prefix[1:] + source_key_dashes + '.csv'
     print(f'Using schema mapping from: {txn_map_key}')
     try:
         mapping_file = sc.textFile(f"{args['txn_bucket']}/{txn_map_key}").collect()
@@ -105,11 +102,22 @@ def main():
         reader.fieldnames = [ field_name.lower() for field_name in reader.fieldnames ]
         mapping_data = [ field_map for field_map in reader ]
     except Exception as e:
-        print(f'No transformation mapping file exists or error reading: {e.java_exception.getMessage()}, skipping')
-        mapping_data = None
+        message = e.java_exception.getMessage() if hasattr(e, 'java_exception') else str(e)
+        print(f'No transformation mapping file exists or error reading: {message}, skipping')
+        mapping_data = {}
+
+    # Read Data Quality rules
+    dq_rules_key = 'etl/dq-rules/dq-' + source_key_dashes + '.json'
+    print(f'Using data quality rules from: {dq_rules_key}')
+    try:
+        rules_data = sc.textFile(f"{args['txn_bucket']}/{dq_rules_key}")
+        rules_json_data = json.loads('\n'.join(rules_data.collect()))
+    except Exception as e:
+        print(f'No data quality rules file exists or error reading: {e.java_exception.getMessage()}, skipping')
+        rules_json_data = {}
 
     # Read collected S3 object
-    input_spec = spec_json_data.get('input_spec', {}) if spec_json_data else {}
+    input_spec = spec_json_data.get('input_spec', {})
     if 'fixed' in input_spec:
         # mapping_data should be SourceName (ignored for fixed format), DestinationName, (Column) Width
         initial_df = spark.read.text(source_path)
@@ -135,7 +143,7 @@ def main():
             print(f"Using Excel input specification: {input_spec['excel']}")
             header = input_spec['excel'].get('header', True)
         else:
-            print(f'No Excel input specification, using defaults')
+            print('No Excel input specification, using defaults')
             sheet_names = [ '0' ]
             data_address = 'A1'
             header = True
@@ -184,6 +192,7 @@ def main():
     lineage = DataLineageGenerator(args)
     lineage.update_lineage(initial_df, args['source_key'], 'read')
     lineage.update_lineage(initial_df, args['source_key'], 'numericaudit')
+    dataquality = DataQualityCheck(rules_json_data, args, lineage, sc)
 
     if initial_df.count() == 0:
         raise RuntimeError('No rows of data in source file; aborting')
@@ -195,12 +204,13 @@ def main():
             initial_df = custommapping(initial_df, mapping_data, args, lineage)
             print('Performed field mapping')
         else:
-            generated_map_path = args['TempDir'] + '/' + args['target_database_name'] + '-' + args['table_name'] + '.csv'
+            generated_map_path = args['TempDir'] + '/' + source_key_dashes + '.csv'
             print(f'No mapping found, generated recommended mapping to: {generated_map_path}')
             initial_df, generated_mapping_data = clean_column_names(initial_df)
             put_s3_object(generated_map_path, generated_mapping_data)
 
-    totransform_df = initial_df
+    initial_df.cache()
+    totransform_df = dataquality.run_data_quality(initial_df, rules_json_data, 'before_transform')
     totransform_df.cache()
 
     # Perform transforms
@@ -223,14 +233,14 @@ def main():
             )
             print(f'Performed {transform} transform')
     else:
-        generated_spec_path = args['TempDir'] + '/' + args['target_database_name'] + '-' + args['table_name'] + '.json'
+        generated_spec_path = args['TempDir'] + '/' + source_key_dashes + '.json'
         print(f'No transformation specification found, generating recommended spec to: {generated_spec_path}')
         generated_spec_data = generate_spec(totransform_df, ext)
         put_s3_object(generated_spec_path, json.dumps(generated_spec_data, indent=4))
 
     fields_to_add = {
         # Add State Machine execution ID to DataFrame for lineage tracking
-        'execution_id':  args['execution_id'],
+        'execution_id': args['execution_id'],
         # Add partition columns for daily data load partitioning strategy
         'year': args['p_year'],
         'month': args['p_month'],
@@ -244,65 +254,62 @@ def main():
     transformed_schema = list(transformed_df.schema)
     print(str(transformed_schema))
 
-    # Run Data Quality rules and take appropriate action
-    dq_rules_key = 'etl/dq-rules/dq-' + args['target_database_name'] + '-' + args['table_name'] + '.json'
-    print(f'Using data quality rules from: {dq_rules_key}')
-    try:
-        rules_data = sc.textFile(f"{args['txn_bucket']}/{dq_rules_key}")
-        rules_json_data = json.loads('\n'.join(rules_data.collect()))
-    except Exception as e:
-        print(f'No data quality rules file exists or error reading: {e.java_exception.getMessage()}, skipping')
-        rules_json_data = None
-
-    # NOTE: Only quarantine rules will change filtered Dataframe
-    filtered_df = transformed_df
-    if rules_json_data:
-        if 'dataquality_check' not in sys.modules:
-            print('Skipping data quality rules because awsgluedq library is not available')
-        else:
-            dq_rules = rules_json_data['dq_rules']
-            print(f'Using data quality rules: {dq_rules}')
-            fordq_dyf = DynamicFrame.fromDF(transformed_df, glueContext, f"{args['execution_id']}-fordq_dyf")
-            if 'warn_rules' in dq_rules:
-                print(f'Glue Data Quality Warn-on-Failure results:')
-                check_dataquality_warn(fordq_dyf, dq_rules['warn_rules'], args, sc)
-            if 'quarantine_rules' in dq_rules:
-                print(f'Glue Data Quality Quarantine-on-Failure results:')
-                filtered_df.unpersist()
-                filtered_df = check_dataquality_quarantine(fordq_dyf, dq_rules['quarantine_rules'], args, sc)
-                lineage.update_lineage(filtered_df, args['source_key'], 'dataqualityquarantine', transform=dq_rules['quarantine_rules'])
-            if 'halt_rules' in dq_rules:
-                # NOTE: Original DynamicFrame is used to process halt rules, so even rows filtered above can trigger abort
-                print(f'Glue Data Quality Halt-on-Failure results:')
-                check_dataquality_halt(fordq_dyf, dq_rules['halt_rules'], args, sc)
-
-    # Post transform and DQ filter numeric audit
+    filtered_df = dataquality.run_data_quality(transformed_df, rules_json_data, 'after_transform')
     filtered_df.cache()
+    # Post transform and DQ filter numeric audit
     lineage.update_lineage(filtered_df, args['source_key'], 'numericaudit')
 
-    # Build Glue Catalog for data
-    storage_location = args['target_bucket'] + '/' + args['target_database_name'] + '/' + args['table_name']
-    allow_schema_change = input_spec.get('allow_schema_change', allow_schema_change)
-    upsert_catalog_table(
-            filtered_df,
-            args['target_database_name'],
-            args['table_name'],
-            ['year', 'month', 'day'],
-            storage_location,
-            allow_schema_change,
-        )
+    storage_location = args['target_bucket'] + '/' + args['source_key']
 
-    # Set dynamic overwrite to preserve historical partitions, but overwrite current partition
-    spark.conf.set('spark.sql.sources.partitionOverwriteMode', 'dynamic')
-    spark.conf.set('hive.exec.dynamic.partition', 'true')
+    # The combination of Glue Catalog API upserts and Spark saveAsTable using Hive/Parquet
+    # allows the lake to manage the merged/destination schema, and Spark to manage schema
+    # consistency without needing to repair tables
+    upsert_catalog_table(
+        filtered_df,
+        args['target_database_name'],
+        args['table_name'],
+        ['year', 'month', 'day'],
+        storage_location,
+        table_description=input_spec.get('table_description'),
+        # Will raise errors if nonpermissible schema change is detected
+        allow_schema_change=input_spec.get('allow_schema_change', allow_schema_change),
+    )
+
+    # Strongly type job arguments to reduce risk of SQL injection
+    p_year = int(args['p_year'])
+    p_month = int(args['p_month'])
+    p_day = int(args['p_day'])
+    # Explicitly clear the existing partition (i.e. overwrite)
+    try:
+        glueContext.purge_table(
+            database=args['target_database_name'],
+            table_name=args['table_name'],
+            options={
+                'partitionPredicate': f"(year == '{p_year}' AND month == '{p_month:02}' AND day == '{p_day:02}')",
+                'retentionPeriod': 0
+            }
+        )
+    except Exception as e:
+        # "Pushdown predicate cannot be resolved" error occurs when table is just created above
+        # and has no data (thus no partitions)
+        if "User's pushdown predicate" in e.java_exception.getMessage():
+            print('No existing partition data to clear')
+        else:
+            raise e
+
+    # saveAsTable on new tables fails in strict mode even with only 1 partition
     spark.conf.set('hive.exec.dynamic.partition.mode', 'nonstrict')
 
-    # Write the data with new schema and partitioning to the target location in hadoop parquet
-    filtered_df.write.partitionBy('year', 'month', 'day').save(storage_location, format='parquet', mode='overwrite')
+    spark.conf.set('spark.sql.sources.partitionOverwriteMode', 'dynamic')
+    spark.conf.set('hive.exec.dynamic.partition', 'true')
 
-    # Do not use RECOVER PARTITIONS because we already updated the Glue Catalog if it was needed
-    spark.sql(f"ALTER TABLE {args['target_database_name']}.{args['table_name']} ADD IF NOT EXISTS PARTITION"
-        f"(year='{args['p_year']}', month='{args['p_month']}', day='{args['p_day']}')")
+    filtered_df.write.partitionBy('year', 'month', 'day').saveAsTable(
+        f"{args['target_database_name']}.{args['table_name']}",
+        path=storage_location,
+        format='hive',
+        fileFormat='parquet',
+        mode='append',
+    )
 
     job.commit()
 

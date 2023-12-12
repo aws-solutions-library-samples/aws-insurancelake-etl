@@ -1,0 +1,74 @@
+{
+	"primary_entity_table": "customer_primary",
+
+	"global_id_field": "globalid",
+
+	"sort_field": "lastupdated",
+
+	"exact_match_fields": {
+		"source_primary_key": "customerno",
+		"source_system_key": "srcsystemid"
+	},
+
+	"levels": [
+		{
+			"id": "1",
+			"blocks": [
+				"firstname[:1]",
+				"lastname[1:]",
+				"zip"
+			],
+			"fields": [
+				{
+					"fieldname": "firstname",
+					"type" : "string",
+					"weight": 0.075,
+					"method": "jarowinkler",
+					"threshold": 0.85
+				},
+				{
+					"fieldname": "lastname",
+					"type" : "string",
+					"weight": 0.075,
+					"method": "jarowinkler",
+					"threshold": 0.85
+				},
+				{
+					"fieldname": "addressstreet",
+					"type" : "string",
+					"weight": 0.15,
+					"method": "jarowinkler",
+					"threshold": 0.85
+				},
+				{
+					"fieldname": "customerdob",
+					"type" : "exact",
+					"weight": 0.7
+				}
+			],
+			"threshold": 0.85
+		},
+
+		{
+			"id": "2",
+			"blocks": [
+				"phonenumber"
+			],
+			"fields": [
+				{
+					"fieldname": "email",
+					"type" : "exact",
+					"weight": 0.5
+				},
+				{
+					"fieldname": "customerdob",
+					"type" : "exact",
+					"weight": 0.5
+				}
+
+			],
+			"threshold": 1.0
+		}
+
+	]
+}

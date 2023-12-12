@@ -1,0 +1,6 @@
+partyid,partytype,firstname,lastname,sex,dob,nationalid,maritalstatus,annualincome,occupation,companyname,phonenumber,email,addressstreet,city,state,zip,country,lastupdated,srcsystemid
+AA000001,IND,Jacob,Walker,M,1947-07-17,203-32-6034,married,21505,"Engineer, materials",Howard-Simmons,447-513-6675,rangellisa@gmail.com,40847 Deanna Greens Suite 042,Little Rock,AR,72000-0000,US,06/07/2023 11:57:22,A01
+AA000003,IND,Jennifer,Haley,F,2021-10-06,483-72-9493,single,135183,Furniture designer,"Harris, Ford and Delgado",609-310-9474,navarrosamantha@gmail.com,87079 Perez Plains Suite 680,Fargo,ND,58298-0000,US,06/07/2023 11:57:22,A01
+AA000018,IND,Deb,L,F,2008-10-29,310-78-9762,single,162119,"Scientist, clinical (histocompatibility and immunogenetics)",Miller-Campbell,719-135-9299,laurenperry@hotmail.com,4929 Belch Road,Devon,OR,52997-0000,US,06/07/2023 11:57:22,A01
+AA000019,IND,James,Steele,M,1947-07-01,078-09-4316,divorced,415723,"Surveyor, commercial/residential",Morgan-Wong,132-679-3284,henrykaren@gmail.com,42131 Mark Loop,Springfield,MO,63232-0000,US,06/07/2023 11:57:22,A01
+AA000020,IND,Devon,Martin,M,1962-09-08,626-36-4805,married,168341,Insurance risk surveyor,Choi-Cole,156-802-8451,alowe@hotmail.com,176 Spence Loop,Newark,NJ,07339-0000,US,06/07/2023 11:57:22,A01

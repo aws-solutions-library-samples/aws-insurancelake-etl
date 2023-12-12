@@ -15,6 +15,9 @@ ENVIRONMENT = 'environment'
 # Manual Inputs
 GITHUB_REPOSITORY_OWNER_NAME = 'github_repository_owner_name'
 GITHUB_REPOSITORY_NAME = 'github_repository_name'
+CODESTAR_CONNECTION_ARN = 'codestar_connection_arn'
+CODESTAR_REPOSITORY_OWNER_NAME = 'codestar_repository_owner_name'
+CODESTAR_REPOSITORY_NAME = 'codestar_repository_name'
 CODECOMMIT_REPOSITORY_NAME = 'codecommit_repository_name'
 CODECOMMIT_MIRROR_REPOSITORY_NAME = 'codecommit_mirror_repository_name'
 ACCOUNT_ID = 'account_id'
@@ -87,6 +90,16 @@ def get_local_configuration(environment: str, local_mapping: dict = None) -> dic
                 # Leave empty if you do not use Github
                 GITHUB_REPOSITORY_NAME: '',
 
+                # If you use Bitbucket Cloud or any other supported Codestar provider, specify the
+                # Codestar connection ARN
+                CODESTAR_CONNECTION_ARN: '',
+
+                # Codestar repository owner or workspace name if using Bitbucket Cloud
+                CODESTAR_REPOSITORY_OWNER_NAME: '',
+
+                # Leave empty if you do not use Codestar
+                CODESTAR_REPOSITORY_NAME: '',
+
                 # Use only if your repository is already in CodecCommit, otherwise leave empty!
                 # Use your CodeCommit repo name here
                 CODECOMMIT_REPOSITORY_NAME: '',
@@ -124,7 +137,7 @@ def get_local_configuration(environment: str, local_mapping: dict = None) -> dic
                 REGION: 'us-east-2',
                 LINEAGE: True,
                 # VPC_CIDR: '10.0.0.0/24',
-                CODE_BRANCH: 'master',
+                CODE_BRANCH: 'main',
             }
         }
 

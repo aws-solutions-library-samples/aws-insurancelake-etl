@@ -54,7 +54,7 @@ def test_resource_types_and_counts(monkeypatch):
 		template = Template.from_stack(glue_stacks[environment])
 
 		# Collect-Cleanse, Cleanse-Consume
-		template.resource_count_is('AWS::Glue::Job', 2)
+		template.resource_count_is('AWS::Glue::Job', 3)
 		# Glue Scripts, Glue Temp
 		template.resource_count_is('AWS::S3::Bucket', 2)
 		# S3 Deployment CustomResource handler, CustomResource Log Retention handler

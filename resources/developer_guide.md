@@ -1,6 +1,6 @@
 # Developer Guide
 
-## Set up Instructions
+## Local CDK Deployment
 
 Reference the [CDK Instructions](./cdk_instructions.md) for standard CDK project setup.
 
@@ -33,8 +33,7 @@ The above will create a git hook which will validate code prior to commits. Conf
 
 ### Unit Testing
 
-The Python CDK unit tests use pytest, which will be installed as part of the solution requirements.
-The pySpark Glue Job and Python Lambda function unit tests are still under development.
+The Python CDK unit tests use [pytest](https://docs.pytest.org/), which will be installed as part of the solution requirements.
 
 Run tests with the following command (`--cov` will include a code coverage report):
 ```bash
@@ -42,8 +41,10 @@ python -m pytest --cov
 ```
 
 Glue Job Unit Tests will be automatically skipped if no Glue/Spark environment is detected. For information on setting up a local Glue/Spark environment, refer to the following guides:
+
 * [AWS Blog: Develop and test AWS Glue version 3.0 and 4.0 jobs locally using a Docker container](https://aws.amazon.com/blogs/big-data/develop-and-test-aws-glue-version-3-0-jobs-locally-using-a-docker-container/)
 * [AWS Developer Guide: Developing and testing AWS Glue job scripts locally](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-libraries.html)
+* Note that Hudi support and Glue Data Quality are not available in the AWS Glue Docker image.
 
 ## Known Issues
 

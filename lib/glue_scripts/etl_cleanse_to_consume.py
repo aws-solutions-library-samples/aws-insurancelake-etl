@@ -5,6 +5,7 @@ import sys
 import time
 import os
 import re
+import json
 
 from pyspark.context import SparkContext
 
@@ -14,8 +15,9 @@ from awsglue.job import Job
 
 # For running in local Glue container
 sys.path.append(os.path.dirname(__file__) + '/lib')
-from glue_catalog_helpers import create_database
+from glue_catalog_helpers import upsert_catalog_table
 from datalineage import DataLineageGenerator
+from dataquality_check import DataQualityCheck
 
 expected_arguments = [
     'JOB_NAME',
@@ -25,9 +27,12 @@ expected_arguments = [
     'txn_sql_prefix_path',
     'source_bucket',
     'target_bucket',
+    'dq_results_table',
     'state_machine_name',
     'execution_id',
-    'database_name_prefix',
+    'source_key',
+    'source_database_name',
+    'target_database_name',
     'table_name',
     'base_file_name',
     'p_year',
@@ -64,7 +69,7 @@ def athena_execute_query(database: str, query: str, result_bucket: str, max_atte
     athena = boto3.client('athena')
 
     query_response = athena.start_query_execution(
-            QueryExecutionContext = {'Database': database},
+            QueryExecutionContext = {'Database': database.lower()},
             QueryString = query,
             ResultConfiguration = {'OutputLocation': result_bucket + '/'}
         )
@@ -83,7 +88,7 @@ def athena_execute_query(database: str, query: str, result_bucket: str, max_atte
         if status in [ 'FAILED', 'CANCELED' ]:
             # Raise errors that are not raised from StartQueryExecution
             raise RuntimeError("athena_execute_query() failed with query engine error: "
-                              f"{query_details['QueryExecution']['Status'].get('StateChangeReason', '')}")
+                f"{query_details['QueryExecution']['Status'].get('StateChangeReason', '')}")
         if status != 'SUCCEEDED':
             time.sleep(1)
         attempts -= 1
@@ -100,34 +105,36 @@ def main():
     job = Job(glueContext)
     job.init(args['JOB_NAME'], args)
 
-    hadoop_conf = sc._jsc.hadoopConfiguration()
-    hadoop_conf.set("fs.s3.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem")
-
-    # Argument passed as database_name_prefix will have mixed case and match the S3 file system
-    # Glue Catalog Databases will be lower case only
-    source_database = args['database_name_prefix'].lower()
-    target_database = f"{args['database_name_prefix'].lower()}_consume"
+    # Hive database and table names are case insensitive
     target_table = args['table_name']
     substitution_data = args.copy()
-    substitution_data.update({
-        'source_database': source_database,
-        'target_database': target_database,
-    })
     sql_prefix = args['txn_sql_prefix_path']
+    source_key_dashes = args['source_database_name'] + '-' + args['table_name']
+
+    # Read Data Quality rules
+    dq_rules_key = 'etl/dq-rules/dq-' + source_key_dashes + '.json'
+    print(f'Using data quality rules from: {dq_rules_key}')
+    try:
+        rules_data = sc.textFile(f"{args['txn_bucket']}/{dq_rules_key}")
+        rules_json_data = json.loads('\n'.join(rules_data.collect()))
+    except Exception as e:
+        print(f'No data quality rules file exists or error reading: {e.java_exception.getMessage()}, skipping')
+        rules_json_data = {}
 
     # TODO: Check if Lakeformation permissions break Spark SQL query and find workaround
-    spark_sql_key = f"{sql_prefix[1:]}spark-{args['database_name_prefix']}-{args['table_name']}.sql"
+    spark_sql_key = sql_prefix[1:] + 'spark-' + source_key_dashes + '.sql'
     print(f'Using Spark SQL transformation from: {spark_sql_key}')
     try:
         spark_sql_data = sc.textFile(f"{args['txn_bucket']}/{spark_sql_key}")
         spark_sql = '\n'.join(spark_sql_data.collect())
     except Exception as e:
-        print(f'No Spark SQL transformation exists or error reading: {e.java_exception.getMessage()}, skipping')
+        message = e.java_exception.getMessage() if hasattr(e, 'java_exception') else str(e)
+        print(f'No Spark SQL transformation exists or error reading: {message}, skipping')
         spark_sql = None
 
     # Spark SQL is used to populate the target database, stored in S3
     if spark_sql is not None:
-        re_create_table = re.compile(r'\s*CREATE[\s\w]*\s+TABLE\s+["`\']?([\w]+)["`\']?\s+AS(.*)', re.IGNORECASE | re.DOTALL)
+        re_create_table = re.compile(r'\s*CREATE TABLE\s+["`\']?([\w]+)["`\']?\s+AS(.*)', re.IGNORECASE | re.DOTALL)
         match_create_table = re_create_table.match(spark_sql)
         if match_create_table:
             print(f'Table name override detected: {match_create_table.group(1)}')
@@ -140,39 +147,76 @@ def main():
         if not spark_sql:
             raise RuntimeError('Spark SQL file found but appears to be empty')
 
+        # Use last-win strategy to resolve duplicate keys when using map_from_arrays in Spark SQL
+        spark.conf.set('spark.sql.mapKeyDedupPolicy', 'LAST_WIN')
+
+        # Use hive schema instead of Parquet to handle schema evolution
+        spark.conf.set('spark.sql.hive.convertMetastoreParquet', False)
+
         print(f'Executing Spark SQL: {spark_sql.format(**substitution_data)}')
         # Spark SQL should query entire table, because the existing consume table will be overwritten
         df = spark.sql(spark_sql.format(**substitution_data))
+        df.cache()
         print(f'Retrieved (from Cleanse) dataframe row count: {df.count()}'
               f'  column count: {len(df.columns)}'
               f'  number of partitions: {df.rdd.getNumPartitions()}')
 
-        df.cache()
         lineage = DataLineageGenerator(args)
-        dataset_name = args['database_name_prefix'] + '/' + args['table_name']
-        lineage.update_lineage(df, dataset_name, 'numericaudit')
-        lineage.update_lineage(df, dataset_name, 'sparksql', transform=[ spark_sql ])
+        lineage.update_lineage(df, args['source_key'], 'sparksql', transform=[ spark_sql ])
 
-        storage_location = f"{args['target_bucket']}/{args['database_name_prefix']}/{target_table}"
+        dataquality = DataQualityCheck(rules_json_data, args, lineage, sc)
+        filtered_df = dataquality.run_data_quality(df, rules_json_data, 'after_sparksql')
+        filtered_df.cache()
+        # Post Spark SQL and DQ filter numeric audit
+        lineage.update_lineage(df, args['source_key'], 'numericaudit')
 
-        create_database(target_database)
-        df.write.partitionBy('year', 'month', 'day').saveAsTable(
-            f'{target_database}.{target_table}',
-            path=storage_location,
-            format='parquet',
-            mode='overwrite',
+        # Folder structure in the consume bucket should match the other buckets
+        storage_location = f"{args['target_bucket']}/{args['source_database_name']}/{target_table}"
+
+        # The combination of Glue Catalog API upserts and Spark saveAsTable using Hive/Parquet
+        # allows the lake to manage the merged/destination schema, and Spark to manage schema
+        # consistency without needing to repair tables
+        upsert_catalog_table(
+            df,
+            args['target_database_name'],
+            target_table,
+            ['year', 'month', 'day'],
+            storage_location,
+            # Permissive schema change because we are rewriting the entire table
+            allow_schema_change='permissive',
         )
+
+        # Explicitly clear any existing S3 folder (i.e. overwrite all partitions)
+        glueContext.purge_s3_path(storage_location, options={ 'retentionPeriod': 0 })
+
+        # Set dynamic partitioning to write all partitions in DataFrame
+        spark.conf.set('spark.sql.sources.partitionOverwriteMode', 'dynamic')
+        spark.conf.set('hive.exec.dynamic.partition', 'true')
+        spark.conf.set('hive.exec.dynamic.partition.mode', 'nonstrict')
+
+        df.repartition('year', 'month', 'day'). \
+            write.partitionBy('year', 'month', 'day').saveAsTable(
+                f"{args['target_database_name']}.{target_table}",
+                path=storage_location,
+                format='hive',
+                fileFormat='parquet',
+                # Use append to not overwrite previous schema versions and to force saveAsTable to
+                # use the schema in Glue Catalog (set above)
+                mode='append',
+            )
+
         df.unpersist()
 
     # Athena SQL is used to create views
-    athena_sql_key = f"{sql_prefix[1:]}athena-{args['database_name_prefix']}-{args['table_name']}.sql"
+    athena_sql_key = sql_prefix[1:] + 'athena-' + source_key_dashes + '.sql'
     print(f'Using Athena SQL transformation from: {athena_sql_key}')
     try:
         athena_sql_data = sc.textFile(f"{args['txn_bucket']}/{athena_sql_key}")
         # Format with line breaks and preserve whitespace between lines so logging is easier to read
         athena_sql = '\n'.join(athena_sql_data.collect())
     except Exception as e:
-        print(f'No Athena SQL transformation exists or error reading: {e.java_exception.getMessage()}, skipping')
+        message = e.java_exception.getMessage() if hasattr(e, 'java_exception') else str(e)
+        print(f'No Athena SQL transformation exists or error reading: {message}, skipping')
         athena_sql = None
 
     if athena_sql:
@@ -181,7 +225,8 @@ def main():
             # Check if there is actual SQL content since split will return an element after the final ;
             if sql:
                 print(f'Executing Athena SQL: {sql.format(**substitution_data)}')
-                status = athena_execute_query(target_database, sql.format(**substitution_data), args['TempDir'])
+                status = athena_execute_query(
+                    args['target_database_name'], sql.format(**substitution_data), args['TempDir'])
                 print(f'Athena query execution status: {status}')
 
     job.commit()

@@ -44,35 +44,50 @@ mock_athena_get_query_execute_failed_response =  {
 
 class mock_client_sts:
 
-	@staticmethod
-	def get_caller_identity():
-		return { 'Account': mock_account_id }
+    @staticmethod
+    def get_caller_identity():
+        return { 'Account': mock_account_id }
 
 class mock_client_sfn:
 
-	@staticmethod
-	def start_execution(stateMachineArn: str, name: str, input: str):
-		return { 
-			'executionArn': f'arn:aws:states:{mock_region}:{mock_account_id}:execution:test-state-machine:{name}-plusuniqueid',
-			'startDate': '2023-01-01 23:00:00',
-		}
+    @staticmethod
+    def start_execution(stateMachineArn: str, name: str, input: str):
+        return {
+            'executionArn': f'arn:aws:states:{mock_region}:{mock_account_id}:execution:test-state-machine:{name}-plusuniqueid',
+            'startDate': '2023-01-01 23:00:00',
+        }
 
 # There's no way to use moto's athena mock to cause a failed query
 class mock_client_athena:
-	@staticmethod
-	def start_query_execution(QueryExecutionContext: dict, QueryString: str, ResultConfiguration: dict):
-		return mock_athena_execute_query_response
+    @staticmethod
+    def start_query_execution(QueryExecutionContext: dict, QueryString: str, ResultConfiguration: dict):
+        return mock_athena_execute_query_response
 
-	@staticmethod
-	def get_query_execution(QueryExecutionId: str):
-		return mock_athena_get_query_execute_failed_response
+    @staticmethod
+    def get_query_execution(QueryExecutionId: str):
+        return mock_athena_get_query_execute_failed_response
+
+class mock_client_s3:
+    @staticmethod
+    def list_objects_v2(Bucket: str, Prefix: str):
+        response = {
+                'Name': Bucket,
+                'Prefix': Prefix,
+            }
+        if 'does-not-exist' in Prefix:
+            return response
+        else:
+            response.update({ 'Contents': [{'Key': 'found.json' }] })
+            return response
 
 def mock_boto3_client(client: str):
-	if client == 'sts':
-		return mock_client_sts
-	elif client == 'stepfunctions':
-		return mock_client_sfn
-	elif client == 'athena':
-		return mock_client_athena
-	else:
-		raise RuntimeError(f'boto3 client {client} requested from mock but not implemented')
+    if client == 'sts':
+        return mock_client_sts
+    elif client == 'stepfunctions':
+        return mock_client_sfn
+    elif client == 'athena':
+        return mock_client_athena
+    elif client == 's3':
+        return mock_client_s3
+    else:
+        raise RuntimeError(f'boto3 client {client} requested from mock but not implemented')

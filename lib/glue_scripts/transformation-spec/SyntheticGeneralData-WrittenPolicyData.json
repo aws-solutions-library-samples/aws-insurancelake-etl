@@ -78,7 +78,8 @@
 			"policy_month_start_field": "StartDate",
 			"policy_month_end_field": "EndDate",
 			"policy_effective_date": "EffectiveDate",
-			"policy_expiration_date": "ExpirationDate"
+			"policy_expiration_date": "ExpirationDate",
+			"policy_month_index": "PolicyMonthIndex"
 		},
 
 		"earnedpremium": [

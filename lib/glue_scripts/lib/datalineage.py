@@ -72,7 +72,7 @@ class DataLineageGenerator:
                 'job_name': self.job_name,
                 'dataset' : dataset,
                 'uuid' : self.uniid,
-                'time_of_operation' : str(now.strftime("%Y-%m-%d %H:%M:%S")),
+                'time_of_operation' : str(now.strftime('%Y-%m-%d %H:%M:%S')),
                 'dataset_operation' : operation,
                 'step_function_name' : self.step_function_name,
                 'info' : json.dumps(transform_spec)
@@ -132,8 +132,9 @@ class DataLineageGenerator:
                 'dataset_counts': dataset_counts,
                 'field_total': {
                     # Sum any double or decimal columns; convert to string explicitly to not rely on the JSON parser
-                    field[0]: str(df.select(sum(f'`{field[0]}`')).collect()[0][0])
-                        for field in df.dtypes if field[1] == 'double' or field[1][:7] == 'decimal'
+                    field_name: str(df.select(sum(f'`{field_name}`')).collect()[0][0])
+                        for field_name, field_type in df.dtypes
+                            if field_type == 'double' or field_type.startswith('decimal')
                 }
             }
             self.insert_table(dataset, operation, lineage_info)
@@ -143,7 +144,7 @@ class DataLineageGenerator:
             for map_record in kwargs['map']:
                 if map_record['destname'].lower() == 'null':
                     self.insert_table(dataset, 'dropped', { 'dropped': map_record['sourcename'] })
-                elif map_record.get('threshold', None):
+                elif map_record.get('threshold'):
                     self.insert_table(dataset, 'fuzzymapping', map_record)
                 else:
                     self.insert_table(dataset, operation, map_record)

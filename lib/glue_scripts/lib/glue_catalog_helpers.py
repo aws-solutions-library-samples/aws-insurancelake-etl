@@ -1,14 +1,13 @@
 # Copyright Amazon.com and its affiliates; all rights reserved. This file is Amazon Web Services Content and may not be duplicated or distributed without permission.
 # SPDX-License-Identifier: MIT-0
-import boto3
-import botocore
 import io
 import csv
 from urllib.parse import urlparse
+import boto3
+import botocore
 from pyspark.sql.dataframe import DataFrame
 from pyspark.sql.types import DoubleType, NullType
 from pyspark.sql.functions import col
-from awsglue.dynamicframe import DynamicFrame
 
 def table_exists(target_database: str, table_name: str) -> bool:
     """Function to check if table exists returns true/false
@@ -23,15 +22,15 @@ def table_exists(target_database: str, table_name: str) -> bool:
 
     Returns
     -------
-    bool
-        whether table exists or not
+    response
+        get_table response dictionary, or None if table does not exist
     """
     try:
         glue_client = boto3.client('glue')
-        glue_client.get_table(DatabaseName=target_database, Name=table_name)
-        return True
+        response = glue_client.get_table(DatabaseName=target_database, Name=table_name)
+        return response
     except glue_client.exceptions.EntityNotFoundException:
-        return False
+        pass
 
 
 def create_database(database_name: str):
@@ -109,16 +108,18 @@ def check_schema_change(existing_schema: list, new_schema: list, allow_schema_ch
         # TODO: Finish implementation
         # field additions: new_schema_set - existing_schema_set
         # field removals: existing_schema_set - new_schema_set
+        # common fields: new_schema_set & existing_schema_set - check types of these
 
     raise RuntimeError(f'Unsupported value for allow_schema_change {allow_schema_change}')
 
 
 def upsert_catalog_table(
-        df: any, 
-        target_database: str, 
-        table_name: str, 
-        partition_keys: list, 
-        storage_location: str, 
+        df: DataFrame,
+        target_database: str,
+        table_name: str,
+        partition_keys: list,
+        storage_location: str,
+        table_description: str = None,
         allow_schema_change: str = 'strict',
     ):
     """Function to upsert Glue Data Catalog table
@@ -126,7 +127,7 @@ def upsert_catalog_table(
     Parameters
     ----------
     df
-        Spark Dataframe or Glue DynamicFrame from which to gather schema
+        Spark Dataframe from which to gather schema
     target_database
         Glue Catalog database name to use
     table_name
@@ -138,21 +139,28 @@ def upsert_catalog_table(
     allow_schema_change: optional
         Schema evolution setting to be used by check_schema_change()
     """
+    # Always run this because most save operations do not create the database
     create_database(target_database)
 
-    df_schema = df.toDF().dtypes if type(df) == DynamicFrame else df.dtypes
     schema = [
         # Glue Catalog will transparently convert all column names to lowercase
         # so do it explicitly so that schema change detection works
-        { 'Name': field[0].lower(), 'Type': field[1] }
-        for field in df_schema
+        { 'Name': field_name.lower(), 'Type': field_type }
+        for field_name, field_type in df.dtypes
             # Skip explicitly defining partition keys in the catalog
             # schema if they already exist in the dataframe schema
-            if field[0] not in partition_keys
+            if field_name not in partition_keys
+    ]
+    partition_schema = [
+        { 'Name': field_name.lower(), 'Type': field_type }
+        for field_name, field_type in df.dtypes
+            if field_name in partition_keys
     ]
 
-    input_format = 'org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat'
-    output_format = 'org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat'
+    # Derived partition_schema should match specified partition keys
+    if set(partition_keys) != { field['Name'] for field in partition_schema }:
+        raise RuntimeError(f'Some or all specified partition keys {partition_keys} not found in Dataframe schema')
+
     serde_info = {
         'Parameters': {
             'serialization.format': '1'
@@ -161,59 +169,56 @@ def upsert_catalog_table(
     }
     storage_descriptor = {
         'Columns': schema,
-        'InputFormat': input_format,
-        'OutputFormat': output_format,
+        'InputFormat': 'org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat',
+        'OutputFormat': 'org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat',
         'SerdeInfo': serde_info,
         'Location': storage_location
     }
-    partition_key = [
-        { 'Name': key_name, 'Type': 'string' } for key_name in partition_keys
-    ]
     table_input = {
         'Name': table_name,
         'StorageDescriptor': storage_descriptor,
         'Parameters': {
-            'classification': 'PARQUET',
+            'classification': 'Parquet',
             'SourceType': 's3',
             'SourceTableName': table_name,
-            'TableVersion': '0'
+            'TableVersion': '0',
         },
         'TableType': 'EXTERNAL_TABLE',
-        'PartitionKeys': partition_key
+        'PartitionKeys': partition_schema
     }
+    if table_description:
+        table_input.update({ 'Description': table_description })
 
-    print(f'Upserting Glue Catalog schema: {schema}')
-    try:
-        glue_client = boto3.client('glue')
-        if not table_exists(target_database, table_name):
-            print(f'Target Table name: {table_name} does not exist')
-            glue_client.create_table(DatabaseName=target_database, TableInput=table_input)
-            return
+    glue_client = boto3.client('glue')
+    table_response = table_exists(target_database, table_name)
+    if not table_response:
+        print(f'Target table name: {target_database}.{table_name} does not exist, no schema to compare')
+        print(f'Creating target table: {target_database}.{table_name}')
+        glue_client.create_table(DatabaseName=target_database, TableInput=table_input)
+        return
 
-        # Compare new schema to existing Glue catalog
-        table_response = glue_client.get_table(DatabaseName=target_database, Name=table_name)
-        schema_equal = ( table_response['Table']['StorageDescriptor']['Columns'] == schema )
-        if schema_equal:
-            print('No schema changes detected')
-            return
+    # Compare new schema to existing Glue catalog
+    partitions_equal = ( table_response['Table'].get('PartitionKeys', []) == partition_schema )
+    if not partitions_equal:
+        raise RuntimeError('Nonpermissible change to partition keys detected with existing '
+            f'Glue catalog {target_database}.{table_name}')
 
-        if check_schema_change(table_response['Table']['StorageDescriptor']['Columns'], schema, allow_schema_change):
-            print(f'Trying to update Target Table: {table_name}')
-            glue_client.update_table(DatabaseName=target_database, TableInput=table_input)
-            return
+    existing_column_schema = table_response['Table']['StorageDescriptor'].get('Columns', [])
+    if existing_column_schema == schema:
+        print(f'No schema changes detected with: {target_database}.{table_name}')
+        return
 
-        # Abort if there are changes because it breaks Athena queries to have partitions 
-        # with different schema. Even though we are updating the same Glue catalog, the
-        # existing partitions will retain the original schema. and be in conflict.
+    if check_schema_change(existing_column_schema, schema, allow_schema_change):
+        # Schema changes are permissible
+        print(f'Updating target table schema: {target_database}.{table_name}')
+        glue_client.update_table(DatabaseName=target_database, TableInput=table_input)
+    else:
         print(f'Schema change not permissible by {allow_schema_change} alllow_schema_changes '
             'setting detected between existing partitions and new partitions; aborting')
-        print(f"Existing schema: {table_response['Table']['StorageDescriptor']['Columns']}")
+        print(f"Existing schema: {existing_column_schema}")
         print(f'New schema: {schema}')
-        raise RuntimeError(f'Nonpermissible schema change detected with existing Glue catalog {target_database}.{table_name}')
-
-    except botocore.exceptions.ClientError as error:
-        print(f'Glue job client process failed: {error}')
-        raise error
+        raise RuntimeError('Nonpermissible schema change detected with existing '
+            f'Glue catalog {target_database}.{table_name}')
 
 
 def clean_column_names(df: DataFrame) -> tuple:
@@ -278,10 +283,10 @@ def generate_spec(df: DataFrame, input_file_extension: str) -> dict:
             'excel': { 'sheet_names': [ '0' ], 'data_address': 'A1', 'header': True }
         })
 
-    transform_spec = { 'date': [], 'decimal': [] }
+    transform_spec = { 'date': [], 'changetype': [] }
     for field in df.schema:
         if field.dataType == DoubleType():
-            transform_spec['decimal'].append({ 'field': field.name, 'format': '16,2' })
+            transform_spec['changetype'].append({ field.name: 'decimal(16,2)' })
 
         if 'date' in field.name.lower():
             transform_spec['date'].append({ 'field': field.name, 'format': 'MM/dd/yy' })
@@ -310,7 +315,7 @@ def put_s3_object(uri: str, data: any):
 
 
 def clean_nulltypes(df: DataFrame) -> DataFrame:
-    """Convert Void/NullType columns typically created from DynamicFrame operations to string
+    """Convert Void/NullType columns to string, typically created from DynamicFrame operations
     """
     cols = []
     for field in df.schema:

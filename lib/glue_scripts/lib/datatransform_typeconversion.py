@@ -1,6 +1,5 @@
 # Copyright Amazon.com and its affiliates; all rights reserved. This file is Amazon Web Services Content and may not be duplicated or distributed without permission.
 # SPDX-License-Identifier: MIT-0
-import pyspark
 from pyspark.sql.dataframe import DataFrame
 from pyspark.sql.functions import col, to_date, to_timestamp, regexp_extract, concat_ws, regexp_replace, initcap
 
@@ -14,6 +13,7 @@ def transform_date(df: DataFrame, date_formats: list, args: dict, lineage, *extr
     date_formats
         List of fieldnames and expected date format to convert _from_ in the form:
             field: 'FieldName'
+            source: "SourceFieldName" (optional, if omitted, field will be changed in place)
             format: 'ExpectedDateFormat'
     args
         Glue job arguments, from which source_key and base_file_name are used
@@ -25,13 +25,13 @@ def transform_date(df: DataFrame, date_formats: list, args: dict, lineage, *extr
     DataFrame
         pySpark DataFrame with date format conversion applied
     """
-    cols_map = {}
-    for conversion in date_formats:
-        cols_map.update({
-            conversion['field']:
-            to_date( col(conversion['field']), conversion['format'] )
-        })
-
+    cols_map = {
+        conversion['field']: to_date(
+                col(conversion.get('source', conversion['field'])),
+                conversion['format']
+            )
+            for conversion in date_formats
+    }
     # No need to unpersist as there is only one reference to the dataframe and it is returned
     lineage.update_lineage(df, args['source_key'], 'dateconversion', transform=date_formats)
     return df.withColumns(cols_map)
@@ -47,6 +47,7 @@ def transform_timestamp(df: DataFrame, timestamp_formats: list, args: dict, line
     timestamp_formats
         List of fieldnames and expected timestamp format to convert _from_ in the form:
             field: 'FieldName'
+            source: "SourceFieldName" (optional, if omitted, field will be changed in place)
             format: 'ExpectedTimestampFormat'
     args
         Glue job arguments, from which source_key and base_file_name are used
@@ -58,30 +59,41 @@ def transform_timestamp(df: DataFrame, timestamp_formats: list, args: dict, line
     DataFrame
         pySpark DataFrame with timestamp format conversion applied
     """
-    cols_map = {}
-    for conversion in timestamp_formats:
-        cols_map.update({
-            conversion['field']:
-            to_timestamp( col(conversion['field']), conversion['format'] )
-        })
-
+    cols_map = {
+        conversion['field']: to_timestamp(
+                col(conversion.get('source', conversion['field'])),
+                conversion['format']
+            )
+            for conversion in timestamp_formats
+    }
     # No need to unpersist as there is only one reference to the dataframe and it is returned
     lineage.update_lineage(df, args['source_key'], 'timestampconversion', transform=timestamp_formats)
     return df.withColumns(cols_map)
 
 
 def transform_decimal(df: DataFrame, decimal_formats: list, args: dict, lineage, *extra):
-    """Convert specified numeric field (usually Float or Double) fields to Decimal (fixed
-    precision) type
+    print('WARNING: decimal transform is deprecated and will be removed in the future; '
+          'replace with changetype transform')
+    return transform_changetype(
+        df,
+        { spec['field']: f"decimal({spec['format']})" for spec in decimal_formats },
+        args,
+        lineage
+    )
+
+
+def transform_changetype(df: DataFrame, field_types: dict, args: dict, lineage, *extra):
+    """Cast columns to specified data type
 
     Parameters
     ----------
     df
-        pySpark DataFrame on which to apply decimal conversion
-    decimal_formats
-        List of fieldnames and decimal precision, scale in the form:
-            field: 'FieldName'
-            format: 'precision,scale'
+        pySpark DataFrame on which to apply column type conversion
+    columns
+        Dictionary of field -> type mappings in the form:
+            field_name_1: bigint,
+            field_name_2: decimal(10,2),
+            field_name_3: string
     args
         Glue job arguments, from which source_key and base_file_name are used
     lineage
@@ -90,17 +102,14 @@ def transform_decimal(df: DataFrame, decimal_formats: list, args: dict, lineage,
     Returns
     -------
     DataFrame
-        pySpark DataFrame with decimal conversion applied
+        pySpark DataFrame with field type conversion applied
     """
-    cols_map = {}
-    for conversion in decimal_formats:
-        cols_map.update({
-            conversion['field']:
-            col(conversion['field']).cast(f"Decimal({conversion['format']})")
-        })
-
+    cols_map = {
+        field: col(field).cast(field_type)
+            for field, field_type in field_types.items()
+    }
     # No need to unpersist as there is only one reference to the dataframe and it is returned
-    lineage.update_lineage(df, args['source_key'], 'decimalconversion', transform=decimal_formats)
+    lineage.update_lineage(df, args['source_key'], 'changetype', transform=field_types)
     return df.withColumns(cols_map)
 
 
@@ -116,6 +125,7 @@ def transform_implieddecimal(df: DataFrame, decimal_formats: list, args: dict, l
     decimal_formats
         List of fieldnames and decimal precision, scale in the form:
             field: 'FieldName'
+            source: "SourceFieldName" (optional, if omitted, field will be changed in place)
             format: 'precision,scale'
             num_implied: (optional) number of implied decimal points, default 2
     args
@@ -132,13 +142,14 @@ def transform_implieddecimal(df: DataFrame, decimal_formats: list, args: dict, l
 
     cols_map = {}
     for conversion in decimal_formats:
+        sourcefield = conversion.get('source', conversion['field'])
         pattern = implied_decimal_pattern.format(num_implied = conversion.get('num_implied', 2))
         cols_map.update({
             conversion['field']:
             concat_ws(
                 '.',
-                regexp_extract(conversion['field'], pattern, 1),
-                regexp_extract(conversion['field'], pattern, 2)
+                regexp_extract(sourcefield, pattern, 1),
+                regexp_extract(sourcefield, pattern, 2)
             ) \
             .cast(f"Decimal({conversion['format']})")
         })
@@ -158,6 +169,7 @@ def transform_currency(df: DataFrame, currency_formats: list, args: dict, lineag
     currency_formats
         List of fieldnames and decimal precision, scale in the form:
             field: 'FieldName'
+            source: "SourceFieldName" (optional, if omitted, field will be changed in place)
             format: 'precision,scale' (optional, defaults to 16,2)
             euro: boolean (if true, expects European 5.000.000,12 format, default false)
     args
@@ -172,13 +184,14 @@ def transform_currency(df: DataFrame, currency_formats: list, args: dict, lineag
     """
     cols_map = {}
     for conversion in currency_formats:
+        sourcefield = conversion.get('source', conversion['field'])
         decimal_format = conversion.get('format', '16,2')
         if conversion.get('euro', False):
             # Decimal = ,  Thousands = .
-            new_column = regexp_replace(regexp_replace(conversion['field'], r'[^\-\d,-]+', ''), r',', '.')
+            new_column = regexp_replace(regexp_replace(sourcefield, r'[^\-\d,-]+', ''), r',', '.')
         else:
             # Decimal = .  Thousands = ,
-            new_column = regexp_replace(conversion['field'], r'[^\-\d\.]+', '')
+            new_column = regexp_replace(sourcefield, r'[^\-\d\.]+', '')
         cols_map.update({
             conversion['field']: new_column.cast(f'Decimal({decimal_format})')
         })
@@ -213,32 +226,4 @@ def transform_titlecase(df: DataFrame, titlecase_fields: list, args: dict, linea
     }
     # No need to unpersist as there is only one reference to the dataframe and it is returned
     lineage.update_lineage(df, args['source_key'], 'titlecaseconversion', transform=titlecase_fields)
-    return df.withColumns(cols_map)
-
-
-def transform_bigint(df: DataFrame, bigint_fields: list, args: dict, lineage, *extra):
-    """Convert specified numeric field to bigint
-
-    Parameters
-    ----------
-    df
-        pySpark DataFrame on which to apply bigint conversion
-    bigint_fields
-        Simple list of fieldnames to covert
-    args
-        Glue job arguments, from which source_key and base_file_name are used
-    lineage
-        Initialized lineage class object from the calling job
-
-    Returns
-    -------
-    DataFrame
-        pySpark DataFrame with bigint conversion applied
-    """
-    cols_map = {
-        field: col(field).cast('long')
-            for field in bigint_fields
-    }
-    # No need to unpersist as there is only one reference to the dataframe and it is returned
-    lineage.update_lineage(df, args['source_key'], 'bigintconversion', transform=bigint_fields)
     return df.withColumns(cols_map)

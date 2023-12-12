@@ -89,6 +89,7 @@ def lambda_handler(event: dict, context: dict) -> dict:
     sfn_client = boto3.client('stepfunctions')
     sfn_arn = os.environ['SFN_STATE_MACHINE_ARN']
     audit_table_name = os.environ['DYNAMODB_TABLE_NAME']
+    glue_scripts_bucket_name = os.environ['GLUE_SCRIPTS_BUCKET_NAME']
 
     print(event)
     lambda_message = event['Records'][0]
@@ -98,27 +99,36 @@ def lambda_handler(event: dict, context: dict) -> dict:
     principal_id = lambda_message['userIdentity']['principalId']
     source_ipaddress = lambda_message['requestParameters']['sourceIPAddress']
 
-    if object_full_path[-1] == '/':
+    if object_full_path.endswith('/'):
         logger.error(f'Ignoring folder creation: {object_full_path}')
         return {
             'statusCode': 400,
-            'body': json.dumps(f'Received PutObject for folder; cannot process')
+            'body': json.dumps('Received PutObject for folder; cannot process')
         }
 
     try:
         # Bucket/key format: s3://<bucketname>/<source_system_name>/<table_name>
         object_file_dir = os.path.dirname(object_full_path)
         object_base_file_name = os.path.basename(object_full_path)
-        # First object/folder name after bucket name will be used as source system/database name
-        object_source_system_name = object_file_dir.split('/')[0]
-        # Second object/folder name after bucket name will be used as table name
-        object_table_name = object_file_dir.split('/')[1]
-    except IndexError:
+        # First object/folder name will be used as source system/database name
+        # Second object/folder name will be used as table name
+        object_source_system_name, object_table_name = object_file_dir.split('/')
+    except ValueError:
         logger.error(f'File object {object_full_path} cannot be processed without 2 levels of directory structure')
         return {
             'statusCode': 400,
             'body': json.dumps(f'File object {object_full_path} ignored due to unexpected naming convention')
         }
+
+    entity_match_spec = 'etl/transformation-spec/' + object_source_system_name + '-' + 'entitymatch.json'
+    s3_client = boto3.client('s3')
+    result = s3_client.list_objects_v2(Bucket=glue_scripts_bucket_name, Prefix=entity_match_spec)
+    if 'Contents' in result:
+        entity_match = True
+        print(f'Entity Match JSON {entity_match_spec} found; enabling Entity Match job')
+    else:
+        entity_match = False
+        print(f'Entity Match JSON {entity_match_spec} not found; skipping Entity Match job')
 
     logger.info(f'Bucket: {source_bucket_name}')
     logger.info(f'Key: {object_full_path}')
@@ -154,6 +164,7 @@ def lambda_handler(event: dict, context: dict) -> dict:
             'p_day': p_day,
             'table_name': object_table_name,
             'execution_id': execution_id,
+            'entity_match': entity_match,
         }
     )
     print(f'SFN Input: {execution_input}')

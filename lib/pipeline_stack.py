@@ -15,6 +15,7 @@ from cdk_nag import AwsSolutionsChecks, NagSuppressions
 from .configuration import (
     ACCOUNT_ID, CODECOMMIT_MIRROR_REPOSITORY_NAME, DEPLOYMENT, PROD, TEST,
 	GITHUB_REPOSITORY_NAME, GITHUB_REPOSITORY_OWNER_NAME, GITHUB_TOKEN,
+    CODESTAR_CONNECTION_ARN, CODESTAR_REPOSITORY_OWNER_NAME, CODESTAR_REPOSITORY_NAME,
 	CODECOMMIT_REPOSITORY_NAME, CODECOMMIT_MIRROR_REPOSITORY_NAME,
     get_logical_id_prefix, get_resource_name_prefix, get_all_configurations
 )
@@ -51,6 +52,10 @@ class PipelineStack(cdk.Stack):
 
         self.mappings = get_all_configurations()
 
+        self.logical_id_prefix = get_logical_id_prefix()
+        self.resource_name_prefix = get_resource_name_prefix()
+        self.target_branch = target_branch
+
         if (target_environment == PROD or target_environment == TEST):
             self.removal_policy = cdk.RemovalPolicy.RETAIN
             self.log_retention = logs.RetentionDays.SIX_MONTHS
@@ -60,13 +65,12 @@ class PipelineStack(cdk.Stack):
 
         self.create_environment_pipeline(
             target_environment,
-            target_branch,
             target_aws_env
         )
 
     def create_environment_pipeline(
         self,
-        target_environment: str, target_branch: str, target_aws_env: dict,
+        target_environment: str, target_aws_env: dict,
     ):
         """Creates CloudFormation stack to create CDK Pipeline resources such as:
         Code Pipeline, Code Build, and ancillary resources.
@@ -80,11 +84,8 @@ class PipelineStack(cdk.Stack):
         target_aws_env
             The CDK env variables used for stacks in the deploy stage
         """
-        logical_id_prefix = get_logical_id_prefix()
-        resource_name_prefix = get_resource_name_prefix()
-
         code_build_env = CodeBuild.BuildEnvironment(
-            build_image=CodeBuild.LinuxBuildImage.STANDARD_6_0,
+            build_image=CodeBuild.LinuxBuildImage.STANDARD_7_0,
             privileged=False
         )
         
@@ -102,59 +103,26 @@ class PipelineStack(cdk.Stack):
                     ],
                 ),
                 iam.PolicyStatement(
-                    sid='EtlPipelineSTSAssumeRolePolicy',
-                    effect=iam.Effect.ALLOW,
-                    actions=[
-                        'sts:AssumeRole',
-                    ],
-                    resources=[
-                        '*',
-                    ],
+                    actions=[ 'sts:AssumeRole' ],
+                    resources=[ '*' ],
+                    conditions={
+                        'StringEquals': {
+                            'iam:ResourceTag/aws-cdk:bootstrap-role': 'lookup'
+                        }
+                    },
                 ),
             ]
         )
 
-
-        if self.mappings[DEPLOYMENT][GITHUB_REPOSITORY_NAME] != '':
-            # Github
-            codepipeline_source = Pipelines.CodePipelineSource.git_hub(
-                repo_string=f"{self.mappings[DEPLOYMENT][GITHUB_REPOSITORY_OWNER_NAME]}/{self.mappings[DEPLOYMENT][GITHUB_REPOSITORY_NAME]}",
-                branch=target_branch,
-                authentication=cdk.SecretValue.secrets_manager(
-                    self.mappings[DEPLOYMENT][GITHUB_TOKEN]
-                ),
-                trigger=CodePipelineActions.GitHubTrigger.POLL,
-            )
-        else:
-            # CodeCommit
-            if self.mappings[DEPLOYMENT][CODECOMMIT_MIRROR_REPOSITORY_NAME] != '':
-                repo = CodeCommit.Repository.from_repository_name(
-                    self,
-                    f'{DEPLOYMENT}{logical_id_prefix}EtlMirrorRepository',
-                    repository_name=self.mappings[DEPLOYMENT][CODECOMMIT_MIRROR_REPOSITORY_NAME],
-                )
-            else:
-                repo = CodeCommit.Repository.from_repository_name(
-                    self,
-                    f'{DEPLOYMENT}{logical_id_prefix}EtlRepository',
-                    repository_name=self.mappings[DEPLOYMENT][CODECOMMIT_REPOSITORY_NAME],
-                )
-
-            codepipeline_source = Pipelines.CodePipelineSource.code_commit(
-                repository=repo,
-                branch=target_branch,
-                code_build_clone_output=True,
-            )
-
         pipeline = Pipelines.CodePipeline(
             self,
-            f'{target_environment}{logical_id_prefix}EtlPipeline',
-            pipeline_name=f'{target_environment.lower()}-{resource_name_prefix}-etl-pipeline',
+            f'{target_environment}{self.logical_id_prefix}EtlPipeline',
+            pipeline_name=f'{target_environment.lower()}-{self.resource_name_prefix}-etl-pipeline',
             code_build_defaults=code_build_opt,
             self_mutation=True,
             synth=Pipelines.ShellStep(
                 'Synth',
-                input=codepipeline_source,
+                input=self.get_codepipeline_source(),
                 commands=[
                     'npm install -g aws-cdk',
                     'python -m pip install -r requirements.txt --root-user-action=ignore',
@@ -221,3 +189,52 @@ class PipelineStack(cdk.Stack):
                 'reason': 'Wildcard IAM permissions are used by auto-created Codepipeline policies and custom policies to allow flexible creation of resources'
             },
         ], apply_to_children=True)
+
+
+    def get_codepipeline_source(self) -> Pipelines.CodePipelineSource:
+        """Based on configuration, create a CodePipeline source object for the selected repository type
+
+        Returns
+        -------
+        Pipelines.CodePipelineSource
+            CodePipeline source repository object
+        """
+        if self.mappings[DEPLOYMENT][GITHUB_REPOSITORY_NAME]:
+            # Github
+            return Pipelines.CodePipelineSource.git_hub(
+                    repo_string=f'{self.mappings[DEPLOYMENT][GITHUB_REPOSITORY_OWNER_NAME]}/'
+                        f'{self.mappings[DEPLOYMENT][GITHUB_REPOSITORY_NAME]}',
+                    branch=self.target_branch,
+                    authentication=cdk.SecretValue.secrets_manager(
+                        self.mappings[DEPLOYMENT][GITHUB_TOKEN]
+                    ),
+                    trigger=CodePipelineActions.GitHubTrigger.POLL,
+                )
+        if self.mappings[DEPLOYMENT][CODESTAR_REPOSITORY_NAME]:
+            # CodeStar
+            return Pipelines.CodePipelineSource.connection(
+                repo_string=f'{self.mappings[DEPLOYMENT][CODESTAR_REPOSITORY_OWNER_NAME]}/' \
+                    f'{self.mappings[DEPLOYMENT][CODESTAR_REPOSITORY_NAME]}',
+                branch=self.target_branch,
+                connection_arn=self.mappings[DEPLOYMENT][CODESTAR_CONNECTION_ARN],
+            )
+        else:
+            # CodeCommit
+            if self.mappings[DEPLOYMENT][CODECOMMIT_MIRROR_REPOSITORY_NAME]:
+                repo = CodeCommit.Repository.from_repository_name(
+                    self,
+                    f'{DEPLOYMENT}{self.logical_id_prefix}InfrastructureMirrorRepository',
+                    repository_name=self.mappings[DEPLOYMENT][CODECOMMIT_MIRROR_REPOSITORY_NAME],
+                )
+            else:
+                repo = CodeCommit.Repository.from_repository_name(
+                    self,
+                    f'{DEPLOYMENT}{self.logical_id_prefix}InfrastructureRepository',
+                    repository_name=self.mappings[DEPLOYMENT][CODECOMMIT_REPOSITORY_NAME],
+                )
+
+            return Pipelines.CodePipelineSource.code_commit(
+                repository=repo,
+                branch=self.target_branch,
+                code_build_clone_output=True,
+            )

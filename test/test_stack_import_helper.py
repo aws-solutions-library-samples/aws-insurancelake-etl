@@ -75,8 +75,8 @@ def test_importedvpcs_resource_counts(monkeypatch):
 
 	# Imported values are used and exposed as 3 specific resources on the stack
 	assert vpc_proxy_count == 1, \
-		f'Unexpected number of imported VPC proxies'
+		'Unexpected number of imported VPC proxies'
 	assert subnet_proxy_count == 3, \
-		f'Unexpected number of imported Subnet proxies'
+		'Unexpected number of imported Subnet proxies'
 	assert securitygroup_proxy_count == 1, \
-		f'Unexpected number of imported SecurityGroup proxies'
+		'Unexpected number of imported SecurityGroup proxies'

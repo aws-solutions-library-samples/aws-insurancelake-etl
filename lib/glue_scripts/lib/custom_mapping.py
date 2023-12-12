@@ -1,5 +1,10 @@
 # Copyright Amazon.com and its affiliates; all rights reserved. This file is Amazon Web Services Content and may not be duplicated or distributed without permission.
 # SPDX-License-Identifier: MIT-0
+from rapidfuzz import fuzz
+from rapidfuzz import process as fuzz_process
+from rapidfuzz.utils import default_process
+from pyspark.sql.dataframe import DataFrame
+from pyspark.sql.functions import col
 from awsglue.dynamicframe import DynamicFrame
 from awsglue.transforms import ApplyMapping
 from pyspark.sql.dataframe import DataFrame
@@ -8,7 +13,7 @@ from rapidfuzz import fuzz
 from rapidfuzz import process as fuzz_process
 from rapidfuzz.utils import default_process
 
-def custommapping(df: DataFrame, field_mapping_list: list, args: list, lineage) -> DataFrame:
+def custommapping(df: DataFrame, field_mapping_list: list, args: dict, lineage) -> DataFrame:
     """Apply a custom field mapping to the data schema in a DataFrame
     Uses RapidFuzz for fuzzy matching: https://maxbachmann.github.io/RapidFuzz/
 
@@ -34,7 +39,7 @@ def custommapping(df: DataFrame, field_mapping_list: list, args: list, lineage) 
     """
     # Direct field mapping rows have 2 values only
     field_map = { map_row['sourcename']: map_row['destname']
-        for map_row in field_mapping_list if not map_row.get('threshold', None) }
+        for map_row in field_mapping_list if not map_row.get('threshold') }
     select_list = [ col('`' + field.name + '`').alias(field_map[field.name])
         for field in df.schema
             if field.name in field_map and field_map[field.name].lower() != 'null' ]
@@ -45,8 +50,8 @@ def custommapping(df: DataFrame, field_mapping_list: list, args: list, lineage) 
     # Perform fuzzy match with rapidfuzz, specified sort, and column alias
     if unmapped_fields:
         for map_row in field_mapping_list:
-            if map_row.get('threshold', None):
-                match, score, index = fuzz_process.extractOne(
+            if map_row.get('threshold'):
+                match, score, _ = fuzz_process.extractOne(
                     map_row['sourcename'],
                     unmapped_fields,
                     processor=default_process,
@@ -67,7 +72,7 @@ def custommapping(df: DataFrame, field_mapping_list: list, args: list, lineage) 
     return df.select(select_list)
 
 
-def custommapping_with_glue(dyf: DynamicFrame, field_mapping_list: list, args: list, lineage) -> DynamicFrame:
+def custommapping_with_glue(dyf: DynamicFrame, field_mapping_list: list, args: dict, lineage) -> DynamicFrame:
     """Apply a custom field mapping to the data schema in a Glue DynamicFrame
     """
     # NOTE: Fuzzy matching mappings will be skipped

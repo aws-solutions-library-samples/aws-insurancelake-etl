@@ -1,0 +1,23 @@
+{
+	"transform_spec": {
+
+		"date": [
+			{
+				"field": "customerdob",
+				"format": "yyyy-MM-dd"
+			}
+		],
+
+		"timestamp": [
+			{
+				"field": "lastupdated",
+				"format": "MM/dd/yyyy HH:mm:ss"
+			}
+		],
+
+		"bigint":  [
+			"annualincome"
+		]
+
+	}
+}

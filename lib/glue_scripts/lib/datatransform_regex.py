@@ -1,13 +1,12 @@
 # Copyright Amazon.com and its affiliates; all rights reserved. This file is Amazon Web Services Content and may not be duplicated or distributed without permission.
 # SPDX-License-Identifier: MIT-0
-import pyspark
 from pyspark.sql.dataframe import DataFrame
 from pyspark.sql.types import StringType
-from pyspark.sql.functions import lit, regexp_extract, udf
+from pyspark.sql.functions import lit, regexp_extract, regexp_replace, udf
 import re
 
 def transform_filename(df: DataFrame, filename_patterns: list, args: dict, lineage, *extra):
-    """Add column to DataFrame based on regexp pattern on the filename argument to the Glue job
+    """Add column in DataFrame based on regexp group match on the filename argument to the Glue job
 
     Parameters
     ----------
@@ -48,7 +47,7 @@ def transform_filename(df: DataFrame, filename_patterns: list, args: dict, linea
 
 
 def transform_columnfromcolumn(df: DataFrame, cfc_spec: list, args: dict, lineage, *extra):
-    """Add column to DataFrame based on regexp pattern on another column
+    """Add or replace column in DataFrame based on regexp group match pattern
 
     Parameters
     ----------
@@ -60,15 +59,36 @@ def transform_columnfromcolumn(df: DataFrame, cfc_spec: list, args: dict, lineag
     """
     cols_map = {}
     for spec in cfc_spec:
-        # spec will indicate a source field if the matched value should be added as a new column
         sourcefield = spec.get('source', spec['field'])
-
         cols_map.update({
             spec['field']:
             regexp_extract(sourcefield, spec['pattern'], 1)
         })
 
     lineage.update_lineage(df, args['source_key'], 'columnfromcolumn', transform=cfc_spec)
+    return df.withColumns(cols_map)
+
+
+def transform_columnreplace(df: DataFrame, replace_spec: list, args: dict, lineage, *extra):
+    """Add or replace column in DataFrame with regex substitution on an existing column
+
+    Parameters
+    ----------
+    replace_spec
+        List of patterns and fieldnames to add:
+            field: 'FieldName'
+            source: 'FieldName' (optional, field will be replaced if ommitted)
+            pattern: 'regex-replace-string'
+    """
+    cols_map = {}
+    for spec in replace_spec:
+        sourcefield = spec.get('source', spec['field'])
+        cols_map.update({
+            spec['field']:
+            regexp_replace(sourcefield, spec['pattern'], spec['replacement'])
+        })
+
+    lineage.update_lineage(df, args['source_key'], 'columnreplace', transform=replace_spec)
     return df.withColumns(cols_map)
 
 

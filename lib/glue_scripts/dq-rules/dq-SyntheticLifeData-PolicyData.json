@@ -1,5 +1,5 @@
 {
-	"dq_rules": {
+	"after_transform": {
 		"warn_rules": [
 			"Completeness 'sumassured' > 0.80",
 			"ColumnValues \"sumassured\" >= 0",
@@ -8,6 +8,11 @@
 		"halt_rules": [
 			"(ColumnExists 'policyid') and (IsComplete 'policyid')",
 			"(ColumnExists 'policyeffectivedate') and (IsComplete 'policyeffectivedate')"
+		]
+	},
+	"after_sparksql": {
+		"quarantine_rules": [
+			"CustomSql 'SELECT policyid FROM primary WHERE claimamount <= sumassured OR claimamount is null'"
 		]
 	}
 }

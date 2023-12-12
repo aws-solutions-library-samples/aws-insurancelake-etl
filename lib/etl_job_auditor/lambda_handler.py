@@ -41,7 +41,7 @@ def lambda_handler(event: dict, context: dict) -> dict:
     audit_message_timestamp = now.strftime('%Y-%m-%d %H:%M:%S.%f')
     return_message = ''
 
-    if "JobRunState" in event['Input']['taskresult']:
+    if 'JobRunState' in event['Input']['taskresult']:
         print(f"JobRunState exists: {event['Input']['taskresult']['JobRunState']}")
         status = event['Input']['taskresult']['JobRunState']
 
@@ -52,20 +52,20 @@ def lambda_handler(event: dict, context: dict) -> dict:
                 Key={
                     'execution_id': execution_id
                 },
-                UpdateExpression="set job_last_updated_timestamp=:lut,job_latest_status=:sts",
+                UpdateExpression='set job_last_updated_timestamp=:lut,job_latest_status=:sts',
                 ExpressionAttributeValues={
                     ':sts': status,
                     ':lut': audit_message_timestamp,
                 },
-                ReturnValues="UPDATED_NEW"
+                ReturnValues='UPDATED_NEW'
             )
             return_message = f'status {status}'
         except botocore.exceptions.ClientError as error:
             logger.error(f'DynamoDB update_item failed: {error}')
             raise error
     else:
-        print("JobRunState does not exist, assuming FAILED")
-        status = "FAILED"
+        print('JobRunState does not exist, assuming FAILED')
+        status = 'FAILED'
         try:
             error_event = json.loads(event['Input']['taskresult']['Cause'])
             error_message = error_event.get('ErrorMessage', error_event['JobRunState'])
@@ -80,15 +80,15 @@ def lambda_handler(event: dict, context: dict) -> dict:
                 Key={
                     'execution_id': execution_id
                 },
-                UpdateExpression="set joblast_updated_timestamp=:lut,job_latest_status=:sts,error_message=:emsg",
+                UpdateExpression='set joblast_updated_timestamp=:lut,job_latest_status=:sts,error_message=:emsg',
                 ExpressionAttributeValues={
                     ':sts': status,
                     ':lut': audit_message_timestamp,
                     ':emsg': error_message,
                 },
-                ReturnValues="UPDATED_NEW"
+                ReturnValues='UPDATED_NEW'
             )
-            return_message = f"status {status} {error_message}"
+            return_message = f'status {status} {error_message}'
         except botocore.exceptions.ClientError as error:
             logger.error(f'DynamoDB update_item failed: {error}')
             raise error

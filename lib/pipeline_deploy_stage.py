@@ -67,7 +67,9 @@ class PipelineDeployStage(cdk.Stage):
             env=env,
             collect_to_cleanse_job=glue_stack.collect_to_cleanse_job,
             cleanse_to_consume_job=glue_stack.cleanse_to_consume_job,
+            consume_entity_match_job=glue_stack.consume_entity_match_job,
             job_audit_table=dynamodb_stack.job_audit_table,
+            glue_scripts_bucket=glue_stack.glue_scripts_bucket,
             **kwargs,
         )
 

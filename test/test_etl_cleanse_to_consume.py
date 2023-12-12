@@ -30,12 +30,15 @@ mock_args = [
     '--txn_sql_prefix_path=/etl/transformation-sql/',
     f'--source_bucket={mock_cleanse_bucket}',
     f'--target_bucket={mock_consume_bucket}',
-    f'--database_name_prefix={mock_database_name}',
+    f'--source_key={mock_database_name}/{mock_table_name}',
+    f'--source_database_name={mock_database_name}',
+    f'--target_database_name={mock_database_name}_consume',
     f'--table_name={mock_table_name}',
     '--base_file_name=testfile.csv',
     '--p_year=2022',
     '--p_month=12',
     '--p_day=6',
+    f'--dq_results_table={mock_resource_prefix}-dq-results-table',
 ]
 
 mock_spark_sql_file = """select

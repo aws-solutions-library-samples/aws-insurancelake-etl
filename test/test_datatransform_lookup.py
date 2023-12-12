@@ -36,6 +36,15 @@ mock_table_columns = [ 'id', 'date' ]
 mock_table_data = [ ( 1, '1/1/2022' ), ( 2, '12/31/2022' ) ]
 mock_table_schema = 'id int, date string'
 
+mock_table_data_filldown = [
+    ( 1, 'policyline1', 'coverageA', 5000 ),
+    ( 2, None, 'coverageB', 4000 ),
+    ( 3, None, 'coverageC', 3000 ),
+    ( 4, 'policyline2', 'coverageB', 2000),
+    ( 5, None, 'coverageC', 1000 ),
+]
+mock_table_schema_filldown = 'id int, policyline string, coveragedetail string, amount int'
+
 
 @pytest.fixture
 def dynamodb_table_for_lookup():
@@ -192,3 +201,14 @@ def test_get_multilookup_data_paginates(monkeypatch, dynamodb_table_for_multiloo
         limit=1,
     )
     assert len(items) == 2
+
+
+def test_transform_filldown_fills_one_column():
+    lineage = mock_lineage([])
+    df = spark.createDataFrame(mock_table_data_filldown, schema=mock_table_schema_filldown)
+    df = transform_filldown(df, [ { 'field': 'policyline' } ], mock_args, lineage, spark.sparkContext)
+    df.show(10,False)
+    assert 'policyline' in df.columns
+    assert df.filter('`policyline` is null').count() == 0
+    assert df.filter('`policyline` = "policyline1"').count() == 3
+    assert df.filter('`policyline` = "policyline2"').count() == 2

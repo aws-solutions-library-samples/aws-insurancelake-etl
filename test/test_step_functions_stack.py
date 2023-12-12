@@ -48,7 +48,9 @@ def test_resource_types_and_counts(monkeypatch):
 			target_environment=environment,
 			collect_to_cleanse_job=glue_stack.collect_to_cleanse_job,
 			cleanse_to_consume_job=glue_stack.cleanse_to_consume_job,
+			consume_entity_match_job=glue_stack.consume_entity_match_job,
 			job_audit_table=dynamodb_stack.job_audit_table,
+			glue_scripts_bucket=glue_stack.glue_scripts_bucket,
 		)
 
 	# All stacks should be generated before calling Template methods
@@ -91,11 +93,13 @@ def test_stack_has_correct_outputs(monkeypatch):
 
 	step_functions_stack = StepFunctionsStack(
 		app,
-		f'Dev-StepFunctionsStackForTests',
+		'Dev-StepFunctionsStackForTests',
 		target_environment='Dev',
 		collect_to_cleanse_job=glue_stack.collect_to_cleanse_job,
 		cleanse_to_consume_job=glue_stack.cleanse_to_consume_job,
+		consume_entity_match_job=glue_stack.consume_entity_match_job,
 		job_audit_table=dynamodb_stack.job_audit_table,
+		glue_scripts_bucket=glue_stack.glue_scripts_bucket,
 	)
 
 	template = Template.from_stack(step_functions_stack)

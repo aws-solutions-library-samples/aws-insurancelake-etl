@@ -14,7 +14,7 @@ APPLICATION = 'APPLICATION'
 
 
 def tag(stack: cdk.Stack, target_environment: str):
-    """Adds a tag to all constructs in the stack
+    """Adds a set of tags to all constructs in the stack
 
     stack
         CDK stack construct to tag

@@ -26,7 +26,7 @@ mock_table_data = [ ( 1, '1/1/2022' ), ( 2, '12/31/2022' ) ]
 
 
 @mock_glue
-def test_table_exists_true(monkeypatch):
+def test_table_exists_returns_dict_when_table_exists(monkeypatch):
     monkeypatch.setenv('AWS_DEFAULT_REGION', mock_region)
     glue_client = boto3.client('glue')
     glue_client.create_database(DatabaseInput={ 'Name': mock_database_name })
@@ -34,7 +34,7 @@ def test_table_exists_true(monkeypatch):
         DatabaseName=mock_database_name,
         TableInput={ 'Name': mock_table_name }
     )
-    assert table_exists(mock_database_name, mock_table_name) == True
+    assert isinstance(table_exists(mock_database_name, mock_table_name), dict)
 
 @mock_glue
 def test_table_exists_false(monkeypatch):
@@ -42,7 +42,7 @@ def test_table_exists_false(monkeypatch):
     glue_client = boto3.client('glue')
     glue_client.create_database(DatabaseInput={ 'Name': mock_database_name })
     # Purposely do not create the table
-    assert table_exists(mock_database_name, mock_table_name) == False
+    assert not table_exists(mock_database_name, mock_table_name)
 
 @mock_glue
 def test_create_database(monkeypatch):
@@ -103,9 +103,10 @@ def test_upsert_catalog_table_update(monkeypatch):
     )
 
     df = spark.createDataFrame(mock_table_data).toDF(*mock_table_columns)
-    upsert_catalog_table(df, mock_database_name, mock_table_name, [], 's3://fake-bucket', 'permissive')
+    upsert_catalog_table(df, mock_database_name, mock_table_name, [],
+        's3://fake-bucket', allow_schema_change='permissive')
 
-    df_schema = [ { 'Name': field[0], 'Type': field[1] } for field in df.dtypes ]
+    df_schema = [ { 'Name': field_name, 'Type': field_type } for field_name, field_type in df.dtypes ]
     response = glue_client.get_table(DatabaseName=mock_database_name, Name=mock_table_name)
 
     for field in df_schema:

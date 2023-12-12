@@ -1,7 +1,6 @@
 # Copyright Amazon.com and its affiliates; all rights reserved. This file is Amazon Web Services Content and may not be duplicated or distributed without permission.
 # SPDX-License-Identifier: MIT-0
 import hashlib
-import pyspark
 from pyspark.context import SparkContext
 from pyspark.sql.functions import udf, lit
 from pyspark.sql.dataframe import DataFrame
@@ -65,7 +64,7 @@ def transform_redact(df: DataFrame, redact_fields: dict, args: dict, lineage, *e
 
     # No need to unpersist as there is only one reference to the dataframe and it is returned
     lineage.update_lineage(df, args['source_key'], 'redact', transform=redact_fields)
-    return df
+    return df.withColumns(cols_map)
 
 
 def transform_tokenize(df_with_values: DataFrame, tokenize_fields: list, args: dict, lineage, sc: SparkContext, *extra) -> DataFrame:

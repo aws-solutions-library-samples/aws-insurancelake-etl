@@ -1,6 +1,6 @@
 # InsuranceLake ETL with CDK Pipeline
 
-The InsuranceLake solution is comprised of two codebases: [Infrastructure](https://github.com/aws-samples/aws-insurancelake-infrastructure) and [ETL](https://github.com/aws-samples/aws-insurancelake-etl). This codebase and the documentation that follows is specific to the ETL. For documentation specific to the Infrastructure, refer to the [InsuranceLake Infrastructure with CDK Pipeline README](https://github.com/aws-samples/aws-insurancelake-infrastructure/blob/main/README.md).
+The InsuranceLake solution is comprised of two codebases: [Infrastructure](https://github.com/aws-samples/aws-insurancelake-infrastructure) and [ETL](https://github.com/aws-samples/aws-insurancelake-etl). This codebase is specific to the ETL features, but the documentation that follows applies to the solution as a whole. For documentation with specific details on the Infrastructure, refer to the [InsuranceLake Infrastructure with CDK Pipeline README](https://github.com/aws-samples/aws-insurancelake-infrastructure/blob/main/README.md).
 
 This solution helps you deploy ETL processes and data storage resources to create InsuranceLake. It uses Amazon S3 buckets for storage, [AWS Glue](https://docs.aws.amazon.com/glue/) for data transformation, and [AWS CDK Pipelines](https://docs.aws.amazon.com/cdk/latest/guide/cdk_pipeline.html). The solution is originally based on the AWS blog [Deploy data lake ETL jobs using CDK Pipelines](https://aws.amazon.com/blogs/devops/deploying-data-lake-etl-jobs-using-cdk-pipelines/).
 
@@ -8,7 +8,7 @@ This solution helps you deploy ETL processes and data storage resources to creat
 
 Specifically, this solution helps you to:
 
-1. Deploy a 3 Cs (Collect, Cleanse, Consume) InsuranceLake
+1. Deploy a 3 Cs (Collect, Cleanse, Consume) architecture InsuranceLake
 1. Deploy ETL jobs needed make common insurance industry data souces available in a data lake
 1. Use pySpark Glue jobs and supporting resoures to perform data transforms in a modular approach
 1. Build and replicate the application in multiple environments quickly
@@ -33,6 +33,7 @@ Specifically, this solution helps you to:
    * [Transformation Modules](#transformation-modules)
 * [Codebase](#codebase)
    * [Source Code Structure](#source-code-structure)
+   * [Security](#security)
    * [Unit Testing](#unit-testing)
    * [Integration Testing](#integration-testing)
 * [Additional resources](#additional-resources)
@@ -47,19 +48,25 @@ If you'd like to get started quickly transforming some sample raw insurance data
 
 Skip steps in this section as needed if you've worked with CDK and Python before.
 
-1. Install [Python](https://www.python.org/downloads/) on your local computer
-1. Install [Node.js](https://nodejs.org/en/download/package-manager/) on your local computer
-   - CDK uses Node.js under the hood; the code will be in Python for this application
-1. Install [CDK](https://docs.aws.amazon.com/cdk/v2/guide/getting_started.html) on your local computer
+1. Open the AWS Console and navigate to [AWS Cloud9](https://console.aws.amazon.com/cloud9control/home)
+1. Select the region to create the Cloud9 environment (should be the same region as the stack; us-east-2 by default)
+1. Select Create environment
+1. Enter an environment name, e.g. InsuranceLakeDemo
+1. Select the t3.small instance size (CDK deployment requires more than 1 GB RAM)
+1. Leave the Platform selected as Amazon Linux 2023
+1. Adjust the timeout to your preference
+1. Click Create
+1. Open the environment you created and wait until it is available for use
+1. Clone the repositories
    ```bash
-   sudo npm install -g aws-cdk
+   git clone https://github.com/aws-samples/aws-insurancelake-infrastructure.git
+   git clone https://github.com/aws-samples/aws-insurancelake-etl.git
    ```
-1. Clone the repository or unpack the source code from the distribution ZIP file
-1. Use a terminal or command prompt and change the working directory to the location of the infrastructure code
+1. Use a terminal or command prompt and change the working directory to the location of the _infrastructure_ code
    ```bash
-   cd aws-cdk-insurancelake-infrastructure
+   cd aws-insurancelake-infrastructure
    ```
-1. Create a virtual environment
+1. Create a Python virtual environment
    ```bash
    python3 -m venv .venv
    ```
@@ -68,13 +75,9 @@ Skip steps in this section as needed if you've worked with CDK and Python before
    source .venv/bin/activate
    ```
 1. Install required Python libraries
+   - NOTE: You may see a warning stating that a newer version is available; it is safe to ignore this for the Quickstart
    ```bash
    pip install -r requirements.txt
-   ```
-1. Setup your AWS account credentials in the terminal or command prompt environment
-   ```bash
-   export AWS_ACCESS_KEY_ID=<id here>
-   export AWS_ACCESS_ACCESS_KEY=<key here>
    ```
 1. Bootstrap CDK in your AWS account
    - By default the solution will deploy resources to the `us-east-2` region
@@ -84,11 +87,8 @@ Skip steps in this section as needed if you've worked with CDK and Python before
 
 ### Deploy the Application
 
-1. Use a terminal or command prompt and change the working directory to the location of the infrastruture code
-   ```bash
-   cd aws-cdk-insurancelake-infrastructure
-   ```
-1. Deploy infrastructure resources in the development environment (2 stacks)
+1. Ensure you are still in the `aws-insurancelake-infrastructure` directory
+1. Deploy infrastructure resources in the development environment (1 stack)
    ```bash
    cdk deploy Dev-InsuranceLakeInfrastructurePipeline/Dev/InsuranceLakeInfrastructureS3BucketZones
    ```
@@ -96,19 +96,19 @@ Skip steps in this section as needed if you've worked with CDK and Python before
    - Wait for deployment to finish (approx. 5 mins)
 1. Copy the S3 bucket name for the Collect bucket to use later
    - Bucket name will be in the form: `dev-insurancelake-<AWS Account ID>-<Region>-collect`
-1. Switch the working directory to the location of the etl code
+1. Switch the working directory to the location of the _etl_ code
    ```bash
-   cd ../aws-cdk-insurancelake-etl
+   cd ../aws-insurancelake-etl
    ```
-1. Deploy the ETL resources in the development environment (3 stacks)
+1. Deploy the ETL resources in the development environment (4 stacks)
    ```bash
-   cdk deploy Dev-InsuranceLakeEtlPipeline/Dev/InsuranceLakeEtlDynamoDb Dev-InsuranceLakeEtlPipeline/Dev/InsuranceLakeEtlGlue Dev-InsuranceLakeEtlPipeline/Dev/InsuranceLakeEtlStepFunctions Dev-InsuranceLakeEtlPipeline/Dev/InsuranceLakeAthenaHelper
+   cdk deploy Dev-InsuranceLakeEtlPipeline/Dev/InsuranceLakeEtlDynamoDb Dev-InsuranceLakeEtlPipeline/Dev/InsuranceLakeEtlGlue Dev-InsuranceLakeEtlPipeline/Dev/InsuranceLakeEtlStepFunctions Dev-InsuranceLakeEtlPipeline/Dev/InsuranceLakeEtlAthenaHelper
    ```
-   - Wait for DynamoDB deployment to finish (approx. 1 min)
+   - Wait for approximately 1 minute for DynamoDB deployment to finish
 1. Review and accept IAM credential creation for the Glue jobs stack
-   - Wait for deployment to finish (approx. 3 mins)
+   - Wait approximately 3 minutes for deployment to finish
 1. Review and accept IAM credential creation for the Step Functions stack
-   - Wait for deployment of Step Functions and Athena Helper stacks to finish (approx. 7 mins)
+   - Wait approximately 7 minutes for deployment of Step Functions and Athena Helper stacks to finish
 
 ### Try out the ETL Process
 
@@ -124,12 +124,13 @@ Skip steps in this section as needed if you've worked with CDK and Python before
    ```bash
    aws s3 cp resources/syntheticgeneral-policy-data.csv s3://<Collect S3 Bucket>/SyntheticGeneralData/PolicyData/
    ```
-1. Open Step Functions in the AWS Console and select `dev-insurancelake-etl-state-machine`
+1. Open [Step Functions](https://console.aws.amazon.com/states/home) in the AWS Console and select `dev-insurancelake-etl-state-machine`
    ![AWS Step Functions Selecting State Machine](./resources/step_functions_select_state_machine.png)
 1. Open the state machine execution in progress and monitor the status until completed
-   ![AWS Step Functions Selecting Runing Execution](./resources/step_functions_select_running_execution.png)
-1. Using Athena in the AWS Console select the Query Editor, and the `insurancelake` Workgroup
-1. Run the following query:
+   ![AWS Step Functions Selecting Running Execution](./resources/step_functions_select_running_execution.png)
+1. Open [Athena](https://console.aws.amazon.com/athena/home) in the AWS Console
+1. Select Launch Query Editor, and change the Workgroup to `insurancelake`
+1. Run the following query to view a sample of prepared data in the consume bucket:
    ```sql
    select * from syntheticgeneraldata_consume.policydata limit 100
    ```
@@ -273,10 +274,10 @@ In order to allow transform specifications to be matched with source system data
   | [datatransform_lookup](lib/glue_scripts/lib/datatransform_lookup.py) | pySpark logic to perform column value lookup operations |
   | [datatransform_typeconversion](lib/glue_scripts/lib/datatransform_typeconversion.py) | pySpark logic to convert date columns, and other data types to standard format |
   | [datatransform_dataprotection](lib/glue_scripts/lib/datatransform_dataprotection.py) | pySpark logic to redact, hash, and tokenize sensitive data columns |
-  | [datatransform_regex](lib/glue_scripts/lib/datatransform_regex.py) | pySpark logic to regex, and Python formatting string operations on data |
+  | [datatransform_regex](lib/glue_scripts/lib/datatransform_regex.py) | pySpark logic to perform regex transforms, and Python formatting string operations on data |
 | [datatransform_premium](lib/glue_scripts/lib/datatransform_premium.py) | pySpark logic to perform common insurance industry data transforms |
   | [custom_mapping](lib/glue_scripts/lib/custom_mapping.py) | pySpark logic to rename columns according to a map file |
-  | [dataquality_checks](lib/glue_scripts/lib/dataquality_checks.py) | Glue logic to run Data Quality rules according to a rules file |
+  | [dataquality_check](lib/glue_scripts/lib/dataquality_check.py) | Glue logic to run Data Quality rules according to a rules file |
   | [datalineage](lib/glue_scripts/lib/datalineage.py) | Custom data lineage tracking class designed to work with InsuranceLake transforms |
 
 ---
@@ -285,30 +286,72 @@ In order to allow transform specifications to be matched with source system data
 
 ### Source Code Structure
 
-- _TODO: Include more folders, scripts, modules, supporting files_
-
-Table below explains how this source ode structured:
+Table below explains how this source code is structured:
 
   | File / Folder    | Description  |
   |------------------| -------------|
   | [app.py](app.py) | Application entry point |
   | [code_commit_stack](./lib/code_commit_stack.py) | Optional stack to deploy an empty CodeCommit respository for mirroring |
-  | [dynamodb_stack](lib/dynamodb_stack.py) | Stack creates DynamoDB Tables for Job Auditing and ETL transformation rules. |
-  | [glue_stack](lib/glue_stack.py) | Stack creates Glue Jobs and supporting resources such as Connections, S3 Buckets - script and temporary - and an IAM execution Role |
   | [pipeline_stack](lib/pipeline_stack.py) | Pipeline stack entry point |
   | [pipeline_deploy_stage](lib/pipeline_deploy_stage.py) | Pipeline deploy stage entry point |
+  | [dynamodb_stack](lib/dynamodb_stack.py) | Stack creates DynamoDB Tables for Job Auditing and ETL transformation rules. |
+  | [glue_stack](lib/glue_stack.py) | Stack creates Glue Jobs and supporting resources such as Connections, S3 Buckets - script and temporary - and an IAM execution Role |
   | [step_functions_stack](lib/step_functions_stack.py) | Stack creates an ETL State machine which invokes Glue Jobs and supporting Lambdas - state machine trigger and status notification. |
   | [athena_helper_stack](lib/athena_helper_stack.py) | Stack creates an Athena workgroup with query results bucket ready for demonstration SQL queries. |
-  | [Glue Scripts](lib/glue_scripts/etl_collect_to_cleanse.py) | Glue pySpark job data processing logic for Collect bucket data, which stores results in the Cleanse bucket |
-  | [Glue Scripts](lib/glue_scripts/etl_cleanse_to_consume.py) | Glue pySpark job data processing logic for Cleanse bucket data, which stores results in the Consume bucket |
-  | [Glue Scripts](lib/glue_scripts/lib/) | Glue pySpark job modules that will be automatically available to all Glue jobs |
+  | [Collect-to-Cleanse Glue Script](lib/glue_scripts/etl_collect_to_cleanse.py) | Glue pySpark job data processing logic for Collect bucket data, which stores results in the Cleanse bucket |
+  | [Cleanse-to-Consume Glue Script](lib/glue_scripts/etl_cleanse_to_consume.py) | Glue pySpark job data processing logic for Cleanse bucket data, which stores results in the Consume bucket |
+  | [Entity Match Glue Script](lib/glue_scripts/etl_consume_entity_match.py) | Glue pySpark job data processing logic for Entity Matching, which stores results in the Consume bucket |
   | [ETL Job Auditor](lib/etl_job_auditor/lambda_handler.py) | Lambda script to update DynamoDB in case of glue job success or failure |
   | [ETL Trigger](lib/state_machine_trigger/lambda_handler.py) | Lambda script to trigger step function and initiate DynamoDB |
   | [ETL Transformation Mapping and Specification](lib/glue_scripts/transformation-spec/) | Field mapping and transformation specification logic to be used for data processing from Collect to Cleanse |
   | [ETL Transformation SQL](lib/glue_scripts/transformation-sql/) | Transformation SQL logic to be used for data processing from Cleanse to Consume |
   | [ETL Data Quality Rules](lib/glue_scripts/dq-rules/) | Glue Data Quality rules for quality checks from Cleanse to Consume |
   | [test](./test)| This folder contains pytest unit tests |
-  | [Resources](./resources) | This folder has architecture, process flow diagrams, and additional documentation |
+  | [resources](./resources) | This folder has architecture, process flow diagrams, and additional documentation |
+
+---
+
+### Security
+
+InsuranceLake uses [CDK-nag](https://github.com/cdklabs/cdk-nag) to ensure AWS resource security recommendations are followed. CDK-nag can generate warnings, which may need to be fixed depending on the context, and errors, which will interrupt the stack synthesis and prevent any deployment.
+
+To force synthesis of all stacks (including the CodePipeline deployed stacks), use the following command:
+
+```bash
+cdk synth '**'
+```
+
+When this operation is complete, you will also have access to the CDK-nag reports in CSV format in the cdk.out directory and assembly directories. By default, the AWS-Solutions Nag pack is used, but any Nag pack can be selected by adjusting 
+
+InsuranceLake uses [bandit](https://bandit.readthedocs.io/en/latest/) to check all helper script, Lambda, and Glue Python code.
+
+To scan all application code using bandit, use the following command:
+
+```bash
+bandit -r --ini .bandit
+```
+
+---
+
+### Security
+
+InsuranceLake uses [CDK-nag](https://github.com/cdklabs/cdk-nag) to ensure AWS resource security recommendations are followed. CDK-nag can generate warnings, which may need to be fixed depending on the context, and errors, which will interrupt the stack synthesis and prevent any deployment.
+
+To force synthesis of all stacks (including the CodePipeline deployed stacks), use the following command:
+
+```bash
+cdk synth '**'
+```
+
+When this operation is complete, you will also have access to the CDK-nag reports in CSV format in the cdk.out directory and assembly directories. By default, the AWS-Solutions Nag pack is used, but any Nag pack can be selected by adjusting 
+
+InsuranceLake uses [bandit](https://bandit.readthedocs.io/en/latest/) to check all helper script, Lambda, and Glue Python code.
+
+To scan all application code using bandit, use the following command:
+
+```bash
+bandit -r --ini .bandit
+```
 
 ---
 
@@ -381,6 +424,8 @@ To setup your local environment with a Glue container, retrieve the container im
 
 In this section, we provide some additional resources.
 
+- [Detailed Collect-to-Cleanse transform reference](./resources/transforms.md)
+- [Data quality rules with Glue Data Quality reference](./resources/data_quality.md)
 - [AWS CDK Detailed Insutructions](./resources/cdk_instructions.md)
 - [Developer Guide](resources/developer_guide.md) for more information on working with this solution
 - [Full Deployment Guide](./resources/full_deployment_guide.md) for deploying to 3 environments from 3 code branches
@@ -395,7 +440,7 @@ In this section, we provide some additional resources.
 The following people are involved in the design, architecture, development, testing, and review of this solution:
 
 1. **Cory Visi**, Senior Solutions Architect, Amazon Web Services
-1. **Ratnadeep Bardhan Roy**, Senioar Solutions Architect, Amazon Web Services
+1. **Ratnadeep Bardhan Roy**, Senior Solutions Architect, Amazon Web Services
 1. **Isaiah Grant**, Cloud Consultant, 2nd Watch, Inc.
 1. **Muhammad Zahid Ali**, Data Architect, Amazon Web Services
 1. **Ravi Itha**, Senior Data Architect, Amazon Web Services

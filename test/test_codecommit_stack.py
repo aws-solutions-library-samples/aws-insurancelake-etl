@@ -8,9 +8,7 @@ from test.boto_mocking_helper import *
 from lib.code_commit_stack import CodeCommitStack
 
 import lib.configuration as configuration
-from lib.configuration import (
-    DEPLOYMENT, get_logical_id_prefix
-)
+from lib.configuration import DEPLOYMENT
 
 
 def test_resource_types_and_counts(monkeypatch):
@@ -20,8 +18,8 @@ def test_resource_types_and_counts(monkeypatch):
 
 	codecommit_stack = CodeCommitStack(
 		app,
-		f'Deploy-CodeCommitStackForTests',
-		target_environment='Deploy',
+		'Deploy-CodeCommitStackForTests',
+		target_environment=DEPLOYMENT,
 	)
 
 	template = Template.from_stack(codecommit_stack)
@@ -36,8 +34,8 @@ def test_stack_has_correct_outputs(monkeypatch):
 
 	codecommit_stack = CodeCommitStack(
 		app,
-		f'Deploy-CodeCommitStackForTests',
-		target_environment='Deploy',
+		'Deploy-CodeCommitStackForTests',
+		target_environment=DEPLOYMENT,
 	)
 
 	template = Template.from_stack(codecommit_stack)
@@ -65,7 +63,7 @@ def test_mirror_user_can_access_repository(monkeypatch):
 	codecommit_stack = CodeCommitStack(
 		app,
 		'Deploy-CodeCommitStackForTests',
-		target_environment='Deploy',
+		target_environment=DEPLOYMENT,
 	)
 
 	template = Template.from_stack(codecommit_stack)

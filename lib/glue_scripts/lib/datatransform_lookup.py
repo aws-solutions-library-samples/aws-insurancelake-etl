@@ -1,12 +1,12 @@
 # Copyright Amazon.com and its affiliates; all rights reserved. This file is Amazon Web Services Content and may not be duplicated or distributed without permission.
 # SPDX-License-Identifier: MIT-0
-import pyspark
 import json
 import boto3
 from boto3.dynamodb.conditions import Key
 from pyspark.context import SparkContext
+from pyspark.sql.window import Window
 from pyspark.sql.dataframe import DataFrame
-from pyspark.sql.functions import coalesce, lit, broadcast, concat_ws
+from pyspark.sql.functions import coalesce, lit, broadcast, concat_ws, col, first, count
 from awsglue.context import GlueContext
 
 def get_lookup_data(table_name: str, key_values: dict, lookup_data_attribute_name: str) -> list:
@@ -242,3 +242,43 @@ def transform_merge(df: DataFrame, merge_spec: list, args: dict, lineage, *extra
         lineage.update_lineage(df, args['source_key'], 'merge', transform=spec)
 
     return df.withColumns(cols_map)
+
+
+def transform_filldown(df: DataFrame, fill_spec: list, args: dict, lineage, *extra) -> DataFrame:
+    """Fill starting column value down the columns for all null values until the next non-null
+    Spark implementation of Pandas ffill()
+    Based on: https://towardsdatascience.com/tips-and-tricks-how-to-fill-null-values-in-sql-4fccb249df6f
+
+    Parameters
+    ----------
+    fill_spec
+        List of dictionary objects in the form:
+            field: existing field on which to apply the fill down operation
+            sort: optional sort coliumn or list of columns
+    """
+    for spec in fill_spec:
+        # TODO: Support descending sort of columns
+        sort_column = spec.get('sort', lit(1))
+        initial_window_spec  = Window.orderBy(sort_column). \
+            rowsBetween(Window.unboundedPreceding, Window.currentRow)
+        df = df.withColumn('transform_filldown_group_number', count(spec['field']).over(initial_window_spec))
+
+        grouped_window_spec = Window.partitionBy('transform_filldown_group_number').orderBy(sort_column)
+        columns = []
+        for field in df.columns:
+            if field == 'transform_filldown_group_number':
+                continue
+            if field == spec['field']:
+                columns.append(
+                    coalesce(
+                        col(field),
+                        first(col(field), ignorenulls=True).over(grouped_window_spec)
+                    ).alias(field)
+                )
+            else:
+                columns.append(col(field))
+
+        df = df.select(columns)
+        lineage.update_lineage(df, args['source_key'], 'filldown', transform=spec)
+
+    return df

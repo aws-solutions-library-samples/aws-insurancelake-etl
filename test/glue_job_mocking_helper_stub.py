@@ -15,16 +15,20 @@ mock_collect_bucket = ''
 mock_cleanse_bucket = ''
 mock_consume_bucket = ''
 
-def etl_cleanse_to_consume():
-	# Stub function so that decorator call will succeed
-	pass
-
 def etl_collect_to_cleanse():
-	# Stub function so that decorator call will succeed
-	pass
+    # Stub function so that decorator call will succeed
+    pass
+
+def etl_cleanse_to_consume():
+    # Stub function so that decorator call will succeed
+    pass
+
+def etl_consume_entity_match():
+    # Stub function so that decorator call will succeed
+    pass
 
 def mock_glue_job(func):
-	# Stub decorator used by unit tests
-	def inner(*args):
-		func()
-	return inner
+    # Stub decorator used by unit tests
+    def inner(*args):
+        func()
+    return inner

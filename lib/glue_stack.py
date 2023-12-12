@@ -114,11 +114,11 @@ class GlueStack(cdk.Stack):
         for subnet_number in range(len(vpc.subnets)):
             job_connections.append(glue.CfnConnection(
                 self,
-                f'{target_environment}{self.logical_id_prefix}CollectToCleanseWorkflowConnection{subnet_number + 1}',
+                f'{target_environment}{self.logical_id_prefix}GlueETLConnection{subnet_number + 1}',
                 catalog_id=self.account,
                 connection_input=glue.CfnConnection.ConnectionInputProperty(
                     connection_type="NETWORK",
-                    name=f'{target_environment.lower()}-{self.resource_name_prefix}-collect-to-cleanse-connection-{subnet_number + 1}',
+                    name=f'{target_environment.lower()}-{self.resource_name_prefix}-glue-etl-connection-{subnet_number + 1}',
                     physical_connection_requirements=glue.CfnConnection.PhysicalConnectionRequirementsProperty(
                         availability_zone=vpc.subnets[subnet_number].availability_zone,
                         subnet_id=vpc.subnets[subnet_number].subnet_id,
@@ -153,7 +153,7 @@ class GlueStack(cdk.Stack):
                 '--additional-python-modules': 'rapidfuzz',
                 '--extra-py-files': ','.join(glue_libraries),
                 '--environment': self.target_environment,
-                '--TempDir': f's3://{self.glue_scripts_temp_bucket.bucket_name}/etl/collect-to-cleanse',
+                '--TempDir': f's3://{self.glue_scripts_temp_bucket.bucket_name}/etl/collect_to_cleanse',
                 '--txn_bucket': f's3://{self.glue_scripts_bucket.bucket_name}',
                 '--txn_spec_prefix_path': '/etl/transformation-spec/',
                 '--source_bucket': f's3://{buckets.raw.bucket_name}',
@@ -209,6 +209,7 @@ class GlueStack(cdk.Stack):
                 '--txn_sql_prefix_path': '/etl/transformation-sql/',
                 '--source_bucket': f's3://{buckets.conformed.bucket_name}',
                 '--target_bucket': f's3://{buckets.purposebuilt.bucket_name}',
+                '--dq_results_table': dq_results_table.table_name,
                 '--data_lineage_table': data_lineage_table.table_name if data_lineage_table else None,
             },
             execution_property=glue.CfnJob.ExecutionPropertyProperty(
@@ -226,6 +227,56 @@ class GlueStack(cdk.Stack):
             #security_configuration='',
         )
 
+        self.consume_entity_match_job = glue.CfnJob(
+            self,
+            f'{target_environment}{self.logical_id_prefix}ConsumeEntityMatchJob',
+            name=f'{target_environment.lower()}-{self.resource_name_prefix}-consume-entity-match-job',
+            description='PySpark Glue job data processing logic to match records in Consume layer with primary set',
+            command=glue.CfnJob.JobCommandProperty(
+                name='glueetl',
+                python_version='3',
+                script_location=f's3://{self.glue_scripts_bucket.bucket_name}/etl/etl_consume_entity_match.py'
+            ),
+            # Used if Glue job needs connections to resources in VPCs (incurs VPC costs and may trigger IP limitations)
+            connections=glue.CfnJob.ConnectionsListProperty(
+                connections=[ job_connection.connection_input.name for job_connection in job_connections ],
+            ) if job_connections else None,
+            # These arguments serve as defaults and base values that are overlayed and/or overriden
+            # by the arguments definition in the calling Step Functions GlueStartJobRun
+            default_arguments={
+                '--enable-auto-scaling': 'true',
+                '--enable-glue-datacatalog': 'true',
+                '--enable-continuous-cloudwatch-log': 'true',
+                '--enable-metrics': 'true',
+                '--user-jars-first': 'true',
+                '--environment': self.target_environment,
+                '--source_bucket': f's3://{buckets.conformed.bucket_name}',
+                '--target_bucket': f's3://{buckets.purposebuilt.bucket_name}',
+                '--txn_bucket': f's3://{self.glue_scripts_bucket.bucket_name}',
+                '--txn_sql_prefix_path': '/etl/transformation-sql/',
+                '--txn_spec_prefix_path': '/etl/transformation-spec/',
+                '--TempDir': f's3://{self.glue_scripts_temp_bucket.bucket_name}/etl/consume_entity_match',
+                '--extra-py-files': ','.join(glue_libraries),
+                '--extra-jars': ','.join(spark_libraries) if spark_libraries else None,
+                '--data_lineage_table': data_lineage_table.table_name if data_lineage_table else None,
+                '--conf': 'spark.serializer=org.apache.spark.serializer.KryoSerializer',
+                '--datalake-formats': 'hudi',
+                '--additional-python-modules': 'recordlinkage',
+            },
+            execution_property=glue.CfnJob.ExecutionPropertyProperty(
+                max_concurrent_runs=10,
+            ),
+            glue_version='4.0',
+            max_retries=0,
+            # With auto-scaling, this represents the maximum number of workers
+            # If using a Connection, there must be enough IP addresses for each worker
+            number_of_workers=50,
+            role=glue_role.role_arn,
+            worker_type='G.1X',
+            # TODO: Allow the user to specify a user-managed, out-of-stack security group name
+            # Glue security configurations cannot be updated by Cloudformation and break all stack updates
+            #security_configuration='',
+        )
         # Recommended encryption settings for account Glue Data Catalog
         # Applies to all databases and tables in the account; uncomment to apply
         # glue.CfnDataCatalogEncryptionSettings(
@@ -458,7 +509,8 @@ class GlueStack(cdk.Stack):
                         resources=dynamodb_resources,
                     )
                 ]),
-                # TODO: Use a custom workgroup to restrict resource access
+                # Glue job uses client-side settings for Athena query execution, which cannot be
+                # restricted to a specific resource
                 'AthenaAccess':
                 iam.PolicyDocument(statements=[
                     iam.PolicyStatement(

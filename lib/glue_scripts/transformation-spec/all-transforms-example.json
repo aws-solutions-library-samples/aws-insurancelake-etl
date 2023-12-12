@@ -1,6 +1,8 @@
 {
 	"input_spec": {
 
+		"table_description": "description will only apply to cleanse bucket",
+
 		"allow_schema_change": "permissive",
 
 		"csv": {
@@ -51,6 +53,20 @@
 			}
 		],
 
+		"columnreplace": [
+			{
+				"field": "clean_date_field",
+				"source": "bad_date_field",
+				"pattern": "0000-00-00",
+				"replacement": ""
+			},
+			{
+				"field": "field_with_extra_data",
+				"pattern": "[a-zA-z]{3,5}",
+				"replacement": ""
+			}
+		],
+
 		"date": [
 		   	{
 				"field": "StartDate",
@@ -62,6 +78,7 @@
 			},
 			{
 				"field": "valuationdate",
+				"source": "valuationdatestring",
 				"format": "yyyyMMdd"
 			}
 		],
@@ -70,21 +87,22 @@
 			{
 				"field": "GenerationDate",
 				"format": "yyyy-MM-dd HH:mm:ss.SSS+0000"
+			},
+			{
+				"field": "DataLoadTimestamp",
+				"source": "DataLoadString",
+				"format": "yyyy-MM-dd HH:mm:ss.SSSZ"
 			}
 		],
 
-		"decimal": [
+		"changetype": [
 			{
-				"field": "ExpiringPremiumAmount",
-				"format": "10,2"
-			},
-			{
-				"field": "WrittenPremiumAmount",
-				"format": "10,2"
-			},
-			{
-				"field": "EarnedPremium",
-				"format": "10,2"
+				"ExpiringPremiumAmount": "decimal(10,2)",
+				"WrittenPremiumAmount": "decimal(10,2)",
+				"EarnedPremium": "decimal(10,2)",
+				"PrimaryKeyId": "bigint",
+				"GrowingCount": "bigint",
+				"PolicyKey": "string"
 			}
 		],
 
@@ -92,6 +110,11 @@
 			{
 				"field": "indemnity_paid_current_period",
 				"num_implied": "4",
+				"format": "16,4"
+			},
+			{
+				"field": "claim_amount",
+				"source": "claim_amount_string",
 				"format": "16,2"
 			}
 		],
@@ -103,6 +126,7 @@
 			},
 			{
 				"field": "EuroValue",
+				"source": "EuroValueFormatted",
 				"euro": true
 			}
 		],
@@ -110,11 +134,6 @@
 		"titlecase": [
 			"CompanyName",
 			"AddressStreet"
-		],
-
-		"bigint": [
-			"PrimaryKeyId",
-			"GrowingCount"
 		],
 
 		"redact": {
@@ -143,7 +162,7 @@
 			}
 		],
 
-		"multivaluelookup": [
+		"multilookup": [
 			{
 				"lookup_group": "LOBCoverage",
 				"match_columns": [
@@ -168,14 +187,33 @@
 			}
 		],
 
+		"filldown": [
+			{
+				"field": "category"
+			},
+			{
+				"field": "subcategory",
+				"sort": "timestamp"
+			}
+		],
+
 		"literal": {
-			"source": "syntheticdata"
+			"source": "syntheticdata",
+			"line_of_business": "synthetic"
 		},
 
 		"addcolumns": [
 			{
 				"field": "TotalWrittenPremium",
 				"source_columns": [ "WrittenPremiumAmount" ]
+			}
+		],
+
+		"multiplycolumns": [
+			{
+				"field": "SplitPremium",
+				"source_columns": [ "WrittenPremiumAmount", "SplitPercent1", "SplitPercent2" ],
+				"empty_value": 0
 			}
 		],
 
@@ -200,9 +238,6 @@
 		"policymonths": [
 			{
 				"field": "CalcNumMonths",
-				"written_premium_list": [
-					"WrittenPremiumAmount"
-				],
 				"policy_effective_date": "EffectiveDate",
 				"policy_expiration_date": "ExpirationDate",
 				"normalized": true
@@ -210,11 +245,12 @@
 		],
 
 		"expandpolicymonths": {
+			"policy_effective_date": "EffectiveDate",
+			"policy_expiration_date": "ExpirationDate",
 			"uniqueid": "generated_policy_number",
 			"policy_month_start_field": "StartDate",
 			"policy_month_end_field": "EndDate",
-			"policy_effective_date": "EffectiveDate",
-			"policy_expiration_date": "ExpirationDate"
+			"policy_month_index": "PolicyMonthIndex"
 		},
 
 		"earnedpremium": [

@@ -1,5 +1,14 @@
 {
-	"dq_rules": {
+	"before_transform": {
+		"quarantine_rules": [
+			"ColumnValues 'StartDate' matches '\\d{1,2}/\\d{1,2}/\\d\\d'",
+			"ColumnValues 'EndDate' matches '\\d\\d-\\d{1,2}-\\d{1,2}'",
+			"ColumnDataType 'EffectiveDate' = 'DATE'",
+			"ColumnDataType 'ExpirationDate' = 'DATE'",
+			"ColumnDataType 'GenerationDate' = 'TIMESTAMP'"
+		]
+	},
+	"after_transform": {
 		"warn_rules": [
 			"Completeness 'EarnedPremium' > 0.80",
 			"ColumnValues \"WrittenPremiumAmount\" >= 0",
@@ -13,6 +22,11 @@
 			"(ColumnExists 'StartDate') and (IsComplete 'StartDate')",
 			"(ColumnExists 'PolicyNumber') and (IsComplete 'PolicyNumber')",
 			"CustomSql 'SELECT COUNT(*) FROM primary WHERE EffectiveDate > ExpirationDate' = 0"
+		]
+	},
+	"after_sparksql": {
+		"quarantine_rules": [
+			"CustomSql 'SELECT PolicyNumber FROM primary WHERE accidentyeartotalincurredamount <= claimlimit OR accidentyeartotalincurredamount is null'"
 		]
 	}
 }

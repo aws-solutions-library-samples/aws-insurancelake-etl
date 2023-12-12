@@ -1,0 +1,4 @@
+partyid,partytype,firstname,lastname,sex,dob,nationalid,maritalstatus,annualincome,occupation,companyname,phonenumber,email,addressstreet,city,state,zip,country,lastupdated,srcsystemid
+F0000001,IND,Jill,McGill,F,2021-10-06,483-72-9493,single,135183,Furniture designer,"Harris, Ford and Delgado",609-310-9474,navarrosamantha@gmail.com,87079 Perez Plains Suite 680,Fargo,ND,58298-0000,US,06/07/2023 11:57:22,F15
+F0000002,IND,D,Lewis,F,2008-10-29,310-78-9762,single,162119,"Scientist, clinical (histocompatibility and immunogenetics)",Miller-Campbell,719-135-9299,dlewis@yahoo.com,6264 Robinson Branch,Bend,OR,97394-0000,US,06/07/2023 11:57:22,F15
+F0000003,IND,J,Walker,M,1947-07-17,203-32-6034,married,21505,"Engineer, materials",Howard-Simmons,447-513-6675,rangellisa@gmail.com,4 shrill  DRV 042,Clark City,NJ,03222-0000,US,06/07/2023 11:57:22,F15

@@ -22,6 +22,16 @@ SELECT
 , policyinforce
 , writtenpremiumamount
 , earnedpremium
+
+, CASE WHEN policymonthindex = 1 THEN 1 ELSE 0
+    END AS writtenpolicy
+
+, CASE WHEN year(expirationdate) = year(startdate) AND month(expirationdate) = month(startdate) THEN 1 ELSE 0
+    END AS expiringpolicy
+
+, CASE WHEN year(expirationdate) = year(startdate) AND month(expirationdate) = month(startdate) THEN writtenpremiumamount ELSE 0
+    END AS expiringpremiumamount
+
 , execution_id
 , year
 , month

@@ -81,7 +81,7 @@ if not buckets and not dynamodb_tables:
 	exit(1)
 
 
-print (f'Emptying Collect/Cleanse/Consume S3 buckets...')
+print ('Emptying Collect/Cleanse/Consume S3 buckets...')
 s3 = boto3.resource('s3')
 for bucket_name in buckets:
 	s3_bucket = s3.Bucket(bucket_name)

@@ -5,7 +5,7 @@ import sys
 from decimal import Decimal
 
 try:
-    from pyspark.sql.types import DateType, StringType
+    from pyspark.sql.types import DateType, StringType, LongType, DecimalType, IntegerType
     from test.glue_job_mocking_helper import *
     from lib.glue_scripts.lib.datatransform_typeconversion import *
 except ModuleNotFoundError as e:
@@ -53,7 +53,6 @@ def test_transform_date_throws_error_on_bad_convert():
     # Look for mention of this setting in Spark Exception to modify date parsing behavior
     assert e_info.match('spark.sql.legacy.timeParserPolicy')
 
-
 def test_transform_currency_converts_schema():
     mock_currency_schema = 'money string'
     mock_currency_data = [ ( '100.00', ), ( '$500.00', ), ( '$1,234,567.89', ), ( '-$2,000', ) ]
@@ -87,10 +86,34 @@ def test_transform_titlecase_converts_string():
     df = transform_titlecase(df, [ 'text' ], mock_args, lineage)
     assert df.filter('`text` = "Test String"').count() == 1
 
-def test_transform_bigint_converts_string():
+def test_transform_decimal_wraps_correctly():
+    lineage = mock_lineage([])
+    df = spark.createDataFrame([ ( '50.23', ) ], schema='amount string')
+    assert df.schema['amount'].dataType == StringType()
+    df = transform_decimal(df, [ { 'field': 'amount', 'format': '10,2' } ], mock_args, lineage)
+    assert df.schema['amount'].dataType == DecimalType(10,2)
+    assert df.filter('`amount` = 50.23').count() == 1
+
+def test_transform_changetype_converts_to_bigint():
     lineage = mock_lineage([])
     df = spark.createDataFrame([ ( '100', ) ], schema='amount string')
     assert df.schema['amount'].dataType == StringType()
-    df = transform_bigint(df, [ 'amount' ], mock_args, lineage)
-    assert str(df.schema['amount'].dataType) == 'LongType()'
+    df = transform_changetype(df, { 'amount': 'bigint' }, mock_args, lineage)
+    assert df.schema['amount'].dataType == LongType()
     assert df.filter('`amount` = 100').count() == 1
+
+def test_transform_changetype_converts_to_decimal():
+    lineage = mock_lineage([])
+    df = spark.createDataFrame([ ( '50.23', ) ], schema='amount string')
+    assert df.schema['amount'].dataType == StringType()
+    df = transform_changetype(df, { 'amount': 'decimal(10,2)' }, mock_args, lineage)
+    assert df.schema['amount'].dataType == DecimalType(10,2)
+    assert df.filter('`amount` = 50.23').count() == 1
+
+def test_transform_changetype_converts_to_string():
+    lineage = mock_lineage([])
+    df = spark.createDataFrame([ ( 123456, ) ], schema='amount int')
+    assert df.schema['amount'].dataType == IntegerType()
+    df = transform_changetype(df, { 'amount': 'string' }, mock_args, lineage)
+    assert df.schema['amount'].dataType == StringType()
+    assert df.filter('`amount` = "123456"').count() == 1

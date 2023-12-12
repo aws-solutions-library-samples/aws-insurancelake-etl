@@ -29,6 +29,7 @@ SELECT
 , writtenpremiumamount
 , writtenpolicy
 , earnedpremium
+, earnedpremium * 10 as claimlimit  -- used for data quality rule
 , syntheticgeneraldata.policydata.execution_id
 , syntheticgeneraldata.policydata.year
 , syntheticgeneraldata.policydata.month

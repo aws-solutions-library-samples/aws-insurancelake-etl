@@ -102,7 +102,7 @@ def test_get_logical_id_prefix_returns_string(monkeypatch):
 	monkeypatch.setattr(configuration.boto3, 'client', mock_boto3_client)
 
 	test_logic_id_prefix = configuration.get_logical_id_prefix()
-	assert type(test_logic_id_prefix) == str
+	assert isinstance(test_logic_id_prefix, str)
 	assert len(test_logic_id_prefix) > 0
 
 
@@ -111,5 +111,5 @@ def test_get_resource_name_prefix_returns_string(monkeypatch):
 	monkeypatch.setattr(configuration.boto3, 'client', mock_boto3_client)
 
 	test_resource_name_prefix = configuration.get_resource_name_prefix()
-	assert type(test_resource_name_prefix) == str
+	assert isinstance(test_resource_name_prefix, str)
 	assert len(test_resource_name_prefix) > 0

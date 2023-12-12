@@ -14,6 +14,7 @@ This section provides complete instructions for three deployment environments, a
   * [AWS Environment Bootstrapping](#aws-environment-bootstrapping)
   * [Application Configuration](#application-configuration)
   * [AWS CodePipeline and GitHub Integration](#aws-codepipeline-and-github-integration)
+  * [AWS CodePipeline and Bitbucket Integration](#aws-codepipeline-and-bitbucket-integration)
   * [Deploying CDK Stacks](#deploying-cdk-stacks)
 
 ---
@@ -24,25 +25,23 @@ This section provides complete instructions for three deployment environments, a
 
 * **Four AWS accounts for full deployment** One of them acts like a central deployment account. The other three are for development, test, and production accounts. To test this solution with single account refer to the [Quickstart section of the README](./README.md#quickstart) for detailed instructions.
 
-* **Cross-account permissions for pipeline** Create a service role for CodePipeline with cross-account permissions. Refer to this [knowledge base article](https://aws.amazon.com/premiumsupport/knowledge-center/codepipeline-deploy-cloudformation/) for details.
+* **Number of branches on your GitHub repo** You need to start with at least one branch (e.g. main) to start using this solution. Test and prod branches can be added at the beginning or after the deployment of the data lake infrastructure on the dev environment.
 
-* **Number of branches on your GitHub repo** You need to start with at least one branch for e.g. main to start using this solution. test and prod branches can be added at the beginning or after the deployment of data lake infrastructure on dev environment.
+* **Administrator privileges** You need administrator privileges to bootstrap your AWS environments and complete the initial deployment. Usually, these steps can be performed by a DevOps administrator of your team. After these steps, you can revoke administrative privileges. Subsequent deployments are based on CDK roles and pipeline self-mutation.
 
-* **Administrator privileges** You need to administrator privileges to bootstrap your AWS environments and complete initial deployment. Usually, these steps can be performed by a DevOps administrator of your team. After these steps, you can revoke administrative privileges. Subsequent deployments are based on self-mutating natures of CDK Pipelines.
-
-* **AWS Region selection** We recommend you to use the same AWS region (e.g. us-east-2) for deployment, dev, test, and prod accounts for simplicity. However, this is not a hard requirement.
+* **AWS region selection** We recommend you use the same AWS region (e.g. us-east-2) for deployment, dev, test, and prod accounts for simplicity. However, this is not a hard requirement.
 
 ---
 
 ### Self-mutating Pipelines via CDK
 
-The pipeline you have created using the CDK Pipelines module is self-mutating. That means the pipeline itself is infrastructure-as-code and can be changed as part of the deployment. During the build stage the pipeline will determine its own stack is changed, redeploy the pipeline, and repeat the build stage using the new pipeline definition.
+The pipeline you have created using the CDK Pipelines module is self-mutating. That means the pipeline itself is infrastructure-as-code and can be changed as part of the deployment. During the build stage the pipeline will determine if its own stack is changed, redeploy the pipeline, and repeat the build stage using the new pipeline definition.
 
 ---
 
 ### Centralized Deployment
 
-Let us see how we deploy data lake ETL workloads from a central deployment account to multiple AWS environments such as dev, test, and prod. As shown in the figure below, we organize **Data Lake ETL source code** into three branches - dev, test, and production. We use a dedicated AWS account to create CDK Pipelines. Each branch is mapped to a CDK pipeline and it turn mapped to a target environment. This way, code changes made to the branches are deployed iteratively to their respective target environment.
+Let us see how we deploy data lake ETL workloads from a central deployment account to multiple AWS environments such as dev, test, and prod. As shown in the figure below, we organize **Data Lake ETL source code** into three branches: develop, test, and main. We use a dedicated AWS account to create CDK Pipelines. Each branch is mapped to a CDK pipeline and it turn mapped to a target environment. This way, code changes made to the branches are deployed iteratively to their respective target environment.
 
 To demonstrate this solution, we need 4 AWS accounts as follows:
 
@@ -155,11 +154,27 @@ Environment bootstrap is standard CDK process to prepare an AWS environment read
 
    By default CDK bootstrapping will use the Administrator Access policy attached to the current session's role. If your organization requires a specific policy for CloudFormation deployment, use the `--cloudformation-execution-policies` command line option to specify the policies to attach.
 
-   If your organization requires specific resource tags, you can pass that tag list on the command line using `--tags`.
+   Run the following command:
 
    ```bash
    ./lib/prerequisites/bootstrap_deployment_account.sh
    ```
+
+   If your organization requires specific resource tags, you can pass that tag list on the command line using `--tags`. Multiple tags are passed as follows:
+
+   ```bash
+   ./lib/prerequisites/bootstrap_deployment_account.sh --tags 'COSTCENTER'='Analytics' --tags 'AssetID'='555'
+   ```
+
+   If your organization requires a permissions boundary attached to all IAM roles, use the following parameter:
+
+   ```bash
+   ./lib/prerequisites/bootstrap_deployment_account.sh --custom-permissions-boundary OrgPermissionBoundaryPolicy
+   ```
+   **NOTE:** Provided permissions boundary will only be applied to the CDK execution role, not the other roles that are created as part of the bootstrap process.
+
+   If your organization requires additional customizations to the bootstrap process, you may need to customize and deploy the bootstrap template. For more information, refer to [the Customizing bootstrapping section of the CDK documentation](https://docs.aws.amazon.com/cdk/v2/guide/bootstrapping.html).
+
 
 1. When you see the following text, enter **y**, and press enter/return
 
@@ -269,7 +284,7 @@ Before we deploy our resources we must provide the manual variables and upon dep
 
 1. Go to [configuration.py](./lib/configuration.py) and fill in values under `local_mapping` dictionary within the function `get_local_configuration` as desired.
 
-   **Note:** You can safely commit these values to your repository
+   **NOTE:** You can safely commit these values to your repository
 
    Example:
 
@@ -285,6 +300,16 @@ Before we deploy our resources we must provide the manual variables and upon dep
          # Use your forked Github repo here!
          # Leave empty if you do not use Github
          GITHUB_REPOSITORY_NAME: 'aws-insurancelake-infrastructure',
+
+         # If you use Bitbucket Cloud or any other supported Codestar provider, specify the
+         # Codestar connection ARN
+         CODESTAR_CONNECTION_ARN: '',
+
+         # Codestar repository owner or workspace name if using Bitbucket Cloud
+         CODESTAR_REPOSITORY_OWNER_NAME: '',
+
+         # Leave empty if you do not use Codestar
+         CODESTAR_REPOSITORY_NAME: '',
 
          # Use only if your repository is already in CodecCommit, otherwise leave empty!
          # Use your CodeCommit repo name here
@@ -326,7 +351,7 @@ Before we deploy our resources we must provide the manual variables and upon dep
          LINEAGE: True,
          # Comment out if you do not need VPC connectivity
          VPC_CIDR: '10.0.0.0/24',
-         CODE_BRANCH: 'master',
+         CODE_BRANCH: 'main',
       }
    }
    ```
@@ -339,7 +364,7 @@ Before we deploy our resources we must provide the manual variables and upon dep
 
 1. Edit the ```configuration.py``` in the ETL repository and modify the repository configuration parameters to reference the ETL code repository.
 
-   **Note:** We recommend that you keep the logical ID prefix and resource name prefix consistent between repositories.
+   **NOTE:** We recommend that you keep the logical ID prefix and resource name prefix consistent between repositories.
 
 1. Go to [tagging.py](./lib/tagging.py) and adjust the tag names and values in the `tag_map` dictionary within the function `get_tag` as needed by your organization. You can edit the existing tag parameters, or add your own tag parameters.
 
@@ -382,29 +407,59 @@ Before we deploy our resources we must provide the manual variables and upon dep
 
 Integration between AWS CodePipeline and GitHub requires a personal access token. This access token is stored in Secrets Manager. This is a one-time setup and is applicable for all target AWS environments and all repositories created under the organization in GitHub.com. Follow the below steps:
 
-**Important Note:** Do **NOT** commit these values to your repository
+1. Create a personal access token in your GitHub. Refer to [Creating a personal access token](https://docs.github.com/en/github/authenticating-to-github/keeping-your-account-and-data-secure/creating-a-personal-access-token) for details.
 
-1. Create a personal access token in your GitHub. Refer to [Creating a personal access token](https://docs.github.com/en/github/authenticating-to-github/keeping-your-account-and-data-secure/creating-a-personal-access-token) for details
-
-1. Go to [configure_account_secrets.py](./lib/prerequisites/configure_account_secrets.py) and fill in the value for attribute **MY_GITHUB_TOKEN**
+   The token should have these permissions:
+      * `repo` - to read the repository
+      * `admin:repo_hook` - to use webhooks as the trigger (recommended)
 
 1. Run the below command
 
     ```bash
-    python3 ./lib/prerequisites/configure_account_secrets.py
+    ./lib/prerequisites/configure_account_secrets.py
     ```
 
-1. Expected output 1:
+1. Paste the Github personal access token when prompted
+
+1. Confirm the profile, account, and region; respond *y* if correct
+
+1. Expected output:
 
     ```bash
     Pushing secret: /DataLake/GitHubToken
     ```
 
-1. Expected output 2: 
+### AWS CodePipeline and Bitbucket Integration
 
-   ```bash
-   A secret is added to AWS Secrets Manager with name /DataLake/GitHubToken
-   ```
+Integration between AWS CodePipeline and Atlassian Bitbucket requires createing an AWS CodeStar Connection. This same configuration can be used for any provider supported by CodeStar (e.g. Gitlab cloud).
+
+1. In the AWS Console, browse to the CodePipeline service
+
+1. Click on Settings to expand the menu options, and click Connections
+
+1. Enter a connection name
+
+   **NOTE:** The Bitbucket provider is selected by default. If a different provider is selected, the following steps will vary slightly. Follow the instructions to establish a trust between AWS CodeStar and your Git provider.
+
+1. Click the orange Connect to Bitbucket button
+
+1. If you are not already logged into Bitbucket, you will be prompted to login now
+
+1. Click the Grant access button to confirm you want to allow AWS CodeStar to connect
+
+1. Click Install a new app
+
+1. You will be prompted to install the AWS CodeStar app for Bitbucket. Ensure the workspace selected contains the InsuranceLake repositories. Click Grant access.
+
+1. Click the orange Connect button
+
+1. Copy the ARN displayed under Connection settings to your clipboard
+
+1. Paste the ARN in `lib/configuration.py` for the `CODESTAR_CONNECTION_ARN` parameter
+
+1. Enter the workspace name for the `CODESTAR_REPOSITORY_OWNER_NAME` parameter, and the repository name for the `CODESTAR_REPOSITORY_NAME`
+
+1. Ensure that other configurations variables for Github and CodeCommit are empty strings.
 
 ---
 
@@ -433,7 +488,7 @@ Integration between AWS CodePipeline and GitHub requires a personal access token
    Prod-InsuranceLakeInfrastructurePipeline/Prod/InsuranceLakeInfrastructureVpc
    ```
 
-   **Note:**
+   **NOTE:**
    1. Here, **InsuranceLake** string literal is the value of ```LOGICAL_ID_PREFIX``` configured in [configuration.py](./lib/configuration.py)
    1. The first three stacks represent the CDK Pipeline stacks which will be created in the deployment account. For each target environment, there will be three stacks.
 

@@ -30,7 +30,9 @@ class StepFunctionsStack(cdk.Stack):
         target_environment: str,
         collect_to_cleanse_job: glue.CfnJob,
         cleanse_to_consume_job: glue.CfnJob,
+        consume_entity_match_job: glue.CfnJob,
         job_audit_table: dynamodb.Table,
+        glue_scripts_bucket: s3.Bucket,
         **kwargs
     ):
         """CloudFormation stack to create Step Functions, Lambdas, and SNS Topics
@@ -172,7 +174,9 @@ class StepFunctionsStack(cdk.Stack):
                 # These arguments overlay base arguments from the Glue Job definition
                 '--state_machine_name.$': '$$.StateMachine.Name',
                 '--execution_id.$': '$.execution_id',
-                '--database_name_prefix.$': '$.target_database_name',
+                '--source_key.$': '$.source_key',
+                '--source_database_name.$': '$.target_database_name',
+                '--target_database_name.$': "States.Format('{}_consume', $.target_database_name)",
                 '--table_name.$': '$.table_name',
                 '--base_file_name.$': '$.base_file_name',
                 '--p_year.$': '$.p_year',
@@ -185,12 +189,44 @@ class StepFunctionsStack(cdk.Stack):
         )
         glue_cleanse_task.add_catch(failure_function_task, result_path='$.taskresult')
 
+        entity_match_choice = stepfunctions.Choice(
+            self,
+            f'{target_environment}{self.logical_id_prefix}EntityMatchChoice',
+            comment='Decision node to perform Entity Matching based on workflow configuration'
+        )
+        entity_match_condition = stepfunctions.Condition.boolean_equals('$.entity_match', True)
+
+        glue_entity_match_task = stepfunctions_tasks.GlueStartJobRun(
+            self,
+            f'{target_environment}{self.logical_id_prefix}GlueEntityMatchJobTask',
+            glue_job_name=consume_entity_match_job.name,
+            comment='Consume data Entity Matching',
+            arguments=stepfunctions.TaskInput.from_object({
+                # These arguments overlay and/or override base arguments from the Glue Job definition
+                '--state_machine_name.$': '$$.StateMachine.Name',
+                '--execution_id.$': '$.execution_id',
+                '--database_name_prefix.$': '$.target_database_name',
+                '--table_name.$': '$.table_name',
+                '--p_year.$': '$.p_year',
+                '--p_month.$': '$.p_month',
+                '--p_day.$': '$.p_day',
+            }),
+            integration_pattern=stepfunctions.IntegrationPattern.RUN_JOB,
+            result_path='$.taskresult',
+            output_path='$',
+        )
+        glue_entity_match_task.add_catch(failure_function_task, result_path='$.taskresult')
+
+
         machine_definition = glue_collect_task.next(
             glue_cleanse_task.next(
-                success_function_task
+                entity_match_choice.when(entity_match_condition, glue_entity_match_task). \
+                    otherwise(success_function_task).afterwards(). \
+                    next(
+                        success_function_task
+                    )
             )
         )
-
 
         machine = stepfunctions.StateMachine(
             self,
@@ -209,6 +245,7 @@ class StepFunctionsStack(cdk.Stack):
             iam.PolicyStatement(
                 actions=[
                     'kms:GenerateDataKey',
+                    'kms:Decrypt',
                 ],
                 resources=[buckets.s3_kms_key.key_arn],
             )
@@ -233,9 +270,11 @@ class StepFunctionsStack(cdk.Stack):
             lambda_environment={
                 'DYNAMODB_TABLE_NAME': job_audit_table.table_name,
                 'SFN_STATE_MACHINE_ARN': machine.state_machine_arn,
+                'GLUE_SCRIPTS_BUCKET_NAME': glue_scripts_bucket.bucket_name,
             },
             job_audit_table=job_audit_table,
             state_machine=machine,
+            glue_scripts_bucket=glue_scripts_bucket,
         )
 
         # Will create CustomResource and Lambda to add event handler to imported bucket
@@ -278,6 +317,7 @@ class StepFunctionsStack(cdk.Stack):
         log_group: logs.LogGroup,
         job_audit_table: dynamodb.Table,
         state_machine: stepfunctions.StateMachine = None,
+        glue_scripts_bucket: s3.Bucket = None,
     ) -> iam.Role:
         """Creates the role used during Lambda execution
 
@@ -339,6 +379,21 @@ class StepFunctionsStack(cdk.Stack):
                 ]),
             })
 
+        if glue_scripts_bucket is not None:
+            policies.update({
+                # Decryption not needed because we just use ListObjects (requires ListBucket permission)
+                'EtlScriptsS3Access':
+                iam.PolicyDocument(statements=[
+                    iam.PolicyStatement(
+                        effect=iam.Effect.ALLOW,
+                        actions=[
+                            's3:ListBucket',
+                        ],
+                        resources=[glue_scripts_bucket.bucket_arn]
+                    )
+                ]),
+            })
+
         return iam.Role(
             self,
             f'{self.target_environment}{self.logical_id_prefix}{logical_id_suffix}LambdaRole',
@@ -357,6 +412,7 @@ class StepFunctionsStack(cdk.Stack):
         lambda_code_relative_path: str,
         job_audit_table: dynamodb.Table,
         state_machine: stepfunctions.StateMachine = None,
+        glue_scripts_bucket: s3.Bucket = None,
         lambda_environment: dict = {},
     ) -> _lambda.Function:
         """Creates a Lambda Function to support the ETL process
@@ -409,6 +465,7 @@ class StepFunctionsStack(cdk.Stack):
                 resource_name_suffix,
                 cloudwatch_log_group,
                 job_audit_table,
-                state_machine
+                state_machine,
+                glue_scripts_bucket,
             ),
         )

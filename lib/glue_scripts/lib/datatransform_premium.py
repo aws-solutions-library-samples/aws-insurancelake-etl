@@ -5,9 +5,9 @@ import datetime
 from dateutil import relativedelta, rrule
 import calendar
 from functools import reduce
-from operator import add
+from operator import add, mul
 from pyspark.sql.dataframe import DataFrame
-from pyspark.sql.functions import udf, expr, months_between, explode_outer, coalesce, lit, col
+from pyspark.sql.functions import udf, expr, months_between, coalesce, lit, col
 from pyspark.sql.types import DecimalType, DateType, ArrayType, IntegerType
 
 def add_columns(*source_columns):
@@ -82,7 +82,7 @@ def transform_policymonths(df: DataFrame, policymonths_spec: list, args: dict, l
     for spec in policymonths_spec:
         dates = [ spec['policy_expiration_date'], spec['policy_effective_date'] ]
 
-        if 'normalized' in spec and spec['normalized']:
+        if spec.get('normalized', False):
             months_function = udf(months_between_normalized, IntegerType())
             cols_map.update({ spec['field']: months_function(*dates) })
         else:
@@ -117,30 +117,40 @@ def transform_expandpolicymonths(df: DataFrame, expandpremium_spec: dict, args: 
     ----------
     earnedpremium_spec
         A dictionary object in the form:
-            uniqueid: (optional) Name of field to add with generated unique identifier (uuid)
-			policy_month_start_field: Name of field to store the policy month
-			policy_month_end_field: Name of field to store the policy month
             policy_effective_date: field name containing policy effective date
             policy_expiration_date: field name containing policy expiration date
+            uniqueid_field: (optional) Name of field to add with generated unique identifier (uuid)
+			policy_month_start_field: Name of field to store the policy month
+			policy_month_end_field: Name of field to store the policy month
+            policy_month_index: field name to store the month index (starting with 1)
     """
     # If specified, add a unique ID for each policy before exploding the rows
-    if 'uniqueid' in expandpremium_spec:
-        df = df.withColumn(expandpremium_spec['uniqueid'], expr('uuid()'))
+    if 'uniqueid_field' in expandpremium_spec:
+        df = df.withColumn(expandpremium_spec['uniqueid_field'], expr('uuid()'))
 
     # Create array column with list of policy months (first day of the month)
-    df = df.withColumn(expandpremium_spec['policy_month_start_field'], 
+    df = df.withColumn('expandpolicymonths_transform_policy_months_list',
             add_policy_months_list(
                 expandpremium_spec['policy_effective_date'],
                 expandpremium_spec['policy_expiration_date']
         ))
 
-    # Explode array column into multiple rows
-    df = df.withColumn(expandpremium_spec['policy_month_start_field'], 
-        explode_outer(expandpremium_spec['policy_month_start_field']))
+    # Use posexplode_outer to expand array of months to one row per month with an index column
+    # Syntax reference: https://issues.apache.org/jira/browse/SPARK-20174
+    df = df.selectExpr('*',
+        f"posexplode_outer(expandpolicymonths_transform_policy_months_list) "
+        f"as ({expandpremium_spec['policy_month_index']}, `{expandpremium_spec['policy_month_start_field']}`)"
+    ).drop('expandpolicymonths_transform_policy_months_list')
 
-    # Add column for last day of month, so we have both start and end date of period
-    df = df.withColumn(expandpremium_spec['policy_month_end_field'],
-            last_day_of_month(expandpremium_spec['policy_month_start_field']))
+    cols_map = {
+        # Add column for last day of month, so we have both start and end date of period
+        expandpremium_spec['policy_month_end_field']:
+            last_day_of_month(expandpremium_spec['policy_month_start_field']),
+        # Index is 0-based by default, so add 1 to normalize it
+        expandpremium_spec['policy_month_index']:
+            expr(f"{expandpremium_spec['policy_month_index']} + 1")
+    }
+    df = df.withColumns(cols_map)
 
     lineage.update_lineage(df, args['source_key'], 'expandpolicymonths', transform=expandpremium_spec)
     return df
@@ -225,8 +235,8 @@ def transform_earnedpremium(df: DataFrame, earnedpremium_spec: list, args: dict,
     return df.withColumns(cols_map)
 
 
-def transform_addcolumns(df: DataFrame, addcolumns_spec: dict, args: dict, lineage, *extra) -> DataFrame:
-    """Add two or more columns together in a new column
+def transform_addcolumns(df: DataFrame, addcolumns_spec: list, args: dict, lineage, *extra) -> DataFrame:
+    """Add two or more columns together in a new or existing column
 
     Parameters
     ----------
@@ -259,4 +269,29 @@ def transform_flipsign(df: DataFrame, field_list: list, args: dict, lineage, *ex
         cols_map.update({ spec['field']: - df[sourcefield] })
 
     lineage.update_lineage(df, args['source_key'], 'flipsign', transform=field_list)
+    return df.withColumns(cols_map)
+
+
+def transform_multiplycolumns(df: DataFrame, multiplycolumns_spec: list, args: dict, lineage, *extra) -> DataFrame:
+    """Multiply two or more columns together in a new or existing column
+
+    Parameters
+    ----------
+    multiplycolumns_spec
+        List of dictionary objects in the form:
+            field: "NewFieldName"
+            source_columns: [ "first", "second", "third" ] list of fields to multiply together
+            empty_value: Value to use if field value is null/empty, (optional, default is 1)
+    """
+    cols_map = {}
+    for spec in multiplycolumns_spec:
+        empty_value = spec.get('empty_value', 1)
+        cols_map.update({
+            spec['field']: reduce(mul, [
+                coalesce(col(c), lit(empty_value))
+                    for c in spec['source_columns']
+            ])
+        })
+
+    lineage.update_lineage(df, args['source_key'], 'multiplycolumns', transform=multiplycolumns_spec)
     return df.withColumns(cols_map)
