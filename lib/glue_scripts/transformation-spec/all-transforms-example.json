@@ -95,16 +95,14 @@
 			}
 		],
 
-		"changetype": [
-			{
-				"ExpiringPremiumAmount": "decimal(10,2)",
-				"WrittenPremiumAmount": "decimal(10,2)",
-				"EarnedPremium": "decimal(10,2)",
-				"PrimaryKeyId": "bigint",
-				"GrowingCount": "bigint",
-				"PolicyKey": "string"
-			}
-		],
+		"changetype": {
+			"ExpiringPremiumAmount": "decimal(10,2)",
+			"WrittenPremiumAmount": "decimal(10,2)",
+			"EarnedPremium": "decimal(10,2)",
+			"PrimaryKeyId": "bigint",
+			"GrowingCount": "bigint",
+			"PolicyKey": "string"
+		},
 
 		"implieddecimal": [
 			{
@@ -193,7 +191,18 @@
 			},
 			{
 				"field": "subcategory",
-				"sort": "timestamp"
+				"sort": [ "timestamp" ]
+			}
+		],
+
+		"rownumber": [
+			{
+				"field": "row_number"
+			},
+			{
+				"field": "policy_month_index",
+				"partition": [ "policynumber" ],
+				"sort": [ "start_date" ]
 			}
 		],
 

@@ -51,7 +51,7 @@ Skip steps in this section as needed if you've worked with CDK and Python before
 1. Open the AWS Console and navigate to [AWS Cloud9](https://console.aws.amazon.com/cloud9control/home)
 1. Select the region to create the Cloud9 environment (should be the same region as the stack; us-east-2 by default)
 1. Select Create environment
-1. Enter an environment name, e.g. InsuranceLakeDemo
+1. Enter an environment name, for example, InsuranceLakeDemo
 1. Select the t3.small instance size (CDK deployment requires more than 1 GB RAM)
 1. Leave the Platform selected as Amazon Linux 2023
 1. Adjust the timeout to your preference
@@ -223,7 +223,7 @@ In this section we talk about the overall InsuranceLake architecture and the ETL
 As shown in the figure below, we use Amazon S3 for storage. We use three S3 buckets:
    1. Collect bucket to store raw data in its original format
    1. Cleanse/Curate bucket to store the data that meets the quality and consistency requirements of the lake
-   1. Consume bucket for data that is used by analysts and data consumers of the lake (e.g. Amazon Quicksight, Amazon Sagemaker)
+   1. Consume bucket for data that is used by analysts and data consumers of the lake (for example, Amazon Quicksight, Amazon Sagemaker)
 
 InsuranceLake is designed to support a number of source systems with different file formats and data partitions. To demonstrate, we have provided a CSV parser and sample data files for a source system with two data tables, which are uploaded to the Collect bucket.
 
@@ -333,28 +333,6 @@ bandit -r --ini .bandit
 
 ---
 
-### Security
-
-InsuranceLake uses [CDK-nag](https://github.com/cdklabs/cdk-nag) to ensure AWS resource security recommendations are followed. CDK-nag can generate warnings, which may need to be fixed depending on the context, and errors, which will interrupt the stack synthesis and prevent any deployment.
-
-To force synthesis of all stacks (including the CodePipeline deployed stacks), use the following command:
-
-```bash
-cdk synth '**'
-```
-
-When this operation is complete, you will also have access to the CDK-nag reports in CSV format in the cdk.out directory and assembly directories. By default, the AWS-Solutions Nag pack is used, but any Nag pack can be selected by adjusting 
-
-InsuranceLake uses [bandit](https://bandit.readthedocs.io/en/latest/) to check all helper script, Lambda, and Glue Python code.
-
-To scan all application code using bandit, use the following command:
-
-```bash
-bandit -r --ini .bandit
-```
-
----
-
 ### Unit Testing
 
 The Python CDK unit tests use pytest, which will be installed as part of the solution requirements.
@@ -426,7 +404,7 @@ In this section, we provide some additional resources.
 
 - [Detailed Collect-to-Cleanse transform reference](./resources/transforms.md)
 - [Data quality rules with Glue Data Quality reference](./resources/data_quality.md)
-- [AWS CDK Detailed Insutructions](./resources/cdk_instructions.md)
+- [AWS CDK Detailed Instructions](./resources/cdk_instructions.md)
 - [Developer Guide](resources/developer_guide.md) for more information on working with this solution
 - [Full Deployment Guide](./resources/full_deployment_guide.md) for deploying to 3 environments from 3 code branches
 - [Github / CodePipeline Integration Guide](./resources/github_guide.md)

@@ -6,19 +6,21 @@ Script to clean-up artifacts left from running the pipeline and leave anything d
 
 *** THIS SCRIPT DELETES DATA AND RESOURCES THAT CANNOT BE RECOVERED ***
 
-Usage: etl_cleanup.py [-h] [--mode reallydelete]
+Usage: etl_cleanup.py [-h] [--mode reallydelete|allbuckets|nodynamodb]
 
 Options:
   -h, --help           show this help message and exit
   --mode reallydelete  Must specify to actually delete anything, otherwise runs dry-run
+  --mode allbuckets    Also delete objects in the ETL scripts Glue job bucket (assumes reallydelete)
+  --mode nodynamodb    Leaves DynamoDB tables intact (assumes reallydelete)
 
 Ensure you have the correct account access and tokens in your environment, as well as the default
 region specified in the AWS_DEFAULT_REGION environment variable.
 
 Script is hard-coded to only work on the InsuranceLake Development environment.
 
-Running without --reallydelete will return a count of objects only (except S3 buckets, which will
-report 0).
+Running without one of the --mode options will return a count of objects only (except S3 buckets,
+which will report 0).
 
 """
 import boto3
@@ -36,13 +38,14 @@ from configuration import (
 # Strongly recommend only using this on the DEV environment
 environment = DEV
 
-
 parser = argparse.ArgumentParser()
-parser.add_argument('--mode', dest='mode', metavar='reallydelete', required = False,
-	choices=[ 'reallydelete' ],
-	help='Must specify to actually delete anything, otherwise runs dry-run')
+parser.add_argument('--mode', dest='mode', required = False,
+	choices=[ 'reallydelete', 'allbuckets', 'nodynamodb' ],
+	help='Must specify to actually delete anything, otherwise runs dry-run; allbuckets includes '
+	'the ETL scripts Glue job bucket with the Glue job scripts, and all JSON config, mapping, '
+	'SQL, DQ rules; nodynamodb skips clearing DynamoDB tables')
 args = parser.parse_args()
-reallydelete = args.mode == 'reallydelete'
+reallydelete = args.mode in [ 'reallydelete', 'allbuckets', 'nodynamodb' ]
 
 if not reallydelete:
 	print('**** DRY RUN MODE ENABLED. NO REAL DELETING WILL OCCUR ****')
@@ -67,9 +70,13 @@ while True:
 	for export in response['Exports']:
 		if export['Name'] in bucket_exports:
 			buckets.append(export['Value'])
-		match = re.search('ExportsOutputRef\w+Table', export['Name'])
-		if match:
+		if re.search('ExportsOutputRef\w+Table', export['Name']):
 			dynamodb_tables.append(export['Value'])
+		# These are automatically added exports that we do not have a mapping for
+		if 'GlueScriptsTemporaryBucket' in export['Name']:
+			buckets.append(export['Value'])
+		if args.mode == 'allbuckets' and 'GlueScriptsBucket' in export['Name']:
+			buckets.append(export['Value'])
 	if 'NextToken' in response:
 		response = cf.list_exports(nextToken=response['NextToken'])
 	else:
@@ -81,7 +88,7 @@ if not buckets and not dynamodb_tables:
 	exit(1)
 
 
-print ('Emptying Collect/Cleanse/Consume S3 buckets...')
+print ('Emptying Collect/Cleanse/Consume/Glue S3 buckets...')
 s3 = boto3.resource('s3')
 for bucket_name in buckets:
 	s3_bucket = s3.Bucket(bucket_name)
@@ -148,7 +155,7 @@ for log_group_name in glue_log_groups:
 	except logs.exceptions.ResourceNotFoundException as error:
 		pass
 
-print('Emptying Cloudwatch Log Groups for Lambda functions. State Machine, and VPC Flow Log...')
+print('Emptying Cloudwatch Log Groups for Lambda functions, State Machine, and VPC Flow Log...')
 logs_to_empty = [
 	f'/aws/lambda/{environment.lower()}-{resource_prefix}-etl-status-update',
 	f'/aws/lambda/{environment.lower()}-{resource_prefix}-etl-trigger',
@@ -182,6 +189,9 @@ for log_group_name in logs_to_empty:
 			break
 	print(f'{log_streams_deleted} Log Streams deleted')
 
+
+if args.mode == 'nodynamodb':
+	sys.exit()
 
 print('Deleting all items in DynamoDB tables...')
 dynamodb = boto3.resource('dynamodb')

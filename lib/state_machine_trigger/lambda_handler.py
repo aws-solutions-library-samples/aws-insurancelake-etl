@@ -44,7 +44,6 @@ def record_etl_job_run(
     source_ipaddress
         S3 event sourceIPAddress from requestParameters record
     """
-    logger.info('record_etl_job_run() called')
     now = datetime.now(tz=dateutil.tz.gettz('UTC'))
     record_time = now.strftime('%Y-%m-%d %H:%M:%S.%f')
     item = {}
@@ -65,7 +64,7 @@ def record_etl_job_run(
     except botocore.exceptions.ClientError as error:
         logger.error(f'record_etl_job_run() DynamoDB put_item failed: {error}')
         raise error
-    logger.info('record_etl_job_run() execution completed')
+    logger.info('record_etl_job_run() execution completed successfully')
     print('Job audit record insert completed successfully')
 
 
@@ -142,9 +141,6 @@ def lambda_handler(event: dict, context: dict) -> dict:
     p_year = event_time.strftime('%Y')
     p_month = event_time.strftime('%m')
     p_day = event_time.strftime('%d')
-    logger.info(f'Partition Year (p_year): {p_year}')
-    logger.info(f'Partition Month (p_month): {p_month}')
-    logger.info(f'Partition Day (p_day): {p_day}')
 
     # Ensure state machine execution logging by following CloudWatch log group name constraints
     safe_object_base_file_name = re.sub('[^a-zA-Z0-9_-]', '', object_base_file_name)

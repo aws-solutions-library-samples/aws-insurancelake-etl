@@ -35,7 +35,7 @@
 
 - Each transform type can only be used once in the transform specification. This limitation helps the transform implementation reduce the number of Spark withColumn statements (using withColumns or select), and [optimize the workflow performance](https://medium.com/@manuzhang/the-hidden-cost-of-spark-withcolumn-8ffea517c015).
 
-- Except where noted, transforms will overwrite an existing field if specified as the result field. Where available use the ```source``` parameter to indicate that a different column should be used as the source data, and the column specified in the ```field``` parameter should be used for the result value. Specifying a source field to create a new column for transforms is useful for debugging issues with a transform, preserving original data, or having a backup datapoint available when incoming data formats are less clear.
+- Except where noted, transforms will overwrite an existing field if specified as the result field. Where available use the `source` parameter to indicate that a different column should be used as the source data, and the column specified in the `field` parameter should be used for the result value. Specifying a source field to create a new column for transforms is useful for debugging issues with a transform, preserving original data, or having a backup datapoint available when incoming data formats are less clear.
 
 ---
 
@@ -44,7 +44,8 @@
 ### currency
 Convert specified numeric field with currnecy formatting to Decimal (fixed precision)
 
-- ```format``` parameter defaults to 16,2 if not specified
+- `format` parameter defaults to 16,2 if not specified
+- While this transform will work on numeric fields, we recommend `changetype` to convert to decimal values because it is more efficient when combined with other data type changes.
 
 ```json
 "currency": [
@@ -66,16 +67,14 @@ Convert specified fields to decimal (fixed precision), int, bigint, string, etc.
 Field type syntax follows the [Spark simpleString](https://spark.apache.org/docs/3.3.0/api/python/_modules/pyspark/sql/types.html) definitions
 
 ```json
-"changetype": [
-    {
-        "ExpiringPremiumAmount": "decimal(10,2)",
-        "WrittenPremiumAmount": "decimal(10,2)",
-        "EarnedPremium": "decimal(10,2)",
-        "PrimaryKeyId": "bigint",
-        "GrowingCount": "bigint",
-        "PolicyKey": "string"
-    }
-]
+"changetype": {
+    "ExpiringPremiumAmount": "decimal(10,2)",
+    "WrittenPremiumAmount": "decimal(10,2)",
+    "EarnedPremium": "decimal(10,2)",
+    "PrimaryKeyId": "bigint",
+    "GrowingCount": "bigint",
+    "PolicyKey": "string"
+}
 ```
 
 ### date
@@ -329,7 +328,8 @@ Replace specified column values with values looked up from an dynamodb table
         "field": "issuestatename",
         "source": "issuestate",
         "lookup": "StateCd",
-        "nomatch": "N/A"
+        "nomatch": "N/A",
+        "source_system": "global"
     }
 ]
 ```

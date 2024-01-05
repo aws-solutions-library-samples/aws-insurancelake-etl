@@ -80,6 +80,16 @@ def test_transform_currency_converts_euro_data():
     assert df.filter('`money` is null').count() == 0
     assert df.agg({ 'money': 'sum' }).first()['sum(money)'] == Decimal('1233167.89')
 
+def test_transform_currency_handles_nonstring():
+    mock_currency_schema = 'money double'
+    mock_currency_data = [ ( 100.0000, ), ( 123456791234.5678, ), ( -2000.0525, ) ]
+    lineage = mock_lineage([])
+    df = spark.createDataFrame(mock_currency_data, schema=mock_currency_schema)
+    df = transform_currency(df, [ { 'field': 'money' } ], mock_args, lineage)
+    df.show(5, False)
+    assert df.filter('`money` is null').count() == 0
+    assert Decimal('123456789334.50') <= df.agg({ 'money': 'sum' }).first()['sum(money)'] <= Decimal('123456789334.53')
+
 def test_transform_titlecase_converts_string():
     lineage = mock_lineage([])
     df = spark.createDataFrame([ ( 'test string', ) ], schema='text string')

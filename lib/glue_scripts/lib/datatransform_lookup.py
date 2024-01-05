@@ -6,7 +6,7 @@ from boto3.dynamodb.conditions import Key
 from pyspark.context import SparkContext
 from pyspark.sql.window import Window
 from pyspark.sql.dataframe import DataFrame
-from pyspark.sql.functions import coalesce, lit, broadcast, concat_ws, col, first, count
+from pyspark.sql.functions import coalesce, lit, broadcast, concat_ws, col, first, count, row_number
 from awsglue.context import GlueContext
 
 def get_lookup_data(table_name: str, key_values: dict, lookup_data_attribute_name: str) -> list:
@@ -54,6 +54,8 @@ def transform_lookup(df_for_lookup: DataFrame, lookup_spec: list, args: dict, li
             source: 'OriginalFieldName' (optional, field will be replaced if ommitted)
             lookup: 'LookupData' (DynamoDB column_name value to use to get looked up values')
             nomatch: 'N/A' (optional, no matches will be empty/null)
+            source_system: 'global' (optional, override the source system name in the workflow for
+                global lookup tables)
     args
         Glue job arguments, from which source_key, value_lookup_table, and target_database_name are used
     lineage
@@ -78,7 +80,7 @@ def transform_lookup(df_for_lookup: DataFrame, lookup_spec: list, args: dict, li
         lookup_data = get_lookup_data(
                 args['value_lookup_table'],
                 {
-                    'source_system': args['target_database_name'],
+                    'source_system': spec.get('source_system', args['target_database_name']),
                     'column_name': spec['lookup'],
                 },
                 'lookup_data'
@@ -254,16 +256,16 @@ def transform_filldown(df: DataFrame, fill_spec: list, args: dict, lineage, *ext
     fill_spec
         List of dictionary objects in the form:
             field: existing field on which to apply the fill down operation
-            sort: optional sort coliumn or list of columns
+            sort: optional sort columns (must be a list)
     """
     for spec in fill_spec:
         # TODO: Support descending sort of columns
-        sort_column = spec.get('sort', lit(1))
-        initial_window_spec  = Window.orderBy(sort_column). \
+        sort_columns = spec.get('sort', [ lit(1) ])
+        initial_window_spec  = Window.partitionBy(lit(1)).orderBy(*sort_columns). \
             rowsBetween(Window.unboundedPreceding, Window.currentRow)
         df = df.withColumn('transform_filldown_group_number', count(spec['field']).over(initial_window_spec))
 
-        grouped_window_spec = Window.partitionBy('transform_filldown_group_number').orderBy(sort_column)
+        grouped_window_spec = Window.partitionBy('transform_filldown_group_number').orderBy(*sort_columns)
         columns = []
         for field in df.columns:
             if field == 'transform_filldown_group_number':
@@ -280,5 +282,30 @@ def transform_filldown(df: DataFrame, fill_spec: list, args: dict, lineage, *ext
 
         df = df.select(columns)
         lineage.update_lineage(df, args['source_key'], 'filldown', transform=spec)
+
+    return df
+
+
+def transform_rownumber(df: DataFrame, rank_spec: list, args: dict, lineage, *extra) -> DataFrame:
+    """Add a column representing an integer number of rows, optionally specifying a sort column
+    and partition column. Specifying no partition column will simply number all rows.
+
+    Parameters
+    ----------
+    rank_spec
+        List of dictionary objects in the form:
+            field: field name to add with the row number
+            partition: optional partition columns (must be a list)
+            sort: optional sort columns (must be a list)
+    """
+    for spec in rank_spec:
+        # TODO: Support descending sort of columns
+        sort_columns = spec.get('sort', [ lit(1) ])
+        partition_columns = spec.get('partition', [ lit(1) ])
+
+        df = df.withColumn(spec['field'], row_number(). \
+            over(Window.partitionBy(*partition_columns).orderBy(*sort_columns)))
+
+        lineage.update_lineage(df, args['source_key'], 'rownumber', transform=spec)
 
     return df

@@ -36,6 +36,7 @@ SELECT
 , year
 , month
 , day
+
 FROM
   syntheticgeneraldata.writtenpolicydata
 ORDER BY startdate ASC, lobcode ASC, agentname ASC, insuredindustry ASC

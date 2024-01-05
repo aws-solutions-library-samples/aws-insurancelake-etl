@@ -34,10 +34,12 @@ SELECT
 , syntheticgeneraldata.policydata.year
 , syntheticgeneraldata.policydata.month
 , syntheticgeneraldata.policydata.day
+
 FROM
   syntheticgeneraldata.policydata
-LEFT OUTER JOIN
+sLEFT OUTER JOIN
   syntheticgeneraldata.claimdata
   ON syntheticgeneraldata.policydata.policynumber = syntheticgeneraldata.claimdata.policynumber
   AND syntheticgeneraldata.policydata.startdate = syntheticgeneraldata.claimdata.startdate
+
 ORDER BY syntheticgeneraldata.policydata.startdate ASC, lobcode ASC, agentname ASC, insuredindustry ASC

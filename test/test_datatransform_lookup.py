@@ -206,9 +206,38 @@ def test_get_multilookup_data_paginates(monkeypatch, dynamodb_table_for_multiloo
 def test_transform_filldown_fills_one_column():
     lineage = mock_lineage([])
     df = spark.createDataFrame(mock_table_data_filldown, schema=mock_table_schema_filldown)
-    df = transform_filldown(df, [ { 'field': 'policyline' } ], mock_args, lineage, spark.sparkContext)
-    df.show(10,False)
+    df = transform_filldown(df, [ { 'field': 'policyline' } ], mock_args, lineage)
     assert 'policyline' in df.columns
     assert df.filter('`policyline` is null').count() == 0
     assert df.filter('`policyline` = "policyline1"').count() == 3
     assert df.filter('`policyline` = "policyline2"').count() == 2
+
+
+def test_transform_rownumber_adds_number_to_every_row():
+    lineage = mock_lineage([])
+    df = spark.createDataFrame(mock_table_data_filldown, schema=mock_table_schema_filldown)
+    df = transform_rownumber(df, [ { 'field': 'row_number' } ], mock_args, lineage)
+    assert 'row_number' in df.columns
+    assert df.filter('`row_number` is null').count() == 0
+    assert df.agg({'row_number': 'min'}).first()['min(row_number)'] == 1
+    assert df.agg({'row_number': 'max'}).first()['max(row_number)'] == 5
+
+def test_transform_rownumber_numbers_over_partition():
+    lineage = mock_lineage([])
+    df = spark.createDataFrame(mock_table_data_filldown, schema=mock_table_schema_filldown)
+
+    # Cleanup the mock data
+    df = transform_filldown(df, [ { 'field': 'policyline' } ], mock_args, lineage)
+
+    # Call the function to test
+    df = transform_rownumber(df, [ { 'field': 'policy_line_row_number', 'partition': [ 'policyline' ] } ], mock_args, lineage)
+    assert 'policy_line_row_number' in df.columns
+    assert df.filter('`policy_line_row_number` is null').count() == 0
+
+    # Test first partition
+    assert df.filter('`policyline` = "policyline1"'). \
+        agg({'policy_line_row_number': 'max'}).first()['max(policy_line_row_number)'] == 3
+
+    # Test second partition
+    assert df.filter('`policyline` = "policyline2"'). \
+        agg({'policy_line_row_number': 'max'}).first()['max(policy_line_row_number)'] == 2

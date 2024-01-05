@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT-0
 from pyspark.sql.dataframe import DataFrame
 from pyspark.sql.functions import col, to_date, to_timestamp, regexp_extract, concat_ws, regexp_replace, initcap
+from pyspark.sql.types import StringType
 
 def transform_date(df: DataFrame, date_formats: list, args: dict, lineage, *extra):
     """Convert specified date fields to ISO format based on known input format
@@ -186,12 +187,18 @@ def transform_currency(df: DataFrame, currency_formats: list, args: dict, lineag
     for conversion in currency_formats:
         sourcefield = conversion.get('source', conversion['field'])
         decimal_format = conversion.get('format', '16,2')
-        if conversion.get('euro', False):
-            # Decimal = ,  Thousands = .
-            new_column = regexp_replace(regexp_replace(sourcefield, r'[^\-\d,-]+', ''), r',', '.')
+
+        if df.schema[sourcefield].dataType is not StringType():
+            # Skip regex replace with non-strings so we do not corrupt values
+            new_column = col(sourcefield)
         else:
-            # Decimal = .  Thousands = ,
-            new_column = regexp_replace(sourcefield, r'[^\-\d\.]+', '')
+            if conversion.get('euro', False):
+                # Decimal = ,  Thousands = .
+                new_column = regexp_replace(regexp_replace(sourcefield, r'[^\-\d,-]+', ''), r',', '.')
+            else:
+                # Decimal = .  Thousands = ,
+                new_column = regexp_replace(sourcefield, r'[^\-\d\.]+', '')
+
         cols_map.update({
             conversion['field']: new_column.cast(f'Decimal({decimal_format})')
         })
