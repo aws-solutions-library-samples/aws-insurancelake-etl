@@ -37,7 +37,7 @@ SELECT
 
 FROM
   syntheticgeneraldata.policydata
-sLEFT OUTER JOIN
+LEFT OUTER JOIN
   syntheticgeneraldata.claimdata
   ON syntheticgeneraldata.policydata.policynumber = syntheticgeneraldata.claimdata.policynumber
   AND syntheticgeneraldata.policydata.startdate = syntheticgeneraldata.claimdata.startdate
