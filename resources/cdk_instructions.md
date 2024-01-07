@@ -90,7 +90,45 @@ command.
 
 ---
 
-## Clean-up Instructions - Infrastructure
+## Clean-up Workflow-created Resources
+
+1. Use the `etl_cleanup.py` script to clear the S3 buckets, Glue Data Catalog entries, logs, and DynamoDB tables:
+   ```bash
+   AWS_DEFAULT_REGION=us-east-2 resources/etl_cleanup.py --mode allbuckets
+   ```
+
+### Clean-up ETL Stacks
+
+1. Delete stacks using the command ```cdk destroy --all```. When you see the following text, enter **y**, and press enter/return.
+
+   ```bash
+   Are you sure you want to delete: TestInsuranceLakeEtlPipeline, ProdInsuranceLakeEtlPipeline, DevInsuranceLakeEtlPipeline (y/n)?
+   ```
+
+   Note: This operation deletes stacks only in central deployment account
+
+1. To delete stacks in **development** account, log onto Dev account, go to AWS CloudFormation console and delete the following stacks in the order listed:
+
+   1. Dev-DevInsuranceLakeEtlAthenaHelper
+   1. Dev-DevInsuranceLakeEtlStepFunctions
+   1. Dev-DevInsuranceLakeEtlGlue
+   1. Dev-DevInsuranceLakeEtlDynamoDb
+
+1. To delete stacks in **test** account, log onto Dev account, go to AWS CloudFormation console and delete the following stacks in the order listed:
+
+   1. Test-DevInsuranceLakeEtlAthenaHelper
+   1. Test-TestInsuranceLakeEtlStepFunctions
+   1. Test-TestInsuranceLakeEtlGlue
+   1. Test-TestInsuranceLakeEtlDynamoDb
+
+1. To delete stacks in **prod** account, log onto Dev account, go to AWS CloudFormation console and delete the following stacks in the order listed:
+
+   1. Prod-DevInsuranceLakeEtlAthenaHelper
+   1. Prod-ProdInsuranceLakeEtlStepFunctions
+   1. Prod-ProdInsuranceLakeEtlGlue
+   1. Prod-ProdInsuranceLakeEtlDynamoDb
+
+## Clean-up Infrastructure Stacks
 
 1. Delete stacks using the command ```cdk destroy --all```. When you see the following text, enter **y**, and press enter/return.
 
@@ -127,37 +165,3 @@ command.
 1. **Optional:**
 
    1. If you are not using AWS CDK for other purposes, you can also remove ```CDKToolkit``` stack in each target account. For more details refer to [AWS CDK Toolkit](https://docs.aws.amazon.com/cdk/latest/guide/cli.html)
-
-   1. Note: The asset S3 bucket has a retention policy and must be removed manually.
-
-
-### Clean-up - ETL
-
-1. Delete stacks using the command ```cdk destroy --all```. When you see the following text, enter **y**, and press enter/return.
-
-   ```bash
-   Are you sure you want to delete: TestInsuranceLakeEtlPipeline, ProdInsuranceLakeEtlPipeline, DevInsuranceLakeEtlPipeline (y/n)?
-   ```
-
-   Note: This operation deletes stacks only in central deployment account
-
-1. To delete stacks in **development** account, log onto Dev account, go to AWS CloudFormation console and delete the following stacks:
-
-   1. Dev-DevInsuranceLakeEtlDynamoDb
-   1. Dev-DevInsuranceLakeEtlGlue
-   1. Dev-DevInsuranceLakeEtlStepFunctions
-   1. Dev-DevInsuranceLakeEtlAthenaHelper
-
-1. To delete stacks in **test** account, log onto Dev account, go to AWS CloudFormation console and delete the following stacks:
-
-   1. Test-TestInsuranceLakeEtlDynamoDb
-   1. Test-TestInsuranceLakeEtlGlue
-   1. Test-TestInsuranceLakeEtlStepFunctions
-   1. Test-DevInsuranceLakeEtlAthenaHelper
-
-1. To delete stacks in **prod** account, log onto Dev account, go to AWS CloudFormation console and delete the following stacks:
-
-   1. Prod-ProdInsuranceLakeEtlDynamoDb
-   1. Prod-ProdInsuranceLakeEtlGlue
-   1. Prod-ProdInsuranceLakeEtlStepFunctions
-   1. Prod-DevInsuranceLakeEtlAthenaHelper

@@ -75,7 +75,7 @@ while True:
 		# These are automatically added exports that we do not have a mapping for
 		if 'GlueScriptsTemporaryBucket' in export['Name']:
 			buckets.append(export['Value'])
-		if args.mode == 'allbuckets' and 'GlueScriptsBucket' in export['Name']:
+		if args.mode == 'allbuckets' and 'GlueScriptsBucket' in export['Name'] and 'Arn' not in export['Name']:
 			buckets.append(export['Value'])
 	if 'NextToken' in response:
 		response = cf.list_exports(nextToken=response['NextToken'])
@@ -85,7 +85,7 @@ while True:
 
 if not buckets and not dynamodb_tables:
 	print('No Cloudformation exports found for S3 buckets or DynamoDB tables; something is probably wrong (check account and region)')
-	exit(1)
+	sys.exit(1)
 
 
 print ('Emptying Collect/Cleanse/Consume/Glue S3 buckets...')
