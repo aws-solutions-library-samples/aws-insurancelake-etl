@@ -13,6 +13,7 @@
 |[combinecolumns](#combinecolumns)	|Add column to DataFrame using format string and source columns	|
 |[filename](#filename)	|Add column in DataFrame based on regexp group match pattern on the filename argument to the Glue job	|
 |[filldown](#filldown)  |Fill starting column value down the columns for all null values until the next non-null    |
+|[rownumber](#rownumber)  |Adds row number column to rows based on a partition column list    |
 |[filterrows](#filterrows)	|Filter out rows based on standard SQL WHERE statement	|
 |[flipsign](#flipsign)	|Flip the sign of a numeric column in a Spark DataFrame, optionally in a new column	|
 |[literal](#literal)	|Add column to DataFrame with static/literal value supplied in specification	|
@@ -232,7 +233,7 @@ Add column in DataFrame based on regexp group match pattern on the filename argu
 
 - Only one (the first) match group will be used per specification block. For multiple groups, use multiple specification blocks and shift the parenthesis.
 
-- Use the ```required``` parameter to optionally halt the workflow if the pattern is not matched. Without ```required```, an unmatched group will be added as a null value string column.
+- Use the `required` parameter to optionally halt the workflow if the pattern is not matched. Without `required`, an unmatched group will be added as a null value string column.
 
 ```json
 "filename": [
@@ -256,7 +257,7 @@ Fill starting column value down the columns for all null values until the next n
 
 - This function is useful for replacing null values created by pivot tables in Excel that have category headers inline with only the first row of data. This will normalize the data ensuring that the headers are on all rows.
 
-- Specify ```sort``` to order the data prior to filling down. Note that this will change the sort order of the data for subsequent transforms.
+- Specify `sort` to order the data prior to filling down. Note that this will change the sort order of the data for subsequent transforms.
 
 ```json
 "filldown": [
@@ -265,7 +266,27 @@ Fill starting column value down the columns for all null values until the next n
     },
     {
         "field": "subcategory",
-        "sort": "timestamp"
+        "sort": [ "timestamp" ]
+    }
+]
+```
+
+### rownumber
+Adds row number column to rows based on an optional partition column list, and optional sort column list. Use this transform to add row numbers, to index rows within categories, or to enumerate possible duplicate rows based on primary keys.
+
+- When specifying the partition and sort options, always use a JSON list, even if there is a single column.
+
+- Specifying a `sort` will change the sort order of the data for subsequent transforms.
+
+```json
+"rownumber": [
+    {
+        "field": "row_number"
+    },
+    {
+        "field": "policy_month_index",
+        "partition": [ "policynumber" ],
+        "sort": [ "start_date" ]
     }
 ]
 ```
@@ -399,7 +420,7 @@ Important Note: if a column already exists, a duplicate column will be created, 
 Multiply two or more columns together in a new or existing column
 
 - Use for calculating premium splits
-- ```empty_value``` parameter is optional and defaults to a value of 1.
+- `empty_value` parameter is optional and defaults to a value of 1.
 
 ```json
 "multiplycolumns": [
@@ -438,7 +459,7 @@ Redact specified column values using supplied redaction string
 ### tokenize
 Replace specified column values with hash and store original value in DynamoDB table
 
-- The ```<environment>-insurancelake-etl-hash-values``` DynamoDB table will be used for storage of all tokens. Since the hashing is deterministic, each value will only be stored once, regardless of how many columns contain the value.
+- The `<environment>-insurancelake-etl-hash-values` DynamoDB table will be used for storage of all tokens. Since the hashing is deterministic, each value will only be stored once, regardless of how many columns contain the value.
 
 ```json
 "tokenize": [
@@ -457,9 +478,9 @@ Calculate monthly earned premium
 
 - The `period_start_date` and `period_end_date` parameters indicate the date columns for determining the earned premium calculation period for each row of data. These are usually the first and last day of the month, and are created by the [expandpolicymonths](#expandpolicymonths) transform.
 
-- The ```byday``` parameter selects the calculation method. If true, earned premium will be proportional to the number of days in the reporting period. If false, earned premium will be divided evenly across all active policy months.
+- The `byday` parameter selects the calculation method. If true, earned premium will be proportional to the number of days in the reporting period. If false, earned premium will be divided evenly across all active policy months.
 
-- For the `policy_effective_date` and ```policy_expiration_date``` parameters indicate the date columns for determining the lifetime of the policy. If ```byday``` is true, they will be used to pro-rate the earned premium for the first and last months of the policy. If ```byday``` is false, they will be used to identify the number of active policy months (always a whole number).
+- For the `policy_effective_date` and `policy_expiration_date` parameters indicate the date columns for determining the lifetime of the policy. If `byday` is true, they will be used to pro-rate the earned premium for the first and last months of the policy. If `byday` is false, they will be used to identify the number of active policy months (always a whole number).
 
 ```json
 "earnedpremium": [
@@ -492,13 +513,13 @@ Add a number of months to a specified date to get an ending/expiration date
 ### expandpolicymonths
 Expand dataset to one row for each month the policy is active with a calculated earned premium
 
-- Use this transform to convert a list of insurance policies (one row per policy) to a list of active policy months (one row per month per policy). This transform will change the shape/size of the input data. However, it is possible to recover the original number of rows using a simple WHERE statement (e.g. ```WHERE PolicyMonthIndex = 1```).
+- Use this transform to convert a list of insurance policies (one row per policy) to a list of active policy months (one row per month per policy). This transform will change the shape/size of the input data. However, it is possible to recover the original number of rows using a simple WHERE statement (e.g. `WHERE PolicyMonthIndex = 1`).
 
-- Transform requires two date field parameters as inputs: ```policy_effective_date``` and ```policy_expiration_date```. If either of the date field values are null, the policy row will not be expanded to any additional rows and will have null values for the policy month fields.
+- Transform requires two date field parameters as inputs: `policy_effective_date` and `policy_expiration_date`. If either of the date field values are null, the policy row will not be expanded to any additional rows and will have null values for the policy month fields.
 
-- Based on the ```policy_month_start_field```, ```policy_month_end_field```, and ```policy_month_index``` parameters, the transform will add colums to each row containing the first day of the month, the last day of the month, and the policy month number.
+- Based on the `policy_month_start_field`, `policy_month_end_field`, and `policy_month_index` parameters, the transform will add colums to each row containing the first day of the month, the last day of the month, and the policy month number.
 
-- Optionally use the ```uniqueid``` parameter to specify a field name to add with a generated GUID, unique to each policy.
+- Optionally use the `uniqueid` parameter to specify a field name to add with a generated GUID, unique to each policy.
 
 ```json
 "expandpolicymonths": {
@@ -514,7 +535,7 @@ Expand dataset to one row for each month the policy is active with a calculated 
 ### policymonths
 Calculate number of months between policy start/end dates
 
-- Optionally specify the ```normalized``` parameter as ```true``` to always return a whole number of months. If ommited ```normalized``` defaults to ```false``` and the number of months returned is a fractional number based on the exact number of days between the effective and expiration dates.
+- Optionally specify the `normalized` parameter as `true` to always return a whole number of months. If ommited `normalized` defaults to `false` and the number of months returned is a fractional number based on the exact number of days between the effective and expiration dates.
 
 ```json
 "policymonths": [
