@@ -5,6 +5,8 @@
 
 		"allow_schema_change": "permissive",
 
+		"strict_schema_mapping": true,
+
 		"csv": {
 			"header": true
 		},
@@ -13,14 +15,20 @@
 			"header": true
 		},
 
-		"excel": {
-				"sheet_names": [ "Sheet1" ],
-				"data_address": "A2",
-				"header": true,
-				"password": ""
-		},
+        "json": {
+            "multiline": true
+        },
 
-		"fixed": {}
+		"fixed": {},
+
+		"parquet": {},
+
+		"excel": {
+			"sheet_names": [ "Sheet1" ],
+			"data_address": "A2",
+			"header": true,
+			"password": ""
+		}
 
 	},
 
@@ -101,7 +109,9 @@
 			"EarnedPremium": "decimal(10,2)",
 			"PrimaryKeyId": "bigint",
 			"GrowingCount": "bigint",
-			"PolicyKey": "string"
+			"PolicyKey": "string",
+			"notes_struct": "json",
+            "policyaddress": "struct<addressline1:string,addressline2:string,city:string,country:string,county:string,displayname:string,id:string,policyaddress:boolean,postalcode:string,state:struct<code:string,name:string>>"
 		},
 
 		"implieddecimal": [
@@ -286,12 +296,31 @@
 
 		"filterrows": [
 			{
+				"description": "Claim number or file number is required",
 				"condition": "claim_number is not null or file_number is not null"
 			},
 			{
+				"description": "Period start dates are valid dates",
 				"condition": "`startdate` >= cast('1970-01-01' as date)"
 			}
-		]
+		],
+
+        "jsonexpandmap": [
+            {
+                "field": "activities",
+                "index_field": "activity_index",
+                "key_field": "activity_id"
+
+            }
+        ],
+
+        "jsonexpandarray": [
+            {
+                "field": "policyaddress",
+                "source": "policyaddresses",
+                "index_field": "policyaddress_index"
+            }
+        ]
 
 	}
 }

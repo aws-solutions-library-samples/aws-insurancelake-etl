@@ -116,11 +116,13 @@ class ImportedVpc():
         )
 
         # Some resources require specific subnets to access the VPC, such a Glue Connections
-        for az_number in range(len(vpc_azs)):
-            self.subnets.append(ec2.Subnet.from_subnet_attributes(
+        self.subnets = [
+            ec2.Subnet.from_subnet_attributes(
                 stack,
                 f'ImportedSubnet{logical_id_suffix}{az_number + 1}',
                 subnet_id=vpc_subnet_ids[az_number],
                 availability_zone=vpc_azs[az_number],
                 route_table_id=vpc_route_tables[az_number]
-            ))
+            )
+            for az_number in range(len(vpc_azs))
+        ]

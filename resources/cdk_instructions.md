@@ -68,7 +68,7 @@ command.
 
  ---
 
- ## Visual Stodio Code Debugging
+ ## Visual Studio Code Debugging
 
  To configure Visual Studio Code for debugging CDK, use the following launch configuration in `launch.json`:
 
@@ -97,71 +97,68 @@ command.
    AWS_DEFAULT_REGION=us-east-2 resources/etl_cleanup.py --mode allbuckets
    ```
 
-### Clean-up ETL Stacks
+   You can also manually empty all six InsuranceLake S3 buckets (cleanse, collect, consume, etl-scripts, glue_temp, access-logs) before cleaning up the stacks (below).
 
-1. Delete stacks using the command ```cdk destroy --all```. When you see the following text, enter **y**, and press enter/return.
+   **Important:** If you want to retain Glue Data Catalog entries, logs, and S3 bucket contents, **do not run the script above**. Follow the instructions below to remove all stack-created resources except the S3 buckets (which will fail due to them containing objects). The buckets follow the defined retention policy in [s3_bucket_zones_stack.py](https://github.com/aws-samples/aws-insurancelake-infrastructure/blob/main/lib/s3_bucket_zones_stack.py#L43).
+
+## Clean-up ETL Stacks
+
+1. Delete stacks using the command `cdk destroy --all`. When you see the following text, enter **y**, and press enter/return.
 
    ```bash
-   Are you sure you want to delete: TestInsuranceLakeEtlPipeline, ProdInsuranceLakeEtlPipeline, DevInsuranceLakeEtlPipeline (y/n)?
+   Are you sure you want to delete: Test-InsuranceLakeEtlPipeline, Prod-InsuranceLakeEtlPipeline, Dev-InsuranceLakeEtlPipeline (y/n)?
    ```
 
-   Note: This operation deletes stacks only in central deployment account
+   **Note:** This operation deletes the pipeline stacks only in the central deployment account
 
 1. To delete stacks in **development** account, log onto Dev account, go to AWS CloudFormation console and delete the following stacks in the order listed:
 
-   1. Dev-DevInsuranceLakeEtlAthenaHelper
-   1. Dev-DevInsuranceLakeEtlStepFunctions
-   1. Dev-DevInsuranceLakeEtlGlue
-   1. Dev-DevInsuranceLakeEtlDynamoDb
+   **Note:** For each environment below, be sure to delete the stacks in the order they are listed, so that stack dependencies do not prevent deletion
+
+   1. Dev-InsuranceLakeEtlAthenaHelper
+   1. Dev-InsuranceLakeEtlStepFunctions
+   1. Dev-InsuranceLakeEtlGlue
+   1. Dev-InsuranceLakeEtlDynamoDb
 
 1. To delete stacks in **test** account, log onto Dev account, go to AWS CloudFormation console and delete the following stacks in the order listed:
 
-   1. Test-DevInsuranceLakeEtlAthenaHelper
-   1. Test-TestInsuranceLakeEtlStepFunctions
-   1. Test-TestInsuranceLakeEtlGlue
-   1. Test-TestInsuranceLakeEtlDynamoDb
+   1. Test-InsuranceLakeEtlAthenaHelper
+   1. Test-InsuranceLakeEtlStepFunctions
+   1. Test-InsuranceLakeEtlGlue
+   1. Test-InsuranceLakeEtlDynamoDb
 
 1. To delete stacks in **prod** account, log onto Dev account, go to AWS CloudFormation console and delete the following stacks in the order listed:
 
-   1. Prod-DevInsuranceLakeEtlAthenaHelper
-   1. Prod-ProdInsuranceLakeEtlStepFunctions
-   1. Prod-ProdInsuranceLakeEtlGlue
-   1. Prod-ProdInsuranceLakeEtlDynamoDb
+   1. Prod-InsuranceLakeEtlAthenaHelper
+   1. Prod-InsuranceLakeEtlStepFunctions
+   1. Prod-InsuranceLakeEtlGlue
+   1. Prod-InsuranceLakeEtlDynamoDb
 
 ## Clean-up Infrastructure Stacks
 
-1. Delete stacks using the command ```cdk destroy --all```. When you see the following text, enter **y**, and press enter/return.
+1. Delete stacks using the command `cdk destroy --all`. When you see the following text, enter **y**, and press enter/return.
 
    ```bash
    Are you sure you want to delete: TestInsuranceLakeInfrastructurePipeline, ProdInsuranceLakeInfrastructurePipeline, DevInsuranceLakeInfrastructurePipeline (y/n)?
    ```
 
-   Note: This operation deletes stacks only in central deployment account
+   Note: This operation deletes the pipeline stacks only in the central deployment account
 
 1. To delete stacks in **development** account, log onto the Dev account, go to AWS CloudFormation console and delete the following stacks:
 
-   1. Dev-DevInsuranceLakeInfrastructureVpc
-   1. Dev-DevInsuranceLakeInfrastructureS3BucketZones
-
-   **Note:**
-    1. Deletion of **Dev-DevInsuranceLakeInfrastructureS3BucketZones** will delete the S3 buckets (collect, cleanse, and consume). This behavior can be changed by modifying the retention policy in [s3_bucket_zones_stack.py](lib/s3_bucket_zones_stack.py#L38)
+   1. Dev-InsuranceLakeInfrastructureVpc
+   1. Dev-InsuranceLakeInfrastructureS3BucketZones
 
 1. To delete stacks in **test** account, log onto Dev account, go to AWS CloudFormation console and delete the following stacks:
 
-   1. Test-TestInsuranceLakeInfrastructureVpc
-   1. Test-TestInsuranceLakeInfrastructureS3BucketZones
-
-   **Note:**
-      1. The S3 buckets (raw, conformed, and purpose-built) have retention policies attached and must be removed manually when they are no longer needed.
+   1. Test-InsuranceLakeInfrastructureVpc
+   1. Test-InsuranceLakeInfrastructureS3BucketZones
 
 1. To delete stacks in **prod** account, log onto Dev account, go to AWS CloudFormation console and delete the following stacks:
 
-   1. Prod-ProdInsuranceLakeInfrastructureVpc
-   1. Prod-ProdInsuranceLakeInfrastructureS3BucketZones
+   1. Prod-InsuranceLakeInfrastructureVpc
+   1. Prod-InsuranceLakeInfrastructureS3BucketZones
 
-   **Note:**
-      1. The S3 buckets (raw, conformed, and purpose-built) have retention policies attached and must be removed manually when they are no longer needed.
+## Clean-up CDK Bootstrap (optional)
 
-1. **Optional:**
-
-   1. If you are not using AWS CDK for other purposes, you can also remove ```CDKToolkit``` stack in each target account. For more details refer to [AWS CDK Toolkit](https://docs.aws.amazon.com/cdk/latest/guide/cli.html)
+If you are not using AWS CDK for other purposes, you can also remove `CDKToolkit` stack in each target account. For more details refer to [AWS CDK Toolkit](https://docs.aws.amazon.com/cdk/latest/guide/cli.html)

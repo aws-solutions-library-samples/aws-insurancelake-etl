@@ -93,13 +93,15 @@ The above will create a git hook which will validate code prior to commits. Conf
       main()
    ```
 
-* Due to their complexity InsuranceLake Glue jobs are not editable in the Glue Visual Editor. Glue job development and testing is best done in [Glue Notebooks](https://docs.aws.amazon.com/glue/latest/dg/notebook-getting-started.html) or a local Python-enabled IDE in the [Glue Docker container](https://aws.amazon.com/blogs/big-data/developing-aws-glue-etl-jobs-locally-using-a-container).
+* Due to their complexity InsuranceLake Glue jobs are not editable in the Glue Visual Editor. Glue job development and testing is best done in [Glue Notebooks](https://docs.aws.amazon.com/glue/latest/dg/notebook-getting-started.html) or a local Python-enabled IDE in a Glue Docker container. Documentation on setting up a Glue Docker container can be found in the following AWS blogs:
+   * [Developing AWS Glue ETL jobs locally using a container](https://aws.amazon.com/blogs/big-data/developing-aws-glue-etl-jobs-locally-using-a-container)
+   * [Develop and test AWS Glue version 3.0 and 4.0 jobs locally using a Docker container](https://aws.amazon.com/blogs/big-data/develop-and-test-aws-glue-version-3-0-jobs-locally-using-a-docker-container)
 
 * The majority of InsuranceLake operations are done using Spark-native DataFrames because conversions to Glue DynamicFrames and Pandas DataFrames come with a cost. InsuranceLake was also designed to be as portable as possible to other Spark environments (with the exception of Glue Data Quality). **We recommend you follow the practice of avoiding DataFrame conversions in your Glue jobs**.
 
 * When there is functionality needed from Pandas that is not available in Spark, there are three methods to consider:
    - [Pandas-on-Spark DataFrame](https://spark.apache.org/docs/latest/api/python/user_guide/pandas_on_spark/pandas_pyspark.html#pyspark)
-      Using the `DataFrame.pandas_api()` is performant because the data and operations are distributed. Avoid operations like `DataFrame.to_numpy()` that that require the data to be collected on the driver (non-distributed). The Pandas API on Spark does not target 100% compatibility, so you may experience errors running your workflow.
+      Using the `DataFrame.pandas_api()` is performant because the data and operations are distributed. Avoid operations like `DataFrame.to_numpy()` that require the data to be collected on the driver (non-distributed). The Pandas API on Spark does not target 100% compatibility, so you may experience errors running your workflow.
 
    - [Pandas UDF](https://spark.apache.org/docs/3.1.1/api/python/reference/api/pyspark.sql.functions.pandas_udf.html)
       Pandas UDFs are user defined functions that are executed by Spark using Arrow to transfer data and Pandas to work with the data. When used in combination with `withColumn` or `select`, a Pandas UDF can perform Pandas library vectorized operations in a distributed manner on individual columns supplied as arguments.

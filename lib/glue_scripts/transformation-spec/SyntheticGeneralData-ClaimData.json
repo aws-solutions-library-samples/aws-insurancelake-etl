@@ -1,4 +1,8 @@
 {
+	"input_spec": {
+		"table_description": "Synthetic General Insurance Claim Data"
+	},
+
 	"transform_spec": {
 		"decimal": [
 			{

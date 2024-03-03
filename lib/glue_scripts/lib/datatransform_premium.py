@@ -138,7 +138,7 @@ def transform_expandpolicymonths(df: DataFrame, expandpremium_spec: dict, args: 
     # Use posexplode_outer to expand array of months to one row per month with an index column
     # Syntax reference: https://issues.apache.org/jira/browse/SPARK-20174
     df = df.selectExpr('*',
-        f"posexplode_outer(expandpolicymonths_transform_policy_months_list) "
+        "posexplode_outer(expandpolicymonths_transform_policy_months_list) "
         f"as ({expandpremium_spec['policy_month_index']}, `{expandpremium_spec['policy_month_start_field']}`)"
     ).drop('expandpolicymonths_transform_policy_months_list')
 

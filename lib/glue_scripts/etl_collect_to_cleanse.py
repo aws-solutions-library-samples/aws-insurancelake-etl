@@ -20,8 +20,10 @@ from glue_catalog_helpers import upsert_catalog_table, clean_column_names, gener
 from custom_mapping import custommapping
 from datatransform_typeconversion import *
 from datatransform_dataprotection import *
-from datatransform_regex import *
+from datatransform_stringmanipulation import *
 from datatransform_lookup import *
+from datatransform_structureddata import *
+from datatransform_misc import *
 from datatransform_premium import *
 from datalineage import DataLineageGenerator
 from dataquality_check import DataQualityCheck
@@ -134,7 +136,7 @@ def main():
         )
         print('Performed fixed width file load and field mapping')
 
-    elif ext.lower() in [ '.xlsx', '.xls' ]:
+    elif ext.lower() in [ '.xlsx', '.xls', 'xlsm', 'xlm' ]:
         if 'excel' in input_spec:
             sheet_names = input_spec['excel']['sheet_names']
             data_address = input_spec['excel']['data_address']
@@ -167,7 +169,19 @@ def main():
         if 'initial_df' not in locals():
             raise RuntimeError(f'None of sheet names {sheet_names} found in Excel workbook')
 
-    elif ext.lower() == '.parquet':
+    elif ext.lower() in [ '.json', '.jsonl' ]:
+        multiline = False
+        if 'json' in input_spec:
+            multiline = input_spec['json'].get('multiline', False)
+
+        initial_df = spark.read.format('json') \
+            .option('prefersDecimal', True) \
+            .option('allowComments', True) \
+            .option('multiLine', multiline) \
+            .option('mode', 'PERMISSIVE') \
+            .load(source_path)
+
+    elif ext.lower() == '.parquet' or 'parquet' in input_spec:
         # TODO: Support partitioned Parquet folder structures (read correctly and repartition later)
         initial_df = spark.read.format('parquet').load(source_path)
 
@@ -201,13 +215,16 @@ def main():
     if 'fixed' not in input_spec:
         # Perform schema mapping if mapping data exists
         if mapping_data:
-            initial_df = custommapping(initial_df, mapping_data, args, lineage)
+            initial_df = custommapping(initial_df, mapping_data, args, lineage,
+                input_spec.get('strict_schema_mapping'))
             print('Performed field mapping')
         else:
             generated_map_path = args['TempDir'] + '/' + source_key_dashes + '.csv'
             print(f'No mapping found, generated recommended mapping to: {generated_map_path}')
             initial_df, generated_mapping_data = clean_column_names(initial_df)
             put_s3_object(generated_map_path, generated_mapping_data)
+            # Log generated mapping data as lineage here
+            lineage.update_lineage(initial_df, args['source_key'], 'mapping', map=generated_mapping_data)
 
     initial_df.cache()
     totransform_df = dataquality.run_data_quality(initial_df, rules_json_data, 'before_transform')

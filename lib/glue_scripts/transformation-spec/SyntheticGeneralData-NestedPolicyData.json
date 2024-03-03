@@ -1,0 +1,45 @@
+{
+	"transform_spec": {
+
+		"date": [
+			{
+				"field": "effectivedate",
+				"format": "yyyy-MM-dd"
+			},
+			{
+				"field": "expirationdate",
+				"format": "yyyy-MM-dd"
+			}
+		],
+
+		"jsonexpandarray": [
+			{
+				"field": "insuredcontactemail",
+				"source": "insuredcontactemails",
+				"index_field": "insuredcontactemailindex"
+			}
+		],
+
+		"jsonexpandmap": [
+			{
+				"field": "insuredaddress",
+				"source": "insuredaddresses",
+				"index_field": "insuredaddressindex",
+				"key_field": "insuredaddresstype"
+			}
+		],
+
+		"changetype": {
+			"insuredaddresses": "json",
+			"producer": "struct<possible_channels:array<string>,location:string,producer_name:string,profit_center_id:bigint,weight:decimal(10,1)>"
+		},
+
+		"expandpolicymonths": {
+			"policy_month_start_field": "startdate",
+			"policy_month_end_field": "enddate",
+			"policy_effective_date": "effectivedate",
+			"policy_expiration_date": "expirationdate",
+			"policy_month_index": "policymonthindex"
+		}
+	}
+}

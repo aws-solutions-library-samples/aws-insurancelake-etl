@@ -46,16 +46,17 @@ def record_etl_job_run(
     """
     now = datetime.now(tz=dateutil.tz.gettz('UTC'))
     record_time = now.strftime('%Y-%m-%d %H:%M:%S.%f')
-    item = {}
-    item['execution_id'] = execution_id
-    item['sfn_execution_name'] = execution_name
-    item['sfn_arn'] = sfn_arn
-    item['sfn_input'] = execution_input
-    item['job_latest_status'] = 'STARTED'
-    item['job_start_date'] = record_time
-    item['job_last_updated_timestamp'] = record_time
-    item['principal_id'] = principal_id
-    item['source_ipaddress'] = source_ipaddress
+    item = {
+        'execution_id': execution_id,
+        'sfn_execution_name': execution_name,
+        'sfn_arn': sfn_arn,
+        'sfn_input': execution_input,
+        'job_latest_status': 'STARTED',
+        'job_start_date': record_time,
+        'job_last_updated_timestamp': record_time,
+        'principal_id': principal_id,
+        'source_ipaddress': source_ipaddress,
+    }
 
     dynamo_client = boto3.resource('dynamodb')
     try:
@@ -68,7 +69,7 @@ def record_etl_job_run(
     print('Job audit record insert completed successfully')
 
 
-def lambda_handler(event: dict, context: dict) -> dict:
+def lambda_handler(event: dict, _) -> dict:
     """Lambda function's entry point. This function receives a PutObject event
     from S3, prepares Step Function State machine inputs, logs the job start in
     DynamoDB table, and initiates the State Machine
@@ -77,8 +78,6 @@ def lambda_handler(event: dict, context: dict) -> dict:
     ----------
     event
         S3 PutObject event dictionary
-    context
-        Lambda context dictionary
 
     Returns
     -------

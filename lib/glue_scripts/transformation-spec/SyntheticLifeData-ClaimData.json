@@ -1,4 +1,8 @@
 {
+	"input_spec": {
+		"table_description": "Synthetic Life Insurance Claim Data"
+	},
+
 	"transform_spec": {
 		"date": [
 		   	{

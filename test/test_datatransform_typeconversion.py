@@ -5,7 +5,8 @@ import sys
 from decimal import Decimal
 
 try:
-    from pyspark.sql.types import DateType, StringType, LongType, DecimalType, IntegerType
+    from pyspark.sql.types import (
+        DateType, StringType, LongType, DecimalType, IntegerType, StructType, StructField)
     from test.glue_job_mocking_helper import *
     from lib.glue_scripts.lib.datatransform_typeconversion import *
 except ModuleNotFoundError as e:
@@ -28,6 +29,20 @@ mock_field = { 'Name': 'test_column', 'Type': 'string' }
 mock_table_columns = [ 'id', 'date' ]
 mock_table_data = [ ( 1, '1/1/2022' ), ( 2, '12/31/2022' ) ]
 mock_table_schema = 'id int, date string'
+
+mock_nested_table_data = [
+        (('James',None,'Smith'),),
+        (('Anna','Rose',''),),
+        (('Julia','','Williams'),),
+]
+
+mock_nested_table_schema = StructType([
+    StructField('name', StructType([
+         StructField('firstname', StringType(), True),
+         StructField('middlename', StringType(), True),
+         StructField('lastname', StringType(), True)
+         ])),
+])
 
 
 def test_transform_date_converts_schema():
@@ -60,7 +75,7 @@ def test_transform_currency_converts_schema():
     df = spark.createDataFrame(mock_currency_data, schema=mock_currency_schema)
     assert df.schema['money'].dataType == StringType()
     df = transform_currency(df, [ { 'field': 'money', 'format': '10,2' } ], mock_args, lineage)
-    assert str(df.schema['money'].dataType) == 'DecimalType(10,2)'
+    assert df.schema['money'].dataType == DecimalType(10,2)
 
 def test_transform_currency_converts_data():
     mock_currency_schema = 'money string'
@@ -127,3 +142,10 @@ def test_transform_changetype_converts_to_string():
     df = transform_changetype(df, { 'amount': 'string' }, mock_args, lineage)
     assert df.schema['amount'].dataType == StringType()
     assert df.filter('`amount` = "123456"').count() == 1
+
+def test_transform_changetype_converts_struct_to_jsonstring():
+    lineage = mock_lineage([])
+    df = spark.createDataFrame(mock_nested_table_data, schema=mock_nested_table_schema)
+    assert str(df.schema['name'].dataType).startswith('StructType')
+    df = transform_changetype(df, { 'name': 'json' }, mock_args, lineage)
+    assert df.schema['name'].dataType == StringType()

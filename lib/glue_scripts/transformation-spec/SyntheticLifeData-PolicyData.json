@@ -1,4 +1,8 @@
 {
+	"input_spec": {
+		"table_description": "Synthetic Life Insurance Policy Data"
+	},
+
 	"transform_spec": {
 		"columnfromcolumn": [
 			{

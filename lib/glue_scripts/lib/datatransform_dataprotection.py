@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MIT-0
 import hashlib
 from pyspark.context import SparkContext
-from pyspark.sql.functions import udf, lit
+from pyspark.sql.functions import udf, lit, col
 from pyspark.sql.dataframe import DataFrame
 from pyspark.sql.types import StructType, StructField, StringType
 from awsglue.context import GlueContext
@@ -31,10 +31,15 @@ def transform_hash(df: DataFrame, hash_fields: list, args: dict, lineage, *extra
 
     cols_map = {}
     for hash_field in hash_fields:
+        if hash_field not in df.columns:
+            # Raise error if field is missing to prevent unexpected schema changes from exposing
+            # sensitive data
+            raise RuntimeError(f"Field '{hash_field}' not found in incoming data")
+
         cols_map.update({ hash_field: tohash(hash_field) })
 
     # No need to unpersist as there is only one reference to the dataframe and it is returned
-    lineage.update_lineage(df, args['source_key'], 'hashing', transform=hash_fields)
+    lineage.update_lineage(df, args['source_key'], 'hash', transform=hash_fields)
     return df.withColumns(cols_map)
 
 
@@ -60,6 +65,11 @@ def transform_redact(df: DataFrame, redact_fields: dict, args: dict, lineage, *e
     """
     cols_map = {}
     for redact_field, redact_string in redact_fields.items():
+        if redact_field not in df.columns:
+            # Raise error if field is missing to prevent unexpected schema changes from exposing
+            # sensitive data
+            raise RuntimeError(f"Field '{redact_field}' not found in incoming data")
+
         cols_map.update({ redact_field: lit(redact_string) })
 
     # No need to unpersist as there is only one reference to the dataframe and it is returned
@@ -89,7 +99,6 @@ def transform_tokenize(df_with_values: DataFrame, tokenize_fields: list, args: d
     DataFrame
         pySpark DataFrame with hashing applied
     """
-    # TODO: Reduce number of dataframes used with select() and column aliases
     # TODO: Support hash with salt or composite hash value (improves uniqueness of token data)
 
     tohash = udf(lambda x: hashlib.sha256(str(x).encode('utf-8')).hexdigest())
@@ -119,15 +128,19 @@ def transform_tokenize(df_with_values: DataFrame, tokenize_fields: list, args: d
 
     for tokenize_field in tokenize_fields:
 
+        if tokenize_field not in df_with_hashes.columns:
+            # Raise error if field is missing to prevent unexpected schema changes from exposing
+            # sensitive data
+            raise RuntimeError(f"Field '{tokenize_field}' not found in incoming data")
+
         # Hash specified field and store value in a new column 'hash_key'
         df_with_hashes = df_with_hashes.withColumn('hash_key', tohash(tokenize_field))
 
-        # Select the tokenized column and the hash_key column into a
-        # temp DataFrame (to merge with the token store table)
-        df_token_store_to_merge = df_with_hashes.select(tokenize_field, 'hash_key')
-
-        # In the temp DataFrame, rename the tokenized column to 'raw_data'
-        df_token_store_to_merge.withColumnRenamed(tokenize_field, 'raw_data')
+        # Select the tokenized column renamed to 'raw_data' and the hash_key column into a temp
+        # DataFrame (to merge with the token store table)
+        df_token_store_to_merge = df_with_hashes.select(
+            col(tokenize_field).alias('raw_data'), 'hash_key'
+        )
 
         # Merge these new original values with the existing token_store DataFrame
         token_store_df = token_store_df.union(df_token_store_to_merge)

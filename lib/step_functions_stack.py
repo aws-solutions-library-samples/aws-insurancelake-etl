@@ -106,7 +106,8 @@ class StepFunctionsStack(cdk.Stack):
 
         failure_function_task = stepfunctions_tasks.LambdaInvoke(
             self,
-            f'{target_environment}{self.logical_id_prefix}EtlFailureStatusUpdateTask',
+            f'{target_environment}{self.logical_id_prefix}EtlFailureJobAuditUpdateTask',
+            comment='Update DynamoDB Job Audit Table with failure result and error message',
             lambda_function=status_function,
             retry_on_service_exceptions=True,
             payload=stepfunctions.TaskInput.from_object({'Input.$': '$'}),
@@ -125,7 +126,8 @@ class StepFunctionsStack(cdk.Stack):
 
         success_function_task = stepfunctions_tasks.LambdaInvoke(
             self,
-            f'{target_environment}{self.logical_id_prefix}EtlSuccessStatusUpdateTask',
+            f'{target_environment}{self.logical_id_prefix}EtlSuccessJobAuditUpdateTask',
+            comment='Update DynamoDB Job Audit Table with success result',
             lambda_function=status_function,
             retry_on_service_exceptions=True,
             payload=stepfunctions.TaskInput.from_object({'Input.$': '$'}),
@@ -142,52 +144,24 @@ class StepFunctionsStack(cdk.Stack):
         success_function_task.next(success_task)
         success_task.next(success_state)
 
-        glue_collect_task = stepfunctions_tasks.GlueStartJobRun(
-            self,
-            f'{target_environment}{self.logical_id_prefix}GlueCollectJobTask',
-            glue_job_name=collect_to_cleanse_job.name,
-            comment='Collect to Cleanse data load and transform',
-            arguments=stepfunctions.TaskInput.from_object({
-                # These arguments overlay base arguments from the Glue Job definition
-                '--state_machine_name.$': '$$.StateMachine.Name',
-                '--execution_id.$': '$.execution_id',
-                '--source_key.$': '$.source_key',
+        glue_collect_task = self.get_glue_job_task(
+            'Collect', 'Collect to Cleanse data load and transform',
+            collect_to_cleanse_job.name, failure_function_task,
+            arguments={
                 '--target_database_name.$': '$.target_database_name',
-                '--table_name.$': '$.table_name',
                 '--base_file_name.$': '$.base_file_name',
-                '--p_year.$': '$.p_year',
-                '--p_month.$': '$.p_month',
-                '--p_day.$': '$.p_day',
-            }),
-            integration_pattern=stepfunctions.IntegrationPattern.RUN_JOB,
-            result_path='$.taskresult',
-            output_path='$',
+            },
         )
-        glue_collect_task.add_catch(failure_function_task, result_path='$.taskresult')
 
-        glue_cleanse_task = stepfunctions_tasks.GlueStartJobRun(
-            self,
-            f'{target_environment}{self.logical_id_prefix}GlueCleanseJobTask',
-            glue_job_name=cleanse_to_consume_job.name,
-            comment='Cleanse to Consume data load and transform',
-            arguments=stepfunctions.TaskInput.from_object({
-                # These arguments overlay base arguments from the Glue Job definition
-                '--state_machine_name.$': '$$.StateMachine.Name',
-                '--execution_id.$': '$.execution_id',
-                '--source_key.$': '$.source_key',
+        glue_cleanse_task = self.get_glue_job_task(
+            'Cleanse', 'Cleanse to Consume data load and transform',
+            cleanse_to_consume_job.name, failure_function_task,
+            arguments={
                 '--source_database_name.$': '$.target_database_name',
                 '--target_database_name.$': "States.Format('{}_consume', $.target_database_name)",
-                '--table_name.$': '$.table_name',
                 '--base_file_name.$': '$.base_file_name',
-                '--p_year.$': '$.p_year',
-                '--p_month.$': '$.p_month',
-                '--p_day.$': '$.p_day',
-            }),
-            integration_pattern=stepfunctions.IntegrationPattern.RUN_JOB,
-            result_path='$.taskresult',
-            output_path='$',
+            },
         )
-        glue_cleanse_task.add_catch(failure_function_task, result_path='$.taskresult')
 
         entity_match_choice = stepfunctions.Choice(
             self,
@@ -196,27 +170,13 @@ class StepFunctionsStack(cdk.Stack):
         )
         entity_match_condition = stepfunctions.Condition.boolean_equals('$.entity_match', True)
 
-        glue_entity_match_task = stepfunctions_tasks.GlueStartJobRun(
-            self,
-            f'{target_environment}{self.logical_id_prefix}GlueEntityMatchJobTask',
-            glue_job_name=consume_entity_match_job.name,
-            comment='Consume data Entity Matching',
-            arguments=stepfunctions.TaskInput.from_object({
-                # These arguments overlay and/or override base arguments from the Glue Job definition
-                '--state_machine_name.$': '$$.StateMachine.Name',
-                '--execution_id.$': '$.execution_id',
+        glue_entity_match_task = self.get_glue_job_task(
+            'EntityMatch', 'Consume data Entity Matching',
+            consume_entity_match_job.name, failure_function_task,
+            arguments={
                 '--database_name_prefix.$': '$.target_database_name',
-                '--table_name.$': '$.table_name',
-                '--p_year.$': '$.p_year',
-                '--p_month.$': '$.p_month',
-                '--p_day.$': '$.p_day',
-            }),
-            integration_pattern=stepfunctions.IntegrationPattern.RUN_JOB,
-            result_path='$.taskresult',
-            output_path='$',
+            },
         )
-        glue_entity_match_task.add_catch(failure_function_task, result_path='$.taskresult')
-
 
         machine_definition = glue_collect_task.next(
             glue_cleanse_task.next(
@@ -308,6 +268,63 @@ class StepFunctionsStack(cdk.Stack):
             value=notification_topic.topic_name,
             export_name=self.mappings[NOTIFICATION_TOPIC]
         )
+
+
+    def get_glue_job_task(
+        self,
+        logical_id: str,
+        comment: str,
+        job_name: str,
+        failure_function: stepfunctions.TaskStateBase,
+        arguments: dict = {},
+    ) -> stepfunctions_tasks.GlueStartJobRun:
+
+        glue_job_retry_config = {
+            'backoff_rate': 2,
+            'max_attempts': 2,
+            # 'max_delay': cdk.Duration.seconds(600),
+            'errors': [
+                # Generic Glue exception raised for any downstream resource limitations like throttling
+                'Glue.AWSGlueException',
+                # This exception means the glue concurrent limit was exceeded
+                'Glue.ConcurrentRunsExceededException',
+                # Could be runtime issues that we can retry on
+                'Glue.InternalServiceException',
+                # Resource limitations
+                'Glue.ResourceNotReadyException',
+                # Resource limitations
+                'Glue.ResourceNumberLimitExceededException',
+                # Task step timed out, could be due to wait on other resources
+                'States.Timeout',
+            ],
+        }
+
+        merged_arguments = {
+                # These arguments overlay and/or override base arguments from the Glue Job definition
+                '--state_machine_name.$': '$$.StateMachine.Name',
+                '--execution_id.$': '$.execution_id',
+                '--source_key.$': '$.source_key',
+                '--table_name.$': '$.table_name',
+                '--p_year.$': '$.p_year',
+                '--p_month.$': '$.p_month',
+                '--p_day.$': '$.p_day',
+            }
+        merged_arguments.update(arguments)
+
+        glue_task = stepfunctions_tasks.GlueStartJobRun(
+            self,
+            f'{self.target_environment}{self.logical_id_prefix}{logical_id}GlueJobTask',
+            glue_job_name=job_name,
+            comment=comment,
+            arguments=stepfunctions.TaskInput.from_object(merged_arguments),
+            integration_pattern=stepfunctions.IntegrationPattern.RUN_JOB,
+            result_path='$.taskresult',
+            output_path='$',
+        )
+        glue_task.add_retry(**glue_job_retry_config)
+        glue_task.add_catch(failure_function, result_path='$.taskresult')
+
+        return glue_task
 
 
     def get_lambda_role(

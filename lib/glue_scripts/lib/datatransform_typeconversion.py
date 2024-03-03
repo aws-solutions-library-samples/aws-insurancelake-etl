@@ -1,7 +1,8 @@
 # Copyright Amazon.com and its affiliates; all rights reserved. This file is Amazon Web Services Content and may not be duplicated or distributed without permission.
 # SPDX-License-Identifier: MIT-0
 from pyspark.sql.dataframe import DataFrame
-from pyspark.sql.functions import col, to_date, to_timestamp, regexp_extract, concat_ws, regexp_replace, initcap
+from pyspark.sql.functions import (
+    col, to_date, to_timestamp, regexp_extract, concat_ws, regexp_replace, initcap, to_json )
 from pyspark.sql.types import StringType
 
 def transform_date(df: DataFrame, date_formats: list, args: dict, lineage, *extra):
@@ -28,9 +29,8 @@ def transform_date(df: DataFrame, date_formats: list, args: dict, lineage, *extr
     """
     cols_map = {
         conversion['field']: to_date(
-                col(conversion.get('source', conversion['field'])),
-                conversion['format']
-            )
+            conversion.get('source', conversion['field']), conversion['format']
+        )
             for conversion in date_formats
     }
     # No need to unpersist as there is only one reference to the dataframe and it is returned
@@ -106,7 +106,7 @@ def transform_changetype(df: DataFrame, field_types: dict, args: dict, lineage, 
         pySpark DataFrame with field type conversion applied
     """
     cols_map = {
-        field: col(field).cast(field_type)
+        field: to_json(field) if field_type.lower() == 'json' else col(field).cast(field_type)
             for field, field_type in field_types.items()
     }
     # No need to unpersist as there is only one reference to the dataframe and it is returned
@@ -169,9 +169,9 @@ def transform_currency(df: DataFrame, currency_formats: list, args: dict, lineag
         pySpark DataFrame on which to apply currency conversion
     currency_formats
         List of fieldnames and decimal precision, scale in the form:
-            field: 'FieldName'
+            field: "FieldName"
             source: "SourceFieldName" (optional, if omitted, field will be changed in place)
-            format: 'precision,scale' (optional, defaults to 16,2)
+            format: "precision,scale" (optional, defaults to 16,2)
             euro: boolean (if true, expects European 5.000.000,12 format, default false)
     args
         Glue job arguments, from which source_key and base_file_name are used
@@ -188,7 +188,7 @@ def transform_currency(df: DataFrame, currency_formats: list, args: dict, lineag
         sourcefield = conversion.get('source', conversion['field'])
         decimal_format = conversion.get('format', '16,2')
 
-        if df.schema[sourcefield].dataType is not StringType():
+        if df.schema[sourcefield].dataType != StringType():
             # Skip regex replace with non-strings so we do not corrupt values
             new_column = col(sourcefield)
         else:

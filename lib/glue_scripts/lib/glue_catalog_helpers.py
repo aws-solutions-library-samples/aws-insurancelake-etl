@@ -142,20 +142,21 @@ def upsert_catalog_table(
     # Always run this because most save operations do not create the database
     create_database(target_database)
 
-    schema = [
+    schema = []
+    partition_schema = []
+    for field_name, field_type in df.dtypes:
         # Glue Catalog will transparently convert all column names to lowercase
         # so do it explicitly so that schema change detection works
-        { 'Name': field_name.lower(), 'Type': field_type }
-        for field_name, field_type in df.dtypes
-            # Skip explicitly defining partition keys in the catalog
-            # schema if they already exist in the dataframe schema
-            if field_name not in partition_keys
-    ]
-    partition_schema = [
-        { 'Name': field_name.lower(), 'Type': field_type }
-        for field_name, field_type in df.dtypes
-            if field_name in partition_keys
-    ]
+        field_def = { 'Name': field_name.lower(), 'Type': field_type }
+
+        if 'comment' in df.schema[field_name].metadata:
+            field_def.update({ 'Comment': df.schema[field_name].metadata['comment'] })
+
+        # Partition keys should only be defined in the partition keys schema
+        if field_name in partition_keys:
+            partition_schema.append(field_def)
+        else:
+            schema.append(field_def)
 
     # Derived partition_schema should match specified partition keys
     if set(partition_keys) != { field['Name'] for field in partition_schema }:
@@ -235,17 +236,17 @@ def clean_column_names(df: DataFrame) -> tuple:
         DataFrame with cleaned column names, and dictionary of mapping operations performed
     """
     cols = []
-    field_map_rows = [[ 'SourceName', 'DestName' ]]
+    field_map_rows = []
     for field in df.schema:
         column = col('`' + field.name + '`')
 
         # Remove leading/trailing whitespace, and trim length to max allowed
         new_name = field.name.strip()[:255].lower()
 
-        for char in ',;{}()\n\t=':
+        for char in ',;{}()\n\r\t=':
             # Remove bad Parquet column naming characters
             new_name = new_name.replace(char, '')
-        for char in ' .':
+        for char in ' .:':
             # Replace characters for Parquet rules/conventions
             new_name = new_name.replace(char, '_')
 
@@ -257,7 +258,7 @@ def clean_column_names(df: DataFrame) -> tuple:
         cols.append(column)
 
         # Fields appear in the recommended map regardless of whether they were aliased
-        field_map_rows.append([ field.name, new_name ])
+        field_map_rows.append({ 'sourcename': field.name, 'destname': new_name })
 
     return df.select(cols), field_map_rows
 
@@ -306,7 +307,8 @@ def put_s3_object(uri: str, data: any):
     """
     if type(data) is list:
         string_output = io.StringIO()
-        writer = csv.writer(string_output)
+        writer = csv.DictWriter(string_output, fieldnames=data[0].keys())
+        writer.writeheader()
         writer.writerows(data)
         data = string_output.getvalue()
     parsed_uri = urlparse(uri)

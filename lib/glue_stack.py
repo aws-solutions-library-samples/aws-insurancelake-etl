@@ -110,9 +110,8 @@ class GlueStack(cdk.Stack):
                     if os.path.splitext(dirent.path)[1] == '.jar'
         ]
 
-        job_connections = []
-        for subnet_number in range(len(vpc.subnets)):
-            job_connections.append(glue.CfnConnection(
+        job_connections = [
+            glue.CfnConnection(
                 self,
                 f'{target_environment}{self.logical_id_prefix}GlueETLConnection{subnet_number + 1}',
                 catalog_id=self.account,
@@ -125,7 +124,9 @@ class GlueStack(cdk.Stack):
                         security_group_id_list=[vpc.shared_security_group.security_group_id]
                     )
                 )
-            ))
+            )
+            for subnet_number in range(len(vpc.subnets))
+        ]
 
         self.collect_to_cleanse_job = glue.CfnJob(
             self,

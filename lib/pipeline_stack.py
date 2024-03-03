@@ -181,6 +181,8 @@ class PipelineStack(cdk.Stack):
         # Enable artifact bucket encryption key rotation using escape hatch
         cfn_artifact_bucket_encryption_key = pipeline.pipeline.artifact_bucket.encryption_key.node.default_child
         cfn_artifact_bucket_encryption_key.enable_key_rotation = True
+        # Enable artifact bucket versioning
+        cfn_artifact_bucket.add_property_override('VersioningConfiguration.Status', 'Enabled')
 
         # Apply Nag Suppression to all Pipeline resources (many role and policies)
         NagSuppressions.add_resource_suppressions(pipeline, [

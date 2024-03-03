@@ -13,7 +13,7 @@ import dateutil.tz
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-def lambda_handler(event: dict, context: dict) -> dict:
+def lambda_handler(event: dict, _) -> dict:
     """Lambda function's entry point. This function receives a success/fail
     event from Step Functions State machine, transforms error message, and
     updates DynamoDB table.
@@ -22,8 +22,6 @@ def lambda_handler(event: dict, context: dict) -> dict:
     ----------
     event
         State Machine event dictionary
-    context
-        Lambda context dictionary
 
     Returns
     -------
@@ -80,7 +78,7 @@ def lambda_handler(event: dict, context: dict) -> dict:
                 Key={
                     'execution_id': execution_id
                 },
-                UpdateExpression='set joblast_updated_timestamp=:lut,job_latest_status=:sts,error_message=:emsg',
+                UpdateExpression='set job_last_updated_timestamp=:lut,job_latest_status=:sts,error_message=:emsg',
                 ExpressionAttributeValues={
                     ':sts': status,
                     ':lut': audit_message_timestamp,
