@@ -13,7 +13,7 @@ This solution helps you deploy ETL processes and data storage resources to creat
 
 Specifically, this solution helps you to:
 
-1. Deploy a 3 Cs (Collect, Cleanse, Consume) architecture InsuranceLake
+1. Deploy a "3 Cs" (Collect, Cleanse, Consume) architecture InsuranceLake
 1. Deploy ETL jobs needed make common insurance industry data souces available in a data lake
 1. Use pySpark Glue jobs and supporting resoures to perform data transforms in a modular approach
 1. Build and replicate the application in multiple environments quickly
@@ -21,7 +21,7 @@ Specifically, this solution helps you to:
 1. Leverage the benefit of self-mutating feature of CDK Pipelines; specifically, the pipeline itself is infrastructure as code and can be changed as part of the deployment
 1. Increase the speed of prototyping, testing, and deployment of new ETL jobs
 
-![InsuranceLake High Level Architecture](./resources/insurancelake-highlevel-architecture.png)
+![InsuranceLake High Level Architecture](https://raw.githubusercontent.com/aws-samples/aws-insurancelake-etl/main/resources/insurancelake-highlevel-architecture.png)
 
 ---
 
@@ -44,16 +44,16 @@ Specifically, this solution helps you to:
     * [Unit Testing](#unit-testing)
     * [Integration Testing](#integration-testing)
 * User Documentation
-    * [Detailed Collect-to-Cleanse transform reference](./resources/transforms.md)
-    * [Schema Mapping Documentation](./resources/schema_mapping.md)
-    * [File Formats and Input Specification Documentation](./resources/file_formats.md)
-    * [Data quality rules with Glue Data Quality reference](./resources/data_quality.md)
-    * [Using SQL for Cleanse-to-Consume](./resources/using_sql.md)
+    * [Detailed Collect-to-Cleanse transform reference](https://github.com/aws-samples/aws-insurancelake-etl/blob/main/resources/transforms.md)
+    * [Schema Mapping Documentation](https://github.com/aws-samples/aws-insurancelake-etl/blob/main/resources/schema_mapping.md)
+    * [File Formats and Input Specification Documentation](https://github.com/aws-samples/aws-insurancelake-etl/blob/main/resources/file_formats.md)
+    * [Data quality rules with Glue Data Quality reference](https://github.com/aws-samples/aws-insurancelake-etl/blob/main/resources/data_quality.md)
+    * [Using SQL for Cleanse-to-Consume](https://github.com/aws-samples/aws-insurancelake-etl/blob/main/resources/using_sql.md)
 * Developer Documentation
-    * [Developer Guide](./resources/developer_guide.md)
-    * [Full Deployment Guide](./resources/full_deployment_guide.md)
-    * [AWS CDK Detailed Instructions](./resources/cdk_instructions.md)
-    * [Github / CodePipeline Integration Guide](./resources/github_guide.md)
+    * [Developer Guide](https://github.com/aws-samples/aws-insurancelake-etl/blob/main/resources/developer_guide.md)
+    * [Full Deployment Guide](https://github.com/aws-samples/aws-insurancelake-etl/blob/main/resources/full_deployment_guide.md)
+    * [AWS CDK Detailed Instructions](https://github.com/aws-samples/aws-insurancelake-etl/blob/main/resources/cdk_instructions.md)
+    * [Github / CodePipeline Integration Guide](https://github.com/aws-samples/aws-insurancelake-etl/blob/main/resources/github_guide.md)
 * [Additional resources](#additional-resources)
 * [Authors](#authors)
 * [License Summary](#license-summary)
@@ -143,9 +143,9 @@ Skip steps in this section as needed if you've worked with CDK and Python before
     aws s3 cp resources/syntheticgeneral-policy-data.csv s3://<Collect S3 Bucket>/SyntheticGeneralData/PolicyData/
     ```
 1. Open [Step Functions](https://console.aws.amazon.com/states/home) in the AWS Console and select `dev-insurancelake-etl-state-machine`
-    ![AWS Step Functions Selecting State Machine](./resources/step_functions_select_state_machine.png)
+    ![AWS Step Functions Selecting State Machine](https://raw.githubusercontent.com/aws-samples/aws-insurancelake-etl/main/resources/step_functions_select_state_machine.png)
 1. Open the state machine execution in progress and monitor the status until completed
-    ![AWS Step Functions Selecting Running Execution](./resources/step_functions_select_running_execution.png)
+    ![AWS Step Functions Selecting Running Execution](https://raw.githubusercontent.com/aws-samples/aws-insurancelake-etl/main/resources/step_functions_select_running_execution.png)
 1. Open [Athena](https://console.aws.amazon.com/athena/home) in the AWS Console
 1. Select Launch Query Editor, and change the Workgroup to `insurancelake`
 1. Run the following query to view a sample of prepared data in the consume bucket:
@@ -171,7 +171,7 @@ If you've determined the AWS CDK InsuranceLake is a good starting point for your
     cdk deploy Deploy-InsuranceLakeInfrastructureMirrorRepository
     ```
     - While this stack is designed for a mirror repository, it can also be used as a main repository for your InsuranceLake code. You can follow links to help setup other repository types here:
-        - [Github](resources/github_guide.md)
+        - [Github](https://github.com/aws-samples/aws-insurancelake-etl/blob/main/resources/github_guide.md)
         - [Bitbucket](https://complereinfosystem.com/2021/02/26/atlassian-bitbucket-to-aws-codecommit-using-bitbucket-pipelines/)
         - [Gitlab](https://klika-tech.com/blog/2022/07/12/repository-mirroring-gitlab-to-codecommit/)
 1. If you plan to use CodeCommit as the main repository, [install the Git CodeCommit Helper](https://docs.aws.amazon.com/codecommit/latest/userguide/setting-up-git-remote-codecommit.html):
@@ -197,11 +197,11 @@ If you've determined the AWS CDK InsuranceLake is a good starting point for your
     - Wait for deployment to finish (approx. 5 mins)
 1. Open CodePipeline in the AWS Console and select the `dev-insurancelake-infrastructure-pipeline` Pipeline
     - The first run of the pipeline starts automatically after the Pipeline stack is deployed.
-    ![Select Infrastructure CodePipeline](./resources/codepipeline_infrastructure_select_pipeline.png)
+    ![Select Infrastructure CodePipeline](https://raw.githubusercontent.com/aws-samples/aws-insurancelake-etl/main/resources/codepipeline_infrastructure_select_pipeline.png)
 1. Monitor the status of the pipeline until completed
-    ![Infrastructure CodePipeline progress](./resources/codepipeline_infrastructure_monitor_progress.png)
+    ![Infrastructure CodePipeline progress](https://raw.githubusercontent.com/aws-samples/aws-insurancelake-etl/main/resources/codepipeline_infrastructure_monitor_progress.png)
 1. Switch the working directory to the location of the etl code
-    ```bash
+    ```bash/
     cd ../aws-insurancelake-etl
     ```
 1. In `lib/configuration.py`, review the `local_mapping` structure in the `get_local_configuration()` function, ensure this matches the Infrastructure configuration, or differs if specifically needed.
@@ -228,9 +228,9 @@ If you've determined the AWS CDK InsuranceLake is a good starting point for your
     - Wait for deployment to finish (approx. 5 mins)
 1. Open CodePipeline in the AWS Console and select the `dev-insurancelake-etl-pipeline` Pipeline
     - The first run of the pipeline starts automatically after the Pipeline stack is deployed.
-   ![Select ETL CodePipeline](./resources/codepipeline_etl_select_pipeline.png)
+   ![Select ETL CodePipeline](https://raw.githubusercontent.com/aws-samples/aws-insurancelake-etl/main/resources/codepipeline_etl_select_pipeline.png)
 1. Monitor the status of the pipeline until completed
-    ![ETL CodePipeline progress](./resources/codepipeline_etl_monitor_progress.png)
+    ![ETL CodePipeline progress](https://raw.githubusercontent.com/aws-samples/aws-insurancelake-etl/main/resources/codepipeline_etl_monitor_progress.png)
 
 ## Architecture
 
@@ -249,7 +249,7 @@ We use AWS Lambda and AWS Step Functions for orchestration and scheduling of ETL
 
 **Note:** [AWS Lake Formation](https://aws.amazon.com/lake-formation/) is a service that makes it easy to set up a secure data lake in days. [Amazon QuickSight](https://aws.amazon.com/quicksight/) is a scalable, serverless, embeddable, machine learning-powered business intelligence (BI) service built for the cloud. These two services are not used in this solution but can be added.
 
-![Conceptual Data Lake](./resources/Aws-cdk-insurancelake-data_lake.png)
+![Conceptual Data Lake](https://raw.githubusercontent.com/aws-samples/aws-insurancelake-etl/main/resources/Aws-cdk-insurancelake-data_lake.png)
 
 ---
 
@@ -273,7 +273,7 @@ The figure below represents the ETL resources we provision for Data Lake.
 14. Sends SNS notification
 15. Data engineers or analysts analyze data using Amazon Athena
 
-![Data Lake Infrastructure Architecture](./resources/Aws-cdk-insurancelake-etl.png)
+![Data Lake Infrastructure Architecture](https://raw.githubusercontent.com/aws-samples/aws-insurancelake-etl/main/resources/Aws-cdk-insurancelake-etl.png)
 
 ---
 
@@ -283,7 +283,18 @@ The figure below represents the ETL resources we provision for Data Lake.
 
 In order to allow transform specifications to be matched with source system data and organized in groups, each of the three ETL stage buckets (Collect, Cleanse, Consume) have similar directory layouts. The first level represents the source system name or the database that will group the underlying tables. The second layer represents the data set or table containing the uploaded data. In the Collect bucket, the source files are stored at the second layer. In the Cleanse bucket, data is converted to compressed parquet files and stored in partitions at the second layer. In the Consume bucket database and table names may change if data is merged.
 
-![Bucket Layout Example](./resources/bucket-layout-example.png)
+![Bucket Layout Example](https://raw.githubusercontent.com/aws-samples/aws-insurancelake-etl/main/resources/bucket-layout-example.png)
+
+Conversely, the files for the transformation/input configuration, schema mapping, data quality rules, Athena/Spark SQL, and entity matching configuration will follow a naming convention that matches the bucket layout. **This matching is case sensitive.**
+
+|Purpose  |ETL Scripts Bucket Location  |Naming Convention
+|---   |---  |---
+|Schema Mapping |/etl/transformation-spec |`<database name>-<table name>.csv`
+|Transformation/Input Config   |/etl/transformation-spec |`<database name>-<table name>.json`
+|Data Quality Rules   |/etl/dq-rules   |`dq-<database name>-<table name>.json`
+|Spark SQL   |/etl/transformation-sql  |`spark-<database name>-<table name>.sql`
+|Athena SQL  |/etl/transformation-sql  |`athena-<database name>-<table name>.sql`
+|Entity Match Config   |/etl/transformation-spec |`<database name>-entitymatch.json`
 
 Conversely, the files for the transformation/input configuration, schema mapping, data quality rules, Athena/Spark SQL, and entity matching configuration will follow a naming convention that matches the bucket layout. **This matching is case sensitive.**
 
@@ -300,16 +311,16 @@ Conversely, the files for the transformation/input configuration, schema mapping
 
 | File / Folder    | Description
 |---    |---
-| [datatransform_dataprotection](lib/glue_scripts/lib/datatransform_dataprotection.py) | pySpark logic to redact, hash, and tokenize sensitive data columns
-| [datatransform_lookup](lib/glue_scripts/lib/datatransform_lookup.py) | pySpark logic to perform column value lookup operations
-| [datatransform_misc](lib/glue_scripts/lib/datatransform_misc.py)  | pySpark logic for miscellaneous data transformation functions, such as filtering rows
-| [datatransform_premium](lib/glue_scripts/lib/datatransform_premium.py) | pySpark logic to perform common insurance industry data transforms
-| [datatransform_stringmanipulation](lib/glue_scripts/lib/datatransform_stringmanipulation.py) | pySpark logic to perform regex transforms, and Python formatting string operations on data
-| [datatransform_structureddata](lib/glue_scripts/lib/datatransform_structureddata.py)  | pySpark logic to perform operations on nested data structures usually created from JSON files
-| [datatransform_typeconversion](lib/glue_scripts/lib/datatransform_typeconversion.py) | pySpark logic to convert date columns, and other data types to standard format
-| [custom_mapping](lib/glue_scripts/lib/custom_mapping.py) | pySpark logic to rename columns according to a map file
-| [dataquality_check](lib/glue_scripts/lib/dataquality_check.py) | Glue logic to run Data Quality rules according to a rules file
-| [datalineage](lib/glue_scripts/lib/datalineage.py) | Custom data lineage tracking class designed to work with InsuranceLake transforms
+| [datatransform_dataprotection](https://github.com/aws-samples/aws-insurancelake-etl/blob/main/lib/glue_scripts/lib/datatransform_dataprotection.py) | pySpark logic to redact, hash, and tokenize sensitive data columns
+| [datatransform_lookup](https://github.com/aws-samples/aws-insurancelake-etl/blob/main/lib/glue_scripts/lib/datatransform_lookup.py) | pySpark logic to perform column value lookup operations
+| [datatransform_misc](https://github.com/aws-samples/aws-insurancelake-etl/blob/main/lib/glue_scripts/lib/datatransform_misc.py)  | pySpark logic for miscellaneous data transformation functions, such as filtering rows
+| [datatransform_premium](https://github.com/aws-samples/aws-insurancelake-etl/blob/main/lib/glue_scripts/lib/datatransform_premium.py) | pySpark logic to perform common insurance industry data transforms
+| [datatransform_stringmanipulation](https://github.com/aws-samples/aws-insurancelake-etl/blob/main/lib/glue_scripts/lib/datatransform_stringmanipulation.py) | pySpark logic to perform regex transforms, and Python formatting string operations on data
+| [datatransform_structureddata](https://github.com/aws-samples/aws-insurancelake-etl/blob/main/lib/glue_scripts/lib/datatransform_structureddata.py)  | pySpark logic to perform operations on nested data structures usually created from JSON files
+| [datatransform_typeconversion](https://github.com/aws-samples/aws-insurancelake-etl/blob/main/lib/glue_scripts/lib/datatransform_typeconversion.py) | pySpark logic to convert date columns, and other data types to standard format
+| [custom_mapping](https://github.com/aws-samples/aws-insurancelake-etl/blob/main/lib/glue_scripts/lib/custom_mapping.py) | pySpark logic to rename columns according to a map file
+| [dataquality_check](https://github.com/aws-samples/aws-insurancelake-etl/blob/main/lib/glue_scripts/lib/dataquality_check.py) | Glue logic to run Data Quality rules according to a rules file
+| [datalineage](https://github.com/aws-samples/aws-insurancelake-etl/blob/main/lib/glue_scripts/lib/datalineage.py) | Custom data lineage tracking class designed to work with InsuranceLake transforms
 
 ---
 
@@ -322,23 +333,23 @@ Table below explains how this source code is structured:
 | File / Folder    | Description
 |---    |---
 | [app.py](app.py) | Application entry point
-| [code_commit_stack](./lib/code_commit_stack.py) | Optional stack to deploy an empty CodeCommit respository for mirroring |
-| [pipeline_stack](lib/pipeline_stack.py) | Pipeline stack entry point
-| [pipeline_deploy_stage](lib/pipeline_deploy_stage.py) | Pipeline deploy stage entry point
-| [dynamodb_stack](lib/dynamodb_stack.py) | Stack creates DynamoDB Tables for Job Auditing and ETL transformation rules
-| [glue_stack](lib/glue_stack.py) | Stack creates Glue Jobs and supporting resources such as Connections, S3 Buckets (script and temporary) and an IAM execution Role
-| [step_functions_stack](lib/step_functions_stack.py) | Stack creates an ETL State machine which invokes Glue Jobs and supporting Lambdas - state machine trigger and status notification
-| [athena_helper_stack](lib/athena_helper_stack.py) | Stack creates an Athena workgroup with query results bucket ready for demonstration SQL queries
-| [Collect-to-Cleanse Glue Script](lib/glue_scripts/etl_collect_to_cleanse.py) | Glue pySpark job data processing logic for Collect bucket data, which stores results in the Cleanse bucket
-| [Cleanse-to-Consume Glue Script](lib/glue_scripts/etl_cleanse_to_consume.py) | Glue pySpark job data processing logic for Cleanse bucket data, which stores results in the Consume bucket
-| [Entity Match Glue Script](lib/glue_scripts/etl_consume_entity_match.py) | Glue pySpark job data processing logic for Entity Matching, which stores results in the Consume bucket
-| [ETL Job Auditor](lib/etl_job_auditor/lambda_handler.py) | Lambda script to update DynamoDB in case of glue job success or failure
-| [ETL Trigger](lib/state_machine_trigger/lambda_handler.py) | Lambda script to trigger step function and initiate DynamoDB
-| [ETL Transformation Mapping and Specification](lib/glue_scripts/transformation-spec/) | Field mapping and transformation specification logic to be used for data processing from Collect to Cleanse
-| [ETL Transformation SQL](lib/glue_scripts/transformation-sql/) | Transformation SQL logic to be used for data processing from Cleanse to Consume
-| [ETL Data Quality Rules](lib/glue_scripts/dq-rules/) | Glue Data Quality rules for quality checks from Cleanse to Consume
-| [test](./test)| This folder contains pytest unit tests
-| [resources](./resources) | This folder has architecture, process flow diagrams, sample data, and additional documentation
+| [code_commit_stack](https://github.com/aws-samples/aws-insurancelake-etl/blob/main/lib/code_commit_stack.py) | Optional stack to deploy an empty CodeCommit respository for mirroring |
+| [pipeline_stack](https://github.com/aws-samples/aws-insurancelake-etl/blob/main/lib/pipeline_stack.py) | Pipeline stack entry point
+| [pipeline_deploy_stage](https://github.com/aws-samples/aws-insurancelake-etl/blob/main/lib/pipeline_deploy_stage.py) | Pipeline deploy stage entry point
+| [dynamodb_stack](https://github.com/aws-samples/aws-insurancelake-etl/blob/main/lib/dynamodb_stack.py) | Stack creates DynamoDB Tables for Job Auditing and ETL transformation rules
+| [glue_stack](https://github.com/aws-samples/aws-insurancelake-etl/blob/main/lib/glue_stack.py) | Stack creates Glue Jobs and supporting resources such as Connections, S3 Buckets (script and temporary) and an IAM execution Role
+| [step_functions_stack](https://github.com/aws-samples/aws-insurancelake-etl/blob/main/lib/step_functions_stack.py) | Stack creates an ETL State machine which invokes Glue Jobs and supporting Lambdas - state machine trigger and status notification
+| [athena_helper_stack](https://github.com/aws-samples/aws-insurancelake-etl/blob/main/lib/athena_helper_stack.py) | Stack creates an Athena workgroup with query results bucket ready for demonstration SQL queries
+| [Collect-to-Cleanse Glue Script](https://github.com/aws-samples/aws-insurancelake-etl/blob/main/lib/glue_scripts/etl_collect_to_cleanse.py) | Glue pySpark job data processing logic for Collect bucket data, which stores results in the Cleanse bucket
+| [Cleanse-to-Consume Glue Script](https://github.com/aws-samples/aws-insurancelake-etl/blob/main/lib/glue_scripts/etl_cleanse_to_consume.py) | Glue pySpark job data processing logic for Cleanse bucket data, which stores results in the Consume bucket
+| [Entity Match Glue Script](https://github.com/aws-samples/aws-insurancelake-etl/blob/main/lib/glue_scripts/etl_consume_entity_match.py) | Glue pySpark job data processing logic for Entity Matching, which stores results in the Consume bucket
+| [ETL Job Auditor](https://github.com/aws-samples/aws-insurancelake-etl/blob/main/lib/etl_job_auditor/lambda_handler.py) | Lambda script to update DynamoDB in case of glue job success or failure
+| [ETL Trigger](https://github.com/aws-samples/aws-insurancelake-etl/blob/main/lib/state_machine_trigger/lambda_handler.py) | Lambda script to trigger step function and initiate DynamoDB
+| [ETL Transformation Mapping and Specification](https://github.com/aws-samples/aws-insurancelake-etl/blob/main/lib/glue_scripts/transformation-spec/) | Field mapping and transformation specification logic to be used for data processing from Collect to Cleanse
+| [ETL Transformation SQL](https://github.com/aws-samples/aws-insurancelake-etl/blob/main/lib/glue_scripts/transformation-sql/) | Transformation SQL logic to be used for data processing from Cleanse to Consume
+| [ETL Data Quality Rules](https://github.com/aws-samples/aws-insurancelake-etl/blob/main/lib/glue_scripts/dq-rules/) | Glue Data Quality rules for quality checks from Cleanse to Consume
+| [test](https://github.com/aws-samples/aws-insurancelake-etl/blob/main/test)| This folder contains pytest unit tests
+| [resources](https://github.com/aws-samples/aws-insurancelake-etl/blob/main/resources) | This folder has architecture, process flow diagrams, sample data, and additional documentation
 
 ---
 

@@ -557,4 +557,4 @@ FROM syntheticgeneraldata.stat_data
 ## Frequently Asked Questions
 
 1. Why do you place commas in front of field names in your SQL instead of at the end?
-    * When the comma is isolated and in front, it is harder to forget adding a new comma when adding a new field. Also, when removing the last field in the list, it does not require a modification of the previous line.
+    * When the comma is isolated and in front, it is harder to forget adding a new comma when adding a new field.

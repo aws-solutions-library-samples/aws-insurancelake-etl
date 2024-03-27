@@ -138,6 +138,16 @@ Convert specified date fields to ISO format based on known input format
 |format    |required    |Date format specified using [Spark datetime patterns](https://spark.apache.org/docs/latest/sql-ref-datetime-pattern.html)
 |source    |optional    |Name of source field, defaults to destination field
 
+- With Spark datetime patterns, `M` (uppercase) means **month** and `m` (lowercase) means **minutes**. Mixing these up will result  in date parse errors.
+
+- Use `dd` to indicate exactly two digit dates, and `d` to indicate **either one or two** digits dates. This applies to all other symbols in the datetime pattern. Single character symbols are the most flexible.
+
+- An error similar to the following typically means that some or all of your dates are not formatted in the way the date pattern expects. Consider using [data quality rules](./data_quality.md#configuration) to test your data.
+    ```log
+    You may get a different result due to the upgrading of Spark 3.0
+    Fail to parse 'YYYY-M-d' in the new parser. You can set spark.sql.legacy.timeParserPolicy to LEGACY to restore the behavior before Spark 3.0, or set to CORRECTED and treat it as an invalid datetime string.
+    ```
+
 ```json
 "date": [
     {
