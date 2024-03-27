@@ -30,6 +30,10 @@ SELECT
 , writtenpolicy
 , earnedpremium
 , earnedpremium * 10 as claimlimit  -- used for data quality rule
+
+, policydata.generationdate as policies_last_updated
+, claimdata.generationdate as claims_last_updated
+
 , syntheticgeneraldata.policydata.execution_id
 , syntheticgeneraldata.policydata.year
 , syntheticgeneraldata.policydata.month

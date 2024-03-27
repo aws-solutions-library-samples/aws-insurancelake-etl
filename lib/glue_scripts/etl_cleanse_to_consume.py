@@ -168,7 +168,7 @@ def main():
         filtered_df = dataquality.run_data_quality(df, rules_json_data, 'after_sparksql')
         filtered_df.cache()
         # Post Spark SQL and DQ filter numeric audit
-        lineage.update_lineage(df, args['source_key'], 'numericaudit')
+        lineage.update_lineage(filtered_df, args['source_key'], 'numericaudit')
 
         # Folder structure in the consume bucket should match the other buckets
         storage_location = f"{args['target_bucket']}/{args['source_database_name']}/{target_table}"
@@ -177,7 +177,7 @@ def main():
         # allows the lake to manage the merged/destination schema, and Spark to manage schema
         # consistency without needing to repair tables
         upsert_catalog_table(
-            df,
+            filtered_df,
             args['target_database_name'],
             target_table,
             ['year', 'month', 'day'],
@@ -194,7 +194,7 @@ def main():
         spark.conf.set('hive.exec.dynamic.partition', 'true')
         spark.conf.set('hive.exec.dynamic.partition.mode', 'nonstrict')
 
-        df.repartition('year', 'month', 'day'). \
+        filtered_df.repartition('year', 'month', 'day'). \
             write.partitionBy('year', 'month', 'day').saveAsTable(
                 f"{args['target_database_name']}.{target_table}",
                 path=storage_location,
@@ -205,7 +205,7 @@ def main():
                 mode='append',
             )
 
-        df.unpersist()
+        filtered_df.unpersist()
 
     # Athena SQL is used to create views
     athena_sql_key = sql_prefix[1:] + 'athena-' + source_key_dashes + '.sql'

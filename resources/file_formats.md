@@ -16,7 +16,7 @@
 
 ## Input Specification
 
-Input specification configuration is defined in the `input-spec` section of the JSON configuration file. The filename follows the convention of `<database name>-<table name>.json` and is stored in the `/etl/transformation-spec` folder in the `etl-scripts` bucket. When using CDK for deployment, the contents of `/lib/glue_scripts/lib/transformation-spec` directory will be automatically deployed to this location. The Input Specification section is used to specify input file format configuration and other data pipeline configuration, and co-exists with the `transforma-spec` section.
+Input specification configuration is defined in the `input-spec` section of the workflow's JSON configuration file. The filename follows the convention of `<database name>-<table name>.json` and is stored in the `/etl/transformation-spec` folder in the `etl-scripts` bucket. When using CDK for deployment, the contents of the `/lib/glue_scripts/lib/transformation-spec` directory will be automatically deployed to this location. The Input Specification section is used to specify input file format configuration and other data pipeline configuration, and co-exists with the `transform-spec` section.
 
 |Parameter  |Description
 |---    |---
@@ -166,7 +166,7 @@ With no additional configuration, InsuranceLake will attempt to read tabular dat
 
 |Parameter  |Type   |Description    |
 |---    |---    |---    |
-|`sheet_names`  |optional   |A JSON list expression of possible sheet names to try. Only one sheet is matched; the first match will be used. Sheets can be named or referenced by index. For referencing by index, specify the sheet number (starting from 0) as a string (for example, `"1"`). Default: `[ "0" ]`   |
+|`sheet_names`  |optional   |A JSON list object of possible sheet names to try. Only one sheet is matched; the first match will be used. Sheets can be named or referenced by index. For referencing by index, specify the sheet number (starting from 0) as a string (for example, `"1"`). Default: `[ "0" ]`   |
 |`data_address` |optional    |Either a Cell Reference representing the top left corner of the data, or a [Range Reference](https://www.techonthenet.com/excel/ranges/index.php) specifying a specific block of data. Default: `A1`   |
 |`header`   |optional   |JSON boolean indicating whether the data has a header row or not. Default: `true`  |
 |`password` |optional   |Password to use to unlock password-protected Excel workbooks. Default: none   |
@@ -186,7 +186,7 @@ Example configuration:
 }
 ```
 
-**Note: To load multiple sheets of data in the workbook into multiple tables, simply copy the same Excel file to multiple `collect` bucket folders, each with their own transformation spec file and Excel configuration (which references each sheet).**
+**Note: To load multiple sheets of data in the workbook into multiple tables, simply copy the same Excel file to multiple Collect bucket folders, each with their own transformation spec file and Excel configuration (which references each sheet).**
 
 ### Notes on Excel Support
 

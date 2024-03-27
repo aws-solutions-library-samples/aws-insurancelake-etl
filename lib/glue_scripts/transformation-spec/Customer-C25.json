@@ -15,9 +15,9 @@
 			}
 		],
 
-		"bigint":  [
-			"annualincome"
-		]
+		"changetype":  {
+			"annualincome": "bigint"
+		}
 
 	}
 }

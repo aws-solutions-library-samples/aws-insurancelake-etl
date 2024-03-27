@@ -18,12 +18,9 @@
 			}
 		],
 
-		"decimal": [
-			{
-				"field": "WrittenPremiumAmount",
-				"format": "10,2"
-			}
-		],
+		"changetype": {
+			"WrittenPremiumAmount": "decimal(10,2)"
+		},
 
         "redact": {
 			"InsuredCustomerNumber": "****",

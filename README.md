@@ -1,6 +1,6 @@
 <!--
   Title: AWS InsuranceLake
-  Description: Serverless data lake solution accelerator and reference architecture fit for the insurance industry built on AWS
+  Description: Serverless modern data lake solution and reference architecture fit for the insurance industry built on AWS
   Author: cvisi@amazon.com
   -->
 # InsuranceLake ETL
@@ -48,6 +48,7 @@ Specifically, this solution helps you to:
     * [Schema Mapping Documentation](./resources/schema_mapping.md)
     * [File Formats and Input Specification Documentation](./resources/file_formats.md)
     * [Data quality rules with Glue Data Quality reference](./resources/data_quality.md)
+    * [Using SQL for Cleanse-to-Consume](./resources/using_sql.md)
 * Developer Documentation
     * [Developer Guide](./resources/developer_guide.md)
     * [Full Deployment Guide](./resources/full_deployment_guide.md)
@@ -238,9 +239,9 @@ In this section we talk about the overall InsuranceLake architecture and the ETL
 ### InsuranceLake 3 Cs
 
 As shown in the figure below, we use Amazon S3 for storage. We use three S3 buckets:
-   1. Collect bucket to store raw data in its original format
-   1. Cleanse/Curate bucket to store the data that meets the quality and consistency requirements of the lake
-   1. Consume bucket for data that is used by analysts and data consumers of the lake (for example, Amazon Quicksight, Amazon Sagemaker)
+    1. Collect bucket to store raw data in its original format
+    1. Cleanse/Curate bucket to store the data that meets the quality and consistency requirements of the lake
+    1. Consume bucket for data that is used by analysts and data consumers of the lake (for example, Amazon Quicksight, Amazon Sagemaker)
 
 InsuranceLake is designed to support a number of source systems with different file formats and data partitions. To demonstrate, we have provided a CSV parser and sample data files for a source system with two data tables, which are uploaded to the Collect bucket.
 

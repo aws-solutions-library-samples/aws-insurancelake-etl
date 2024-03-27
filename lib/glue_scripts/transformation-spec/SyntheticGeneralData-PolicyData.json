@@ -30,20 +30,11 @@
 			}
 		],
 
-		"decimal": [
-			{
-				"field": "ExpiringPremiumAmount",
-				"format": "10,2"
-			},
-			{
-				"field": "WrittenPremiumAmount",
-				"format": "10,2"
-			},
-			{
-				"field": "EarnedPremium",
-				"format": "10,2"
-			}
-		],
+		"changetype": {
+			"ExpiringPremiumAmount": "decimal(10,2)",
+			"WrittenPremiumAmount": "decimal(10,2)",
+			"EarnedPremium": "decimal(10,2)"
+		},
 
 		"redact": {
 			"CustomerNo": "****"

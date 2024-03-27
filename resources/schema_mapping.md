@@ -2,7 +2,7 @@
 
 Schema mapping in InsuranceLake is configured by using a comma-delimited text file to describe the source and destination field names.
 
-The filename of the schema mapping configuration file follows the convention of `<database name>-<table name>.csv` and is stored in the `/etl/transformation-spec` folder in the `etl-scripts` bucket. When using CDK for deployment, the contents of `/lib/glue_scripts/lib/transformation-spec` directory will be automatically deployed to this location.
+The filename of the schema mapping configuration file follows the convention of `<database name>-<table name>.csv` and is stored in the `/etl/transformation-spec` folder in the `etl-scripts` bucket. When using CDK for deployment, the contents of the `/lib/glue_scripts/lib/transformation-spec` directory will be automatically deployed to this location.
 
 Your schema mapping file should map field names to Parquet and Athena-friendly names. Specifically, this means removing or replacing the invalid characters: `,;{}()\n\r\t=`. We also recommend removing/replacing characters that are valid but require escaping: ` .:[]`.
 
@@ -27,7 +27,7 @@ The schema mapping operation is accomplishing using [Spark DataFrame's alias ope
 
 ## Behavior When There is No Schema Mapping
 
-When there is no schema mapping file in the etl-scripts bucket for the workflow, the ETL will clean all column names so that they can be saved successfully in Parquet format. The ETL will also save a *recommended* mapping file to the Glue Temp bucket,  `<environment>-insurancelake-<account>-<region>-glue-temp` bucket, in the folder `/etl/collect_to_cleanse` following the naming convention `<database>-<table>.csv`.
+When there is no schema mapping file or an empty schema mapping file in the etl-scripts bucket for the workflow, the ETL will clean all column names so that they can be saved successfully in Parquet format. The ETL will also save a *recommended* mapping file to the Glue Temp bucket,  `<environment>-insurancelake-<account>-<region>-glue-temp` bucket, in the folder `/etl/collect_to_cleanse` following the naming convention `<database>-<table>.csv`.
 
 When this behavior occurs, you will see the following log message in the Glue Job Output Logs:
 ```log

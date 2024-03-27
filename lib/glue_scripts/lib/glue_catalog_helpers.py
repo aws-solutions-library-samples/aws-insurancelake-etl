@@ -6,7 +6,7 @@ from urllib.parse import urlparse
 import boto3
 import botocore
 from pyspark.sql.dataframe import DataFrame
-from pyspark.sql.types import DoubleType, NullType
+from pyspark.sql.types import DoubleType, FloatType, NullType
 from pyspark.sql.functions import col
 
 def table_exists(target_database: str, table_name: str) -> bool:
@@ -284,13 +284,16 @@ def generate_spec(df: DataFrame, input_file_extension: str) -> dict:
             'excel': { 'sheet_names': [ '0' ], 'data_address': 'A1', 'header': True }
         })
 
-    transform_spec = { 'date': [], 'changetype': [] }
+    transform_spec = { 'date': [], 'timestamp': [], 'changetype': {} }
     for field in df.schema:
-        if field.dataType == DoubleType():
-            transform_spec['changetype'].append({ field.name: 'decimal(16,2)' })
+        if field.dataType in [ DoubleType(), FloatType() ]:
+            transform_spec['changetype'].update({ field.name: 'decimal(16,2)' })
 
         if 'date' in field.name.lower():
             transform_spec['date'].append({ 'field': field.name, 'format': 'MM/dd/yy' })
+
+        if 'time' in field.name.lower():
+            transform_spec['timestamp'].append({ 'field': field.name, 'format': 'yyyy-MM-dd HH:mm:ss' })
 
     return { 'input_spec': input_spec, 'transform_spec': transform_spec }
 

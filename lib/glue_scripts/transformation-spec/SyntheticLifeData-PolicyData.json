@@ -36,6 +36,13 @@
 			}
 		],
 
+		"timestamp": [
+			{
+				"field": "lastupdated",
+				"format": "d/M/yyyy H:m:s"
+			}
+		],
+
 		"redact": {
 			"customerno": "****"
 		},
@@ -49,20 +56,13 @@
 			"personalid"
 		],
 
-		"decimal":  [
-			{
-				"field": "monthlypremium",
-				"format": "10,2"
-			},
-			{
-				"field": "producercommision",
-				"format": "10,2"
-			},
-			{
-				"field": "producer",
-				"format": "10,0"
-			}
-		],
+		"changetype": {
+			"monthlypremium": "decimal(10,2)",
+			"producercommision": "decimal(10,2)",
+			"premiumpaidtilldate": "decimal(10,2)",
+			"commisionpaidtilldate": "decimal(10,2)",
+			"producer": "int"
+		},
 
 		"lookup": [
 			{

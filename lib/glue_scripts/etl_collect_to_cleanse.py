@@ -231,8 +231,8 @@ def main():
     totransform_df.cache()
 
     # Perform transforms
-    if spec_json_data and 'transform_spec' in spec_json_data:
-        transform_spec = spec_json_data['transform_spec']
+    transform_spec = spec_json_data.get('transform_spec', {})
+    if transform_spec:
         print(f'Using transformation specification: {transform_spec}')
 
         for transform in transform_spec.keys():
@@ -296,23 +296,10 @@ def main():
     p_year = int(args['p_year'])
     p_month = int(args['p_month'])
     p_day = int(args['p_day'])
-    # Explicitly clear the existing partition (i.e. overwrite)
-    try:
-        glueContext.purge_table(
-            database=args['target_database_name'],
-            table_name=args['table_name'],
-            options={
-                'partitionPredicate': f"(year == '{p_year}' AND month == '{p_month:02}' AND day == '{p_day:02}')",
-                'retentionPeriod': 0
-            }
-        )
-    except Exception as e:
-        # "Pushdown predicate cannot be resolved" error occurs when table is just created above
-        # and has no data (thus no partitions)
-        if "User's pushdown predicate" in e.java_exception.getMessage():
-            print('No existing partition data to clear')
-        else:
-            raise e
+    spark.sql(f"ALTER TABLE {args['target_database_name']}.{args['table_name']}"
+        " DROP IF EXISTS PARTITION"
+        f" (year = '{p_year}', month = '{p_month:02}', day = '{p_day:02}')"
+    )
 
     # saveAsTable on new tables fails in strict mode even with only 1 partition
     spark.conf.set('hive.exec.dynamic.partition.mode', 'nonstrict')

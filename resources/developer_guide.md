@@ -97,6 +97,54 @@ The above will create a git hook which will validate code prior to commits. Conf
    * [Developing AWS Glue ETL jobs locally using a container](https://aws.amazon.com/blogs/big-data/developing-aws-glue-etl-jobs-locally-using-a-container)
    * [Develop and test AWS Glue version 3.0 and 4.0 jobs locally using a Docker container](https://aws.amazon.com/blogs/big-data/develop-and-test-aws-glue-version-3-0-jobs-locally-using-a-docker-container)
 
+* To more quickly diagnose issues with features not available in the Glue Docker container, or when working with large datasets that may be too slow to process locally, bypassing the Step Functions workflow to execute specific Glue jobs can be helpful. The following are example executions for each of the three InsuranceLake ETL Glue jobs with the minimum required parameters:
+
+   ```bash
+   aws glue start-job-run --job-name dev-insurancelake-cleanse-to-consume-job --arguments '
+   {
+      "--execution_id": "manual_execution_identifier",
+      "--source_bucketname": "dev-insurancelake-<Account ID>-us-east-2-glue-temp",
+      "--source_key": "MyDB/MyTable",
+      "--base_file_name": "input_file.csv",
+      "--database_name_prefix": "MyDB",
+      "--table_name": "MyTable",
+      "--p_year": "2024",
+      "--p_month": "01",
+      "--p_day": "01",
+      "--data_lineage_table": "dev-insurancelake-etl-data-lineage",
+      "--state_machine_name": "dev-insurancelake-etl-state-machine"
+   }'
+
+   aws glue start-job-run --job-name dev-insurancelake-cleanse-to-consume-job --arguments '
+   {
+      "--execution_id": "manual_execution_identifier",
+      "--source_bucketname": "dev-insurancelake-<Account ID>-us-east-2-glue-temp",
+      "--source_key": "MyDB/MyTable",
+      "--base_file_name": "input_file.csv",
+      "--database_name_prefix": "MyDB",
+      "--table_name": "MyTable",
+      "--p_year": "2024",
+      "--p_month": "01",
+      "--p_day": "01",
+      "--data_lineage_table": "dev-insurancelake-etl-data-lineage",
+      "--state_machine_name": "dev-insurancelake-etl-state-machine"
+   }'
+
+
+   aws glue start-job-run --job-name dev-insurancelake-consume-entity-match-job --arguments '
+   {
+      "--execution_id": "manual_execution_identifier",
+      "--source_key": "MyDB/MyTable",
+      "--database_name_prefix": "MyDB",
+      "--table_name": "MyTable",
+      "--data_lineage_table": "dev-insurancelake-etl-data-lineage",
+      "--state_machine_name": "dev-insurancelake-etl-state-machine",
+      "--p_year": "2024",
+      "--p_month": "01",
+      "--p_day": "01"
+   }'
+   ```
+
 * The majority of InsuranceLake operations are done using Spark-native DataFrames because conversions to Glue DynamicFrames and Pandas DataFrames come with a cost. InsuranceLake was also designed to be as portable as possible to other Spark environments (with the exception of Glue Data Quality). **We recommend you follow the practice of avoiding DataFrame conversions in your Glue jobs**.
 
 * When there is functionality needed from Pandas that is not available in Spark, there are three methods to consider:
