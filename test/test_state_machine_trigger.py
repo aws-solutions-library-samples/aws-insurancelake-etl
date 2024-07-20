@@ -1,7 +1,7 @@
 # Copyright Amazon.com and its affiliates; all rights reserved. This file is Amazon Web Services Content and may not be duplicated or distributed without permission.
 # SPDX-License-Identifier: MIT-0
 import pytest
-from moto import mock_dynamodb
+from moto import mock_aws
 import boto3
 import botocore
 import logging
@@ -23,6 +23,18 @@ test_success_event = {
         's3': {
             'bucket': { 'name': 'test-bucket', 'arn': test_source_bucket_arn },
             'object': { 'key': 'level1/level2/test-file.csv' }
+        },
+        'userIdentity': { 'principalId': 'testuser' },
+        'requestParameters': { 'sourceIPAddress': 'testipaddress'},
+    }]
+}
+
+test_partition_override_event = {
+    'Records': [{
+        'eventTime': test_event_time,
+        's3': {
+            'bucket': { 'name': 'test-bucket', 'arn': test_source_bucket_arn },
+            'object': { 'key': 'level1/level2/myyear/mymonth/test-file.csv' }
         },
         'userIdentity': { 'principalId': 'testuser' },
         'requestParameters': { 'sourceIPAddress': 'testipaddress'},
@@ -82,7 +94,7 @@ def mock_record_etl_job_run(audit_table_name: str, sfn_arn: str, execution_id: s
 
 @pytest.fixture
 def use_moto():
-    @mock_dynamodb
+    @mock_aws
     def dynamodb_client_and_audit_table():
         dynamodb = boto3.resource('dynamodb')
  
@@ -113,6 +125,20 @@ def test_handler_success_returns_200(monkeypatch):
     assert result['statusCode'] == 200
 
 
+def test_handler_overrides_partitions(monkeypatch, caplog):
+    monkeypatch.setattr(lambda_handler.boto3, 'client', mock_boto3_client)
+    monkeypatch.setattr(lambda_handler, 'record_etl_job_run', mock_record_etl_job_run)
+    monkeypatch.setenv('DYNAMODB_TABLE_NAME', test_table_name)
+    monkeypatch.setenv('SFN_STATE_MACHINE_ARN', test_state_machine_arn)
+    monkeypatch.setenv('GLUE_SCRIPTS_BUCKET_NAME', test_scripts_bucket)
+
+    result = lambda_handler.lambda_handler(test_partition_override_event, test_context)
+    assert result['statusCode'] == 200
+
+    with caplog.at_level(logging.INFO):
+        assert caplog.text.find('Date used for partitioning: myyear-mymonth-') != -1
+
+
 def test_handler_bad_file_returns_400(monkeypatch):
     monkeypatch.setattr(lambda_handler.boto3, 'client', mock_boto3_client)
     monkeypatch.setattr(lambda_handler, 'record_etl_job_run', mock_record_etl_job_run)
@@ -138,7 +164,7 @@ def test_handler_folder_putobject_returns_400(monkeypatch):
     assert result['statusCode'] == 400
 
 
-@mock_dynamodb
+@mock_aws
 def test_record_etl_job_run_records_status(monkeypatch, use_moto):
     monkeypatch.setenv('AWS_DEFAULT_REGION', mock_region)
     table = use_moto()
@@ -152,7 +178,7 @@ def test_record_etl_job_run_records_status(monkeypatch, use_moto):
     assert item['Item']['job_latest_status'] == 'STARTED'
 
 
-@mock_dynamodb
+@mock_aws
 def test_record_etl_jon_run_logs_no_table(monkeypatch, caplog):
     monkeypatch.setenv('AWS_DEFAULT_REGION', mock_region)
     # Purposely do not call use_moto() to create the table

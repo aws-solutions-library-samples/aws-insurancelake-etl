@@ -1,0 +1,5 @@
+-e .
+-r requirements.txt
+pytest
+pytest-cov
+moto[dynamodb,glue,athena]

@@ -27,7 +27,7 @@ parser.add_argument('lookup_columns', nargs='+',
 	help='Lookup columns to use for combined lookup_item value')
 args = parser.parse_args()
 
-with open(args.data_file, mode="r", encoding="utf-8-sig") as lookup_data_file:
+with open(args.data_file, mode='r', encoding='utf-8') as lookup_data_file:
 	lookup_data_file = csv.DictReader(lookup_data_file)
 
 	dynamodb_write_data = []

@@ -4,7 +4,7 @@ import pytest
 import sys
 from urllib.parse import urlparse
 import shutil
-from moto import mock_athena
+from moto import mock_aws
 from test.boto_mocking_helper import *
 
 try:
@@ -95,7 +95,7 @@ def test_missing_argument_exception(monkeypatch):
         etl_cleanse_to_consume.main()
 
 
-@mock_athena()
+@mock_aws()
 def test_athena_execute_query_success(monkeypatch):
     """
     Test simple create view and expect success
@@ -105,7 +105,7 @@ def test_athena_execute_query_success(monkeypatch):
     assert result == 'SUCCEEDED'
 
 
-@mock_athena
+@mock_aws
 def test_athena_execute_query_max_retries_error(monkeypatch):
     """
     Provide 0 attempts and expect failure from exceeding max attempts

@@ -148,6 +148,7 @@ class StepFunctionsStack(cdk.Stack):
             'Collect', 'Collect to Cleanse data load and transform',
             collect_to_cleanse_job.name, failure_function_task,
             arguments={
+                '--source_path.$': '$.source_path',
                 '--target_database_name.$': '$.target_database_name',
                 '--base_file_name.$': '$.base_file_name',
             },
@@ -281,8 +282,8 @@ class StepFunctionsStack(cdk.Stack):
 
         glue_job_retry_config = {
             'backoff_rate': 2,
-            'max_attempts': 2,
-            # 'max_delay': cdk.Duration.seconds(600),
+            'max_attempts': 4,
+            'jitter_strategy': stepfunctions.JitterType.FULL,
             'errors': [
                 # Generic Glue exception raised for any downstream resource limitations like throttling
                 'Glue.AWSGlueException',
@@ -472,11 +473,12 @@ class StepFunctionsStack(cdk.Stack):
             f'{self.target_environment}{self.logical_id_prefix}{logical_id_suffix}',
             function_name=lambda_function_name,
             description=function_description,
-            runtime=_lambda.Runtime.PYTHON_3_11,
+            runtime=_lambda.Runtime.PYTHON_3_12,
             handler='lambda_handler.lambda_handler',
             code=_lambda.Code.from_asset(f'{os.path.dirname(__file__)}/{lambda_code_relative_path}'),
             architecture=_lambda.Architecture.ARM_64,
             environment=lambda_environment,
+            timeout=cdk.Duration.seconds(10),
             role=self.get_lambda_role(
                 logical_id_suffix,
                 resource_name_suffix,

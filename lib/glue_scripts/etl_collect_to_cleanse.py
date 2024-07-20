@@ -16,7 +16,8 @@ from awsglue.job import Job
 # For running in local Glue container
 sys.path.append(os.path.dirname(__file__) + '/lib')
 
-from glue_catalog_helpers import upsert_catalog_table, clean_column_names, generate_spec, put_s3_object
+from glue_catalog_helpers import ( upsert_catalog_table, clean_column_names, generate_spec,
+    put_s3_object, clear_partition )
 from custom_mapping import custommapping
 from datatransform_typeconversion import *
 from datatransform_dataprotection import *
@@ -44,6 +45,7 @@ expected_arguments = [
     'state_machine_name',
     'execution_id',
     'source_key',
+    'source_path',
     'target_database_name',
     'table_name',
     'base_file_name',
@@ -68,10 +70,17 @@ def main():
     job.init(args['JOB_NAME'], args)
 
     _, ext = os.path.splitext(args['base_file_name'])
-    source_path = args['source_bucket'] + '/' + args['source_key'] + '/' + args['base_file_name']
+    source_path = args['source_bucket'] + '/' + args['source_path'] + '/' + args['base_file_name']
     source_key_dashes = args['target_database_name'] + '-' + args['table_name']
     print(f'Source path: {source_path}')
 
+    # Job parameter supplied date partition strategy (object created date)
+    partition = {
+        # Strongly type job arguments to reduce risk of SQL injection
+        'year': f"{int(args['p_year'])}",
+        'month': f"{int(args['p_month']):02}",
+        'day': f"{int(args['p_day']):02}",
+    }
 
     # Set default schema change detection based on InsuranceLake environment
     if args['environment'] == 'Dev':
@@ -206,7 +215,7 @@ def main():
     lineage = DataLineageGenerator(args)
     lineage.update_lineage(initial_df, args['source_key'], 'read')
     lineage.update_lineage(initial_df, args['source_key'], 'numericaudit')
-    dataquality = DataQualityCheck(rules_json_data, args, lineage, sc)
+    dataquality = DataQualityCheck(rules_json_data, partition, args, lineage, sc)
 
     if initial_df.count() == 0:
         raise RuntimeError('No rows of data in source file; aborting')
@@ -236,11 +245,13 @@ def main():
         print(f'Using transformation specification: {transform_spec}')
 
         for transform in transform_spec.keys():
-            if 'transform_' + transform not in globals():
-                print(f'Transform function transform_{transform} called for in {txn_map_key} not implemented')
+            # Trim optional suffix to support multiple calls to the same transform
+            transform_parts = transform.split(':')
+            if 'transform_' + transform_parts[0] not in globals():
+                print(f'Transform function transform_{transform_parts[0]} called for in {txn_spec_key} not implemented')
                 continue
 
-            transform_func = globals()['transform_' + transform]
+            transform_func = globals()['transform_' + transform_parts[0]]
             totransform_df = transform_func(
                 totransform_df,
                 transform_spec[transform],
@@ -255,17 +266,17 @@ def main():
         generated_spec_data = generate_spec(totransform_df, ext)
         put_s3_object(generated_spec_path, json.dumps(generated_spec_data, indent=4))
 
-    fields_to_add = {
+    # Add partition columns for daily data load partitioning strategy
+    fields_to_add = partition.copy()
+    fields_to_add |= {
         # Add State Machine execution ID to DataFrame for lineage tracking
         'execution_id': args['execution_id'],
-        # Add partition columns for daily data load partitioning strategy
-        'year': args['p_year'],
-        'month': args['p_month'],
-        'day': args['p_day'],
     }
+
     transformed_df = transform_literal(totransform_df, fields_to_add, args, lineage)
     transformed_df.cache()
-    print('Added partition columns and State Machine execution_id column')
+    print(f"Added partition columns {partition}"
+          f" and State Machine execution_id column {args['execution_id']}")
 
     # Record final DataFrame schema
     transformed_schema = list(transformed_df.schema)
@@ -285,21 +296,15 @@ def main():
         filtered_df,
         args['target_database_name'],
         args['table_name'],
-        ['year', 'month', 'day'],
+        partition.keys(),
         storage_location,
         table_description=input_spec.get('table_description'),
         # Will raise errors if nonpermissible schema change is detected
         allow_schema_change=input_spec.get('allow_schema_change', allow_schema_change),
     )
 
-    # Strongly type job arguments to reduce risk of SQL injection
-    p_year = int(args['p_year'])
-    p_month = int(args['p_month'])
-    p_day = int(args['p_day'])
-    spark.sql(f"ALTER TABLE {args['target_database_name']}.{args['table_name']}"
-        " DROP IF EXISTS PARTITION"
-        f" (year = '{p_year}', month = '{p_month:02}', day = '{p_day:02}')"
-    )
+    # Explicitly clear the existing partition in S3 and Glue Catalog (i.e. overwrite)
+    clear_partition(args['target_database_name'], args['table_name'], partition, glueContext)
 
     # saveAsTable on new tables fails in strict mode even with only 1 partition
     spark.conf.set('hive.exec.dynamic.partition.mode', 'nonstrict')
@@ -307,7 +312,7 @@ def main():
     spark.conf.set('spark.sql.sources.partitionOverwriteMode', 'dynamic')
     spark.conf.set('hive.exec.dynamic.partition', 'true')
 
-    filtered_df.write.partitionBy('year', 'month', 'day').saveAsTable(
+    filtered_df.write.partitionBy(*partition.keys()).saveAsTable(
         f"{args['target_database_name']}.{args['table_name']}",
         path=storage_location,
         format='hive',

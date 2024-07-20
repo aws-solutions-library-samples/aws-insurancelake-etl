@@ -63,8 +63,8 @@ def record_etl_job_run(
         table = dynamo_client.Table(audit_table_name)
         table.put_item(Item=item)
     except botocore.exceptions.ClientError as error:
-        logger.error(f'record_etl_job_run() DynamoDB put_item failed: {error}')
-        raise error
+        raise RuntimeError(f'record_etl_job_run() DynamoDB put_item failed: {error}')
+
     logger.info('record_etl_job_run() execution completed successfully')
     print('Job audit record insert completed successfully')
 
@@ -110,13 +110,28 @@ def lambda_handler(event: dict, _) -> dict:
         object_base_file_name = os.path.basename(object_full_path)
         # First object/folder name will be used as source system/database name
         # Second object/folder name will be used as table name
-        object_source_system_name, object_table_name = object_file_dir.split('/')
-    except ValueError:
+        path_components = object_file_dir.split('/')
+        object_source_system_name = path_components[0]
+        object_table_name = path_components[1]
+    except IndexError:
         logger.error(f'File object {object_full_path} cannot be processed without 2 levels of directory structure')
         return {
             'statusCode': 400,
             'body': json.dumps(f'File object {object_full_path} ignored due to unexpected naming convention')
         }
+
+    # Setup partitions from the event time, or user-provided overrides
+    p_year = event_time.strftime('%Y')
+    p_month = event_time.strftime('%m')
+    p_day = event_time.strftime('%d')
+    try:
+        # Check if uploader has provided folders to override the default partitions
+        p_year = path_components[2]
+        p_month = path_components[3]
+        p_day = path_components[4]
+    except IndexError:
+        # Keep any defaults
+        pass
 
     entity_match_spec = 'etl/transformation-spec/' + object_source_system_name + '-' + 'entitymatch.json'
     s3_client = boto3.client('s3')
@@ -129,17 +144,13 @@ def lambda_handler(event: dict, _) -> dict:
         print(f'Entity Match JSON {entity_match_spec} not found; skipping Entity Match job')
 
     logger.info(f'Bucket: {source_bucket_name}')
-    logger.info(f'Key: {object_full_path}')
+    logger.info(f'Key: {object_source_system_name}/{object_table_name}')
     logger.info(f'Source System Name: {object_source_system_name}')
     logger.info(f'Table Name: {object_table_name}')
     logger.info(f'File Path: {object_file_dir}')
     logger.info(f'File Base Name: {object_base_file_name}')
     logger.info(f'State Machine ARN: {sfn_arn}')
-
-    logger.info(f'Date/time used for partitioning: {event_time}')
-    p_year = event_time.strftime('%Y')
-    p_month = event_time.strftime('%m')
-    p_day = event_time.strftime('%d')
+    logger.info(f'Date used for partitioning: {p_year}-{p_month}-{p_day}')
 
     # Ensure state machine execution logging by following CloudWatch log group name constraints
     safe_object_base_file_name = re.sub('[^a-zA-Z0-9_-]', '', object_base_file_name)
@@ -152,7 +163,8 @@ def lambda_handler(event: dict, _) -> dict:
         {
             'target_database_name': object_source_system_name,
             'source_bucketname': source_bucket_name,
-            'source_key': object_file_dir, 
+            'source_key': object_source_system_name + '/' + object_table_name,
+            'source_path': object_file_dir,
             'base_file_name': object_base_file_name,
             'p_year': p_year,
             'p_month': p_month,
@@ -167,12 +179,11 @@ def lambda_handler(event: dict, _) -> dict:
         sfn_response = sfn_client.start_execution(
             stateMachineArn=sfn_arn,
             name=execution_name,
-            input=execution_input
+            input=execution_input,
         )
         print(f'SFN Reponse: {sfn_response}')
     except botocore.exceptions.ClientError as error:
-        logger.error(f'Step function client process failed: {error}')
-        raise error
+        raise RuntimeError(f'Step Function StartExecution failed: {error}')
 
     record_etl_job_run(audit_table_name, sfn_arn, execution_id, execution_name, execution_input, principal_id, source_ipaddress)
 

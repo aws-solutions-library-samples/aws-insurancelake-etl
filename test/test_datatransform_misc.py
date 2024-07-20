@@ -22,8 +22,14 @@ mock_table_data = [
     ( 1, 'policyline1', 'coverageA', 5000 ),
     ( 2, None, 'coverageB', 4000 ),
     ( 3, None, 'coverageC', 3000 ),
-    ( 4, 'policyline2', 'coverageB', 2000),
+    ( 4, 'policyline2', 'coverageB', 2000 ),
     ( 5, None, 'coverageC', 1000 ),
+]
+mock_table_data_merge = [
+    ( 1, 'policyline1', 'coverageA', 1000 ),
+    ( 2, None, None, 1000 ),
+    ( 3, '', 'coverageB', 1000 ),
+    ( 4, '', '', 1000 ),
 ]
 mock_table_schema = 'id int, policyline string, coveragedetail string, amount int'
 
@@ -72,6 +78,42 @@ def test_transform_filterrows_removes_rows():
     lineage = mock_lineage([])
     df = spark.createDataFrame(mock_table_data, schema=mock_table_schema)
     df = transform_filterrows(df, [{
-		"condition": "policyline is not null"
+		'condition': 'policyline is not null'
 	}], mock_args, lineage)
     assert df.count() == 2
+
+
+def test_merge_combines_null_columns():
+    lineage = mock_lineage([])
+    df = spark.createDataFrame(mock_table_data_merge, schema=mock_table_schema)
+    df = transform_merge(df, [{
+        'field': 'combined',
+        'source_list': [ 'policyline', 'coveragedetail' ],
+        'default': 'default',
+	}], mock_args, lineage)
+
+    assert 'combined' in df.columns
+    assert df.filter('`combined` is null').count() == 0
+    assert df.filter('`id` = 1').first()['combined'] == 'policyline1'
+    assert df.filter('`id` = 2').first()['combined'] == 'default'
+    assert df.filter('`id` = 3').first()['combined'] == ''
+    assert df.filter('`id` = 4').first()['combined'] == ''
+
+def test_merge_combines_columns_with_empty_string():
+    lineage = mock_lineage([])
+    df = spark.createDataFrame(mock_table_data_merge, schema=mock_table_schema)
+    df = transform_merge(df, [{
+        'field': 'combined',
+        'source_list': [ 'policyline', 'coveragedetail' ],
+        'default': 'default',
+        'empty_string_is_null': True,
+	}], mock_args, lineage)
+
+    df.show(10,False)
+
+    assert 'combined' in df.columns
+    assert df.filter('`combined` is null').count() == 0
+    assert df.filter('`id` = 1').first()['combined'] == 'policyline1'
+    assert df.filter('`id` = 2').first()['combined'] == 'default'
+    assert df.filter('`id` = 3').first()['combined'] == 'coverageB'
+    assert df.filter('`id` = 4').first()['combined'] == 'default'

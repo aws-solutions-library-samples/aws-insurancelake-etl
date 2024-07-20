@@ -15,6 +15,26 @@ mock_collect_bucket = ''
 mock_cleanse_bucket = ''
 mock_consume_bucket = ''
 
+# Stub Spark types to allow successful import of complex mock data
+def StructType(*args):
+    return args
+
+def StructField(*args):
+    return args
+
+def ArrayType(*args):
+    return args
+
+def MapType(*args):
+    return args
+
+def StringType(arg = ''):
+    return str(arg)
+
+def IntegerType(arg = 0):
+    return str(arg)
+
+
 def etl_collect_to_cleanse():
     # Stub function so that decorator call will succeed
     pass

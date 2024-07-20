@@ -3,7 +3,7 @@
 import pytest
 import sys
 import boto3
-from moto import mock_dynamodb
+from moto import mock_aws
 
 try:
     from test.glue_job_mocking_helper import *
@@ -40,7 +40,7 @@ mock_table_data = [ ( 1, '1/1/2022' ), ( 2, '12/31/2022' ) ]
 
 @pytest.fixture
 def use_moto():
-    @mock_dynamodb
+    @mock_aws
     def dynamodb_client_and_lineage_table():
         dynamodb = boto3.resource('dynamodb')
  
@@ -68,7 +68,7 @@ def test_lineage_is_skipped_when_no_table():
     lineage.update_lineage(df, 'TestDb/TestTable', 'read')
 
 
-@mock_dynamodb
+@mock_aws
 def test_update_lineage_writes_to_table(monkeypatch, use_moto):
     monkeypatch.setenv('AWS_DEFAULT_REGION', mock_region)
     lineage_table = use_moto()
@@ -86,7 +86,7 @@ def test_update_lineage_writes_to_table(monkeypatch, use_moto):
     assert item['Item']['dataset'] == 'TestDb/TestTable'
 
 
-@mock_dynamodb
+@mock_aws
 def test_update_lineage_handles_any_transform(monkeypatch, use_moto):
     monkeypatch.setenv('AWS_DEFAULT_REGION', mock_region)
     lineage_table = use_moto()

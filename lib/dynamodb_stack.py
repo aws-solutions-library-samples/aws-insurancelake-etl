@@ -49,6 +49,7 @@ class DynamoDbStack(cdk.Stack):
             encryption=dynamodb.TableEncryption.DEFAULT,
             point_in_time_recovery=True,
             removal_policy=self.removal_policy,
+            deletion_protection=True if self.removal_policy == cdk.RemovalPolicy.RETAIN else False,
         )
 
         # DynamoDB table to store raw data to hash value mapping
@@ -63,6 +64,7 @@ class DynamoDbStack(cdk.Stack):
             encryption_key=buckets.s3_kms_key,
             point_in_time_recovery=True,
             removal_policy=self.removal_policy,
+            deletion_protection=True if self.removal_policy == cdk.RemovalPolicy.RETAIN else False,
         )
 
         # DynamoDB table to store lookup values for lookup transform
@@ -77,6 +79,7 @@ class DynamoDbStack(cdk.Stack):
             encryption=dynamodb.TableEncryption.DEFAULT,
             point_in_time_recovery=True,
             removal_policy=self.removal_policy,
+            deletion_protection=True if self.removal_policy == cdk.RemovalPolicy.RETAIN else False,
         )
 
         # DynamoDB table to store lookup values for multi-value
@@ -93,6 +96,7 @@ class DynamoDbStack(cdk.Stack):
             encryption=dynamodb.TableEncryption.DEFAULT,
             point_in_time_recovery=True,
             removal_policy=self.removal_policy,
+            deletion_protection=True if self.removal_policy == cdk.RemovalPolicy.RETAIN else False,
         )
 
         # DynamoDB table to store Glue Data Quality results
@@ -106,6 +110,7 @@ class DynamoDbStack(cdk.Stack):
             encryption=dynamodb.TableEncryption.DEFAULT,
             point_in_time_recovery=True,
             removal_policy=self.removal_policy,
+            deletion_protection=True if self.removal_policy == cdk.RemovalPolicy.RETAIN else False,
         )
 
         if self.mappings[LINEAGE]:
@@ -120,6 +125,7 @@ class DynamoDbStack(cdk.Stack):
                 encryption=dynamodb.TableEncryption.DEFAULT,
                 point_in_time_recovery=True,
                 removal_policy=self.removal_policy,
+                deletion_protection=True if self.removal_policy == cdk.RemovalPolicy.RETAIN else False,
             )
         else:
             self.data_lineage_table = None

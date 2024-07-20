@@ -8,7 +8,7 @@ from awsglue.transforms import SelectFromCollection
 from pyspark.sql.dataframe import DataFrame
 from pyspark.context import SparkContext
 from pyspark.sql.functions import col, current_timestamp, lit
-from glue_catalog_helpers import upsert_catalog_table
+from glue_catalog_helpers import clear_partition, upsert_catalog_table
 
 try:
     # Try/Except block for running in AWS-provided Glue container until Glue DQ support is added
@@ -52,7 +52,7 @@ def create_add_dynamodb_columns_func(args: dict, ruleset_name: str, rule_action:
 class DataQualityCheck:
     """Class to perform data quality checks on Glue DynamicFrames with built-in actions
     """
-    def __init__(self, dq_rules: dict, args: dict, lineage, sc: SparkContext):
+    def __init__(self, dq_rules: dict, partition: dict, args: dict, lineage, sc: SparkContext):
         """
         Parameters
         ----------
@@ -66,6 +66,7 @@ class DataQualityCheck:
             Spark Context class from the calling job
         """
         self.dq_rules = dq_rules
+        self.partition = partition
         self.args = args
         self.lineage = lineage
         self.glueContext = GlueContext(sc)
@@ -209,16 +210,20 @@ class DataQualityCheck:
 
         # Failed records will be quarantined
         failed_df = dq_rowleveloutcomes_df.filter(col('DataQualityEvaluationResult').contains('Failed'))
+
+        # Clear partition regardless of quarantined rows in case user is reloading the partition
+        clear_partition(self.args['target_database_name'],
+            self.args['table_name'] + '_quarantine_' + ruleset_name,
+            self.partition, self.glueContext)
+
         if failed_df.count() > 0:
             cols_map = {}
             if ruleset_name == 'before_transform':
                 # DataFrame before transforms will not have partition or execution_id columns yet
                 cols_map.update({
-                    'execution_id': lit(self.args['execution_id']),
-                    'year': lit(self.args['p_year']),
-                    'month': lit(self.args['p_month']),
-                    'day': lit(self.args['p_day']),
+                    name: lit(value) for name, value in self.partition.items()
                 })
+                cols_map.update({'execution_id': lit(self.args['execution_id'])})
             cols_map.update({ 'quarantine_timestamp': current_timestamp() })
             failed_df = failed_df.withColumns(cols_map)
 
@@ -228,38 +233,16 @@ class DataQualityCheck:
                 failed_df,
                 self.args['target_database_name'],
                 self.args['table_name'] + '_quarantine_' + ruleset_name,
-                ['year', 'month', 'day'],
+                self.partition.keys(),
                 storage_location,
                 # Allow schema changes, because we don't want a failure when saving quarantined rows
                 allow_schema_change='permissive',
             )
 
-            # Strongly type job arguments to reduce risk of SQL injection
-            p_year = int(self.args['p_year'])
-            p_month = int(self.args['p_month'])
-            p_day = int(self.args['p_day'])
-            # Explicitly clear the existing partition (i.e. overwrite)
-            try:
-                self.glueContext.purge_table(
-                    database=self.args['target_database_name'],
-                    table_name=self.args['table_name'] + '_quarantine_' + ruleset_name,
-                    options={
-                        'partitionPredicate': f"(year == '{p_year}' AND month == '{p_month:02}' AND day == '{p_day:02}')",
-                        'retentionPeriod': 0
-                    }
-                )
-            except Exception as e:
-                # "Pushdown predicate cannot be resolved" error occurs when table is just created
-                # above and has no data (thus no partitions)
-                if "User's pushdown predicate" in e.java_exception.getMessage():
-                    print('No existing partition data to clear')
-                else:
-                    raise e
-
             # saveAsTable on new tables fails in strict mode even with only 1 partition
             self.spark.conf.set('hive.exec.dynamic.partition.mode', 'nonstrict')
             # Writing with append tells Spark to use the Hive (Glue Catalog) schema
-            failed_df.write.partitionBy('year', 'month', 'day').saveAsTable(
+            failed_df.write.partitionBy(*self.partition.keys()).saveAsTable(
                 f"{self.args['target_database_name']}.{self.args['table_name']}_quarantine_{ruleset_name}",
                 path=storage_location,
                 format='hive',

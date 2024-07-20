@@ -54,7 +54,7 @@ def test_redact_transform_throws_error_if_column_not_found():
 
 def mock_write_dynamic_frame_from_options(
     self,
-    frame: DynamicFrame,
+    frame: any,
     connection_type: str,
     connection_options: dict = {},
     transformation_ctx: str = None

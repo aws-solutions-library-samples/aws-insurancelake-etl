@@ -3,7 +3,7 @@
 import pytest
 import sys
 import json
-from moto import mock_dynamodb
+from moto import mock_aws
 
 try:
     from test.glue_job_mocking_helper import *
@@ -39,7 +39,7 @@ mock_table_schema = 'id int, date string'
 
 @pytest.fixture
 def dynamodb_table_for_lookup():
-    @mock_dynamodb
+    @mock_aws
     def inner():
         dynamodb = boto3.resource('dynamodb')
 
@@ -65,7 +65,7 @@ def dynamodb_table_for_lookup():
         return table
     return inner
 
-@mock_dynamodb
+@mock_aws
 def test_transform_lookup_finds_match(monkeypatch, dynamodb_table_for_lookup):
     monkeypatch.setenv('AWS_DEFAULT_REGION', mock_region)
     lineage = mock_lineage([])
@@ -78,7 +78,7 @@ def test_transform_lookup_finds_match(monkeypatch, dynamodb_table_for_lookup):
 
 @pytest.fixture
 def dynamodb_table_for_multilookup():
-    @mock_dynamodb
+    @mock_aws
     def inner():
         dynamodb = boto3.resource('dynamodb')
  
@@ -111,7 +111,7 @@ def dynamodb_table_for_multilookup():
         return table
     return inner
 
-@mock_dynamodb
+@mock_aws
 def test_transform_multilookup_finds_matches(monkeypatch, dynamodb_table_for_multilookup):
     monkeypatch.setenv('AWS_DEFAULT_REGION', mock_region)
     lineage = mock_lineage([])
@@ -129,7 +129,7 @@ def test_transform_multilookup_finds_matches(monkeypatch, dynamodb_table_for_mul
     assert df.filter('`a` is null').count() == 0
     assert df.filter('`b` is null').count() == 0
 
-@mock_dynamodb
+@mock_aws
 def test_transform_multilookup_nomatch_default(monkeypatch, dynamodb_table_for_multilookup):
     monkeypatch.setenv('AWS_DEFAULT_REGION', mock_region)
     lineage = mock_lineage([])
@@ -149,7 +149,7 @@ def test_transform_multilookup_nomatch_default(monkeypatch, dynamodb_table_for_m
     assert df.filter("`a` = 'N/A'").count() == 2
     assert df.filter("`b` = 'N/A'").count() == 2
 
-@mock_dynamodb
+@mock_aws
 def test_transform_multilookup_error_on_missing_lookup_data(monkeypatch):
     monkeypatch.setenv('AWS_DEFAULT_REGION', mock_region)
     lineage = mock_lineage([])
@@ -181,7 +181,7 @@ def test_transform_multilookup_error_on_missing_lookup_data(monkeypatch):
             mock_args, lineage, spark.sparkContext)
     e_info.match('lookup_group')
 
-@mock_dynamodb
+@mock_aws
 def test_get_multilookup_data_paginates(monkeypatch, dynamodb_table_for_multilookup):
     monkeypatch.setenv('AWS_DEFAULT_REGION', mock_region)
     dynamodb_table_for_multilookup()

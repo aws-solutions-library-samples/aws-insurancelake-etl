@@ -91,6 +91,17 @@
 			}
 		],
 
+		"date:2": [
+			{
+				"field": "EffectiveDate",
+				"format": "yyyy-MM-dd"
+			},
+			{
+				"field": "ExpirationDate",
+				"format": "yyyy-MM-dd"
+			}
+		],
+
 		"timestamp": [
 			{
 				"field": "GenerationDate",
@@ -191,7 +202,8 @@
 				"source_list": [
 					"insuredstatename", "insuredstatecode"
 				],
-				"default": "Unknown"
+				"default": "Unknown",
+				"empty_string_is_null": false
 			}
 		],
 

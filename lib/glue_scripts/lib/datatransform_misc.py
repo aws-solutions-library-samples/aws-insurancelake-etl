@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MIT-0
 from pyspark.sql.window import Window
 from pyspark.sql.dataframe import DataFrame
-from pyspark.sql.functions import coalesce, lit, col, first, count, row_number
+from pyspark.sql.functions import coalesce, lit, col, first, count, row_number, when
 
 def transform_merge(df: DataFrame, merge_spec: list, args: dict, lineage, *extra) -> DataFrame:
     """Merge columns using coalesce
@@ -14,10 +14,17 @@ def transform_merge(df: DataFrame, merge_spec: list, args: dict, lineage, *extra
             field: 'NewFieldName'
             source_list: [ 'first', 'second', 'third' ] list of fields in order of priority to coalesce
             default: 'N/A' optional lowest priority default value to use in the coalesce (instead of null)
+            empty_string_is_null: optional, whether empty strings should be treated as null values
     """
     cols_map = {}
     for spec in merge_spec:
-        column_list = spec['source_list'].copy()
+        column_list = [
+            # Treat any empty strings as null, unless specified otherwise
+            when(col(col_name) == '', None).otherwise(col(col_name))
+                if spec.get('empty_string_is_null', False) else col_name
+            for col_name in spec['source_list']
+        ]
+
         if 'default' in spec:
             # Append the default value as a literal to the list of fields
             column_list.append(lit(spec['default']))

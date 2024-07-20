@@ -24,7 +24,7 @@ args = parser.parse_args()
 #	"column_name1": { "lookup_value1": "lookedup_value1", "lookup_value2": "lookedup_value2", ... },
 #	"column_name2": { ... }
 # }
-with open(args.data_file) as lookup_data_file:
+with open(args.data_file, encoding='utf-8') as lookup_data_file:
 	lookup_data = json.load(lookup_data_file)
 
 # Prepare DynamoDB data in the form of the table schema

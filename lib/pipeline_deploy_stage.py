@@ -39,7 +39,7 @@ class PipelineDeployStage(cdk.Stage):
         dynamodb_stack = DynamoDbStack(
             self,
             f'{logical_id_prefix}EtlDynamoDb',
-            description='InsuranceLake stack for DynamoDB tables to store pipeline state and processing history (uksb-1tu7mtee2)',
+            description='InsuranceLake stack for DynamoDB tables to store pipeline state and processing history (SO9489)',
             target_environment=target_environment,
             env=env,
             **kwargs,
@@ -48,7 +48,7 @@ class PipelineDeployStage(cdk.Stage):
         glue_stack = GlueStack(
             self,
             f'{logical_id_prefix}EtlGlue',
-            description='InsuranceLake stack for Glue jobs to support the data pipeline (uksb-1tu7mtee2)',
+            description='InsuranceLake stack for Glue jobs to support the data pipeline (SO9489)',
             target_environment=target_environment,
             env=env,
             hash_values_table=dynamodb_stack.hash_values_table,
@@ -62,7 +62,7 @@ class PipelineDeployStage(cdk.Stage):
         step_function_stack = StepFunctionsStack(
             self,
             f'{logical_id_prefix}EtlStepFunctions',
-            description='InsuranceLake stack for Step Functions and supporting Lambda functions to orchestrate data pipeline steps (uksb-1tu7mtee2)',
+            description='InsuranceLake stack for Step Functions and supporting Lambda functions to orchestrate data pipeline steps (SO9489)',
             target_environment=target_environment,
             env=env,
             collect_to_cleanse_job=glue_stack.collect_to_cleanse_job,
@@ -76,7 +76,7 @@ class PipelineDeployStage(cdk.Stage):
         athena_helper_stack = AthenaHelperStack(
             self,
             f'{logical_id_prefix}EtlAthenaHelper',
-            description='InsuranceLake stack for Athena helper Workgroup (uksb-1tu7mtee2)',
+            description='InsuranceLake stack for Athena helper Workgroup (SO9489)',
             target_environment=target_environment,
             env=env,
             glue_scripts_temp_bucket=glue_stack.glue_scripts_temp_bucket,

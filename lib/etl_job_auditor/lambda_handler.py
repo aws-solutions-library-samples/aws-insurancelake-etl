@@ -59,8 +59,7 @@ def lambda_handler(event: dict, _) -> dict:
             )
             return_message = f'status {status}'
         except botocore.exceptions.ClientError as error:
-            logger.error(f'DynamoDB update_item failed: {error}')
-            raise error
+            raise RuntimeError(f'DynamoDB update_item failed: {error}')
     else:
         print('JobRunState does not exist, assuming FAILED')
         status = 'FAILED'
@@ -78,7 +77,8 @@ def lambda_handler(event: dict, _) -> dict:
                 Key={
                     'execution_id': execution_id
                 },
-                UpdateExpression='set job_last_updated_timestamp=:lut,job_latest_status=:sts,error_message=:emsg',
+                UpdateExpression=
+                    'set job_last_updated_timestamp=:lut,job_latest_status=:sts,error_message=:emsg',
                 ExpressionAttributeValues={
                     ':sts': status,
                     ':lut': audit_message_timestamp,
@@ -88,8 +88,7 @@ def lambda_handler(event: dict, _) -> dict:
             )
             return_message = f'status {status} {error_message}'
         except botocore.exceptions.ClientError as error:
-            logger.error(f'DynamoDB update_item failed: {error}')
-            raise error
+            raise RuntimeError(f'DynamoDB UpdateItem failed: {error}')
 
     return {
         'statusCode': 200,

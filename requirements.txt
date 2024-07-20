@@ -1,11 +1,7 @@
 -e .
-# Python 3.12 was introduced in 2.107 but is not GA yet and confuses CDK-nag checks
-aws-cdk-lib<=2.106.1
+aws-cdk-lib
 boto3
 cdk-nag
-pytest
-pytest-cov
-moto
 pyparsing>=3.1
 rapidfuzz
 recordlinkage

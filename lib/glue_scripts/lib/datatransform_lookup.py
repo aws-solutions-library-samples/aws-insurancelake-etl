@@ -4,9 +4,8 @@ import json
 import boto3
 from boto3.dynamodb.conditions import Key
 from pyspark.context import SparkContext
-from pyspark.sql.window import Window
 from pyspark.sql.dataframe import DataFrame
-from pyspark.sql.functions import coalesce, lit, broadcast, concat_ws, col, first, count, row_number
+from pyspark.sql.functions import broadcast, concat_ws
 from awsglue.context import GlueContext
 
 def get_lookup_data(table_name: str, key_values: dict, lookup_data_attribute_name: str) -> list:

@@ -142,7 +142,7 @@ class PipelineStack(cdk.Stack):
                 )
             )
 
-        # Enable cdk-nag for environment stacks before adding to
+        # Enable CDK Nag for environment stacks before adding to
         # pipeline, which are deployed with CodePipeline
         cdk.Aspects.of(pipeline_deploy_stage).add(AwsSolutionsChecks())
 

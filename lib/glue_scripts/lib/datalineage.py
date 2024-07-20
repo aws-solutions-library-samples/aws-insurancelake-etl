@@ -49,6 +49,14 @@ class DataLineageGenerator:
         """
         return(str(uuid.uuid4()))
 
+    def generatecounts(self, df) -> dict:
+        """Generates a dictionary of dataframe counts/size
+        """
+        return({
+            'row': df.count(),
+            'column': len(df.columns),
+        })
+
     def insert_table(self, dataset: str, operation: str, transform_spec: any):
         """Inserts the lineage event to DynamoDB data lineage table
 
@@ -98,10 +106,6 @@ class DataLineageGenerator:
             # No table is defined so no data lineage is possible
             return
 
-        dataset_counts = {
-            'row': df.count(),
-            'column': len(df.columns),
-        }
         try:
             dataset_filename = df.select(input_file_name()).limit(1).collect()[0][0]
         except:
@@ -112,7 +116,7 @@ class DataLineageGenerator:
         if operation == 'read':
             lineage_info = {
                 'datasetname': dataset_filename,
-                'dataset_counts': dataset_counts,
+                'dataset_counts': self.generatecounts(df),
                 'schema': str(df.dtypes),
             }
             self.insert_table(dataset, operation, lineage_info)
@@ -121,7 +125,7 @@ class DataLineageGenerator:
             lineage_info = {
                 'datasetname': dataset_filename,
                 'format': kwargs['format'],
-                'dataset_counts': dataset_counts,
+                'dataset_counts': self.generatecounts(df),
                 'schema': str(df.dtypes),
             }
             self.insert_table(dataset, operation, lineage_info)
@@ -129,7 +133,7 @@ class DataLineageGenerator:
         # Numeric Audit
         elif operation == 'numericaudit': 
             lineage_info = {
-                'dataset_counts': dataset_counts,
+                'dataset_counts': self.generatecounts(df),
                 'field_total': {
                     # Sum any double or decimal columns; convert to string explicitly to not rely on the JSON parser
                     field_name: str(df.select(sum(f'`{field_name}`')).collect()[0][0])
@@ -138,6 +142,8 @@ class DataLineageGenerator:
                 }
             }
             self.insert_table(dataset, operation, lineage_info)
+
+        # TODO: Add special handling for multilookup: create one row for each return_attribute for column level lineage
 
         # Mapping
         elif operation == 'mapping':

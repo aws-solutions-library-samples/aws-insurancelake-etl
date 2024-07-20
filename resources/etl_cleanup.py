@@ -24,6 +24,7 @@ which will report 0).
 
 """
 import boto3
+import botocore
 import argparse
 import re
 import sys
@@ -68,14 +69,15 @@ cf = boto3.client('cloudformation')
 response = cf.list_exports()
 while True:
 	for export in response['Exports']:
+		print(f"{export['Name']}: {export['Value']}")
 		if export['Name'] in bucket_exports:
 			buckets.append(export['Value'])
-		if re.search('ExportsOutputRef\w+Table', export['Name']):
+		if re.search(r'ExportsOutputRef\w+Table', export['Name']):
 			dynamodb_tables.append(export['Value'])
 		# These are automatically added exports that we do not have a mapping for
-		if 'GlueScriptsTemporaryBucket' in export['Name']:
+		if 'GlueScriptsTemporaryBucket' in export['Name'] and not export['Value'].startswith('arn'):
 			buckets.append(export['Value'])
-		if args.mode == 'allbuckets' and 'GlueScriptsBucket' in export['Name'] and 'Arn' not in export['Name']:
+		if args.mode == 'allbuckets' and 'GlueScriptsBucket' in export['Name'] and not export['Value'].startswith('arn'):
 			buckets.append(export['Value'])
 	if 'NextToken' in response:
 		response = cf.list_exports(nextToken=response['NextToken'])
@@ -120,7 +122,7 @@ while True:
 			while True:
 				if 'TableList' in response_tables:
 					for table in response_tables['TableList']:
-						match = re.search('^s3://([^\/]+)', table['StorageDescriptor']['Location'])
+						match = re.search(r'^s3://([^\/]+)', table['StorageDescriptor']['Location'])
 						if match and match.group(1) in buckets:
 							# Table location matches an InsuranceLake S3 bucket name
 							# Use a dict key to remove duplicates
@@ -165,16 +167,25 @@ log_groups_response = logs.describe_log_groups()
 if 'NextToken' in log_groups_response:
 	print('Not all log groups were parsed. Support for multiple pages is not implemented.')
 for log_group in log_groups_response['logGroups']:
-	if re.search(f'{environment}-{logical_id_prefix}\w+-\w+StateMachineLogGroup', log_group['logGroupName']):
+	if re.search(fr'{environment}-{logical_id_prefix}\w+-\w+StateMachineLogGroup', log_group['logGroupName']):
 		logs_to_empty.append(log_group['logGroupName'])
-	if re.search(f'{environment}-{logical_id_prefix}\w+-\w+VpcFlowLogGroup', log_group['logGroupName']):
+	if re.search(fr'{environment}-{logical_id_prefix}\w+-\w+VpcFlowLogGroup', log_group['logGroupName']):
 		logs_to_empty.append(log_group['logGroupName'])
 		print("NOTE: VPC Flow Logs are created continuously; you will see some log streams immediately after deleting")
 
 for log_group_name in logs_to_empty:
 	print(f'Emptying Log Group: {log_group_name}: ', end='')
 	log_streams_deleted = 0
-	log_streams_response = logs.describe_log_streams(logGroupName=log_group_name)
+
+	try:
+		log_streams_response = logs.describe_log_streams(logGroupName=log_group_name)
+	except botocore.exceptions.ClientError as error:
+		if error.response['Error']['Code'] == 'ResourceNotFoundException':
+			# Log group doesn't exist; was never created by a Lambda execution
+			continue
+		else:
+			raise error
+
 	while True:
 		for stream in log_streams_response['logStreams']:
 			if reallydelete:

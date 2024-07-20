@@ -99,4 +99,10 @@ class mock_glue_job:
 
 # Shared Spark session for all tests
 if 'pyspark' in sys.modules:
-    spark = SparkSession.builder.master('local[*]').appName('Unit-tests').getOrCreate()
+    spark_conf = SparkConf()
+    spark_conf.set('spark.sql.extensions', 'org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions')
+    spark_conf.set('spark.sql.catalog.local', 'org.apache.iceberg.spark.SparkCatalog')
+    spark_conf.set('spark.sql.catalog.local.type', 'hadoop')
+    spark_conf.set('spark.sql.catalog.local.warehouse', mock_consume_bucket + '/iceberg')
+    spark_conf.set('spark.sql.iceberg.handle-timestamp-without-timezone', True)
+    spark = SparkSession.builder.config(conf=spark_conf).master('local[*]').appName('Unit-tests').getOrCreate()

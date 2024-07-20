@@ -1,7 +1,7 @@
 # Copyright Amazon.com and its affiliates; all rights reserved. This file is Amazon Web Services Content and may not be duplicated or distributed without permission.
 # SPDX-License-Identifier: MIT-0
 import pytest
-from moto import mock_dynamodb
+from moto import mock_aws
 import boto3
 import botocore
 import json
@@ -78,7 +78,7 @@ test_context = {
 
 @pytest.fixture
 def use_moto():
-    @mock_dynamodb
+    @mock_aws
     def dynamodb_client_and_audit_table():
         dynamodb = boto3.resource('dynamodb')
  
@@ -98,7 +98,7 @@ def use_moto():
     return dynamodb_client_and_audit_table
 
 
-@mock_dynamodb
+@mock_aws
 def test_handler_success_event_returns_200(monkeypatch, use_moto):
     monkeypatch.setenv('AWS_DEFAULT_REGION', mock_region)
     monkeypatch.setenv('DYNAMODB_TABLE_NAME', test_table_name)
@@ -108,7 +108,7 @@ def test_handler_success_event_returns_200(monkeypatch, use_moto):
     assert result['statusCode'] == 200
 
 
-@mock_dynamodb
+@mock_aws
 def test_handler_success_event_returns_state(monkeypatch, use_moto):
     monkeypatch.setenv('AWS_DEFAULT_REGION', mock_region)
     monkeypatch.setenv('DYNAMODB_TABLE_NAME', test_table_name)
@@ -118,7 +118,7 @@ def test_handler_success_event_returns_state(monkeypatch, use_moto):
     assert result['body'].find('SUCCEEDED') != -1
 
 
-@mock_dynamodb
+@mock_aws
 def test_handler_success_event_records_state(monkeypatch, use_moto):
     monkeypatch.setenv('AWS_DEFAULT_REGION', mock_region)
     monkeypatch.setenv('DYNAMODB_TABLE_NAME', test_table_name)
@@ -133,7 +133,7 @@ def test_handler_success_event_records_state(monkeypatch, use_moto):
     assert item['Item']['job_latest_status'] == 'SUCCEEDED'
 
 
-@mock_dynamodb
+@mock_aws
 def test_handler_failure_event_returns_200(monkeypatch, use_moto):
     monkeypatch.setenv('AWS_DEFAULT_REGION', mock_region)
     monkeypatch.setenv('DYNAMODB_TABLE_NAME', test_table_name)
@@ -143,7 +143,7 @@ def test_handler_failure_event_returns_200(monkeypatch, use_moto):
     assert result['statusCode'] == 200
 
 
-@mock_dynamodb
+@mock_aws
 def test_handler_failure_event_returns_state_and_error(monkeypatch, use_moto):
     monkeypatch.setenv('AWS_DEFAULT_REGION', mock_region)
     monkeypatch.setenv('DYNAMODB_TABLE_NAME', test_table_name)
@@ -154,7 +154,7 @@ def test_handler_failure_event_returns_state_and_error(monkeypatch, use_moto):
     assert result['body'].find('Error for testing') != -1
 
 
-@mock_dynamodb
+@mock_aws
 def test_handler_failure_event_records_error_message(monkeypatch, use_moto):
     monkeypatch.setenv('AWS_DEFAULT_REGION', mock_region)
     monkeypatch.setenv('DYNAMODB_TABLE_NAME', test_table_name)
@@ -169,7 +169,7 @@ def test_handler_failure_event_records_error_message(monkeypatch, use_moto):
     assert item['Item']['error_message'] == 'RuntimeError: Error for testing'
 
 
-@mock_dynamodb
+@mock_aws
 def test_wrong_table_returns_error(monkeypatch, use_moto):
     monkeypatch.setenv('AWS_DEFAULT_REGION', mock_region)
     monkeypatch.setenv('DYNAMODB_TABLE_NAME', 'wrong_table_name')

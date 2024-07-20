@@ -8,7 +8,7 @@ import numpy as np
 import pyspark.pandas as pd
 
 from pyspark.sql.dataframe import DataFrame
-from pyspark.context import SparkContext
+from pyspark.context import SparkContext, SparkConf
 from pyspark.sql.functions import col, lit, when, expr, coalesce, concat
 from awsglue.utils import getResolvedOptions
 from awsglue.context import GlueContext
@@ -24,11 +24,13 @@ expected_arguments = [
     'JOB_NAME',
     'state_machine_name',
     'execution_id',
+    'source_key',
     'environment',
     'TempDir',
     'txn_bucket',
     'txn_spec_prefix_path',
     'target_bucket',
+    'iceberg_catalog',
     'database_name_prefix',
     'table_name',
     'p_year',
@@ -42,8 +44,7 @@ for arg in sys.argv:
         expected_arguments.append('data_lineage_table')
 
 
-
-def fill_global_id(df: DataFrame, global_id: str) -> DataFrame:
+def fill_global_id(df: DataFrame, global_id: str, args, lineage) -> DataFrame:
     """ Assign all entities a unique ID that do not have one and ensure Global ID field is the
     first field
 
@@ -64,7 +65,9 @@ def fill_global_id(df: DataFrame, global_id: str) -> DataFrame:
         column for column in df.columns
             if column != global_id
     ]
-    # TODO: Data lineage opportunity here
+    lineage.update_lineage(df, args['source_key'], 'fill_global_id',
+        transform=[{ 'field': global_id }])
+
     return df.select(
         when(col(global_id).isNull(), expr('uuid()')) \
             .otherwise(col(global_id)) \
@@ -285,63 +288,24 @@ def entitymatch_recordlinkage(
     return split_dataframe(entity_incoming_matched_df, global_id)
 
 
-def writedatatoprimaryentitytable(
-        entity_df,
-        consume_database,
-        entity_primary_table_name,
-        storage_location,
-        global_id_field,
-        sort_field
-    ):
-    """Write Spark DataFrame to Hudi table, with Hive/Glue Catalog schema sync
-
-    Parameters
-    ----------
-    entity_df
-        Spark DataFrame to write
-    consume_database
-        Name of Consume database to use in the Glue Catalog
-    entity_primary_table_name
-        Name of primary table to write to in the Consume database
-    storage_location
-        Path to primary table storage location (full URI syntax)
-    global_id_field
-        Name of Global ID field to be used as the Hudi record key
-    sort_field
-        Name of field to be used as the Hudi precombine key
-    """
-    # NOTE: KryoSerializer spark serializer should be specified as Glue job runtime argument
-    hudi_options = {
-        'hoodie.table.name': entity_primary_table_name,
-        'hoodie.datasource.write.storage.type': 'COPY_ON_WRITE',
-        'hoodie.datasource.write.operation': 'INSERT',
-        'hoodie.datasource.write.recordkey.field': global_id_field,
-        'hoodie.datasource.write.table.name': entity_primary_table_name,
-        'hoodie.datasource.write.precombine.field': sort_field,
-        'hoodie.datasource.write.hive_style_partitioning': True,
-        'hoodie.datasource.write.keygenerator.class': 'org.apache.hudi.keygen.CustomKeyGenerator',
-        'hoodie.datasource.write.partitionpath.field': 'year:SIMPLE, month:SIMPLE, day:SIMPLE',
-        'hoodie.merge.allow.duplicate.on.inserts': False,
-        'hoodie.datasource.hive_sync.enable': True,
-        'hoodie.datasource.hive_sync.database': consume_database,
-        'hoodie.datasource.hive_sync.table': entity_primary_table_name,
-        'hoodie.datasource.hive_sync.partition_fields': 'year,month,day',
-        'hoodie.datasource.hive_sync.partition_extractor_class': 'org.apache.hudi.hive.MultiPartKeysValueExtractor',
-        'hoodie.datasource.hive_sync.use_jdbc': False,
-        'hoodie.datasource.hive_sync.mode': 'hms',
-    }
-
-    # TODO: Data lineage opportunity here
-    entity_df.write.format('hudi')  \
-        .options(**hudi_options)  \
-        .mode('append')  \
-        .save(storage_location)
-
-
 def main():
     args = getResolvedOptions(sys.argv, expected_arguments)
 
-    sc = SparkContext()
+    # Storage location is used for all tables in the Iceberg warehouse
+    storage_location = args['target_bucket'] + '/iceberg'
+    consume_database = f"{args['database_name_prefix'].lower()}_consume"
+    source_table = args['table_name'].lower()   # lowercase not strictly needed, but more accurate
+
+    spark_conf = SparkConf()
+    # Iceberg configuration must be set before creating the Spark Context
+    spark_conf.set('spark.sql.extensions', 'org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions')
+    spark_conf.set('spark.sql.catalog.glue_catalog', 'org.apache.iceberg.spark.SparkCatalog')
+    spark_conf.set('spark.sql.catalog.glue_catalog.catalog-impl', 'org.apache.iceberg.aws.glue.GlueCatalog')
+    spark_conf.set('spark.sql.catalog.glue_catalog.io-impl', 'org.apache.iceberg.aws.s3.S3FileIO')
+    spark_conf.set('spark.sql.catalog.glue_catalog.warehouse', storage_location)
+    spark_conf.set('spark.sql.iceberg.handle-timestamp-without-timezone', True)
+
+    sc = SparkContext(conf=spark_conf)
     glueContext = GlueContext(sc)
     spark = glueContext.spark_session
     job = Job(glueContext)
@@ -350,11 +314,14 @@ def main():
     # Use the Spark DataFrame to Pandas DataFrame optimized conversion
     spark.conf.set('spark.sql.execution.arrow.pyspark.enabled', True)
 
-    # Use hive schema instead of Parquet to handle schema evolution
-    spark.conf.set('spark.sql.hive.convertMetastoreParquet', False)
+    # Job parameter supplied date partition strategy (used for data retrieval)
+    partition = {
+        # Strongly type job arguments to reduce risk of SQL injection
+        'year': f"{int(args['p_year'])}",
+        'month': f"{int(args['p_month']):02}",
+        'day': f"{int(args['p_day']):02}",
+    }
 
-    # TODO: Implement lineage
-    lineage = DataLineageGenerator(args)
 
     # Load config file from spec folder
     txn_spec_prefix = args['txn_spec_prefix_path']
@@ -369,13 +336,8 @@ def main():
         raise RuntimeError('Entity matching spec file required and none found')
     print(f'Using transformation specification: {spec_json_data}')
 
-    consume_database = f"{args['database_name_prefix'].lower()}_consume"
-    source_table = args['table_name'].lower()   # lowercase not strictly needed, but more accurate
-    consume_bucket = args['target_bucket']
     entity_primary_table_name = spec_json_data['primary_entity_table']
-    storage_location = consume_bucket + '/' + args['database_name_prefix'] + '/' + entity_primary_table_name
     global_id_field = spec_json_data['global_id_field']
-    sort_field = spec_json_data['sort_field']
 
     # Incoming data can have the global ID set for some rows-- these should be left intact
     # Incoming data can have no global ID, so all rows need it added
@@ -384,22 +346,25 @@ def main():
     # Any rows that didn't match using any method should be treated as new entities and assigned a global ID
 
 
-    # TODO: Allow config override of consume database source_table name
     # Read newly added partition from consume table using Glue Catalog Hive
-    # Strongly type job arguments to reduce risk of SQL injection
-    p_year = int(args['p_year'])
-    p_month = int(args['p_month'])
-    p_day = int(args['p_day'])
-    entity_incoming_df = spark.sql(f'SELECT * FROM {consume_database}.{source_table} WHERE '    # nosec
-        f"(year == '{p_year}' AND month == '{p_month:02}' AND day == '{p_day:02}')"
-    )
-    print(f'Retrieved {entity_incoming_df.count()} records as incoming data from {consume_database}.{source_table}')
+    # Bandit check suppressed due to parameters being from trusted, known source
+    partition_predicate = ' AND '. \
+        join([ f"{name} == '{value}'" for name, value in partition.items() ])
+    entity_incoming_df = spark.sql(f'SELECT * FROM {consume_database}.{source_table}'   # nosec B608
+        f' WHERE {partition_predicate}')
+
+    print(f'Retrieved {entity_incoming_df.count()} records as incoming data from'
+        f' {consume_database}.{source_table}')
+
+
+    lineage = DataLineageGenerator(args)
 
     if global_id_field not in entity_incoming_df.columns:
         # Incoming dataset does not provide a global ID column, so add an empty one
-        print(f'Global ID field {global_id_field} not found; field will be added and populated')
-        # TODO: Data lineage opportunity here
         entity_incoming_df = entity_incoming_df.withColumn(global_id_field, lit(None))
+        lineage.update_lineage(entity_incoming_df, args['source_key'], 'add_column',
+            transform=[{ 'field': global_id_field }])
+        print(f'Global ID field {global_id_field} not found; field added and populated')
     else:
         print(f'Global ID field {global_id_field} found and will take priority over matching')
 
@@ -407,24 +372,31 @@ def main():
     if not table_exists(consume_database, entity_primary_table_name):
         print('Creating primary entity table for the first time...')
         # Any records without a global ID are assumed new records and assigned an ID
-        entity_incoming_df = fill_global_id(entity_incoming_df, global_id_field)
+        entity_incoming_df = fill_global_id(entity_incoming_df, global_id_field, args, lineage)
         entity_incoming_df.cache()
 
         print(f'Incoming record schema: {entity_incoming_df.schema}')
+        print(f'Writing {entity_incoming_df.count()} incoming records to primary entity table:'
+            f' {consume_database}.{entity_primary_table_name}')
+
+        entity_incoming_df.writeTo(
+            f"{args['iceberg_catalog']}.{consume_database}.{entity_primary_table_name}") \
+            .tableProperty('format-version', '2') \
+            .partitionedBy(*partition.keys()) \
+            .create()
 
     else:
         print('Matching incoming data to primary entity table...')
 
         # Read existing primary entity Hudi table
         entity_primary_df = spark.read \
-            .format('hudi') \
-            .load(storage_location)
+            .format('iceberg') \
+            .load(f"{args['iceberg_catalog']}.{consume_database}.{entity_primary_table_name}")
         entity_incoming_df.cache()
         print(f'{entity_primary_df.count()} records read from primary table {consume_database}.{entity_primary_table_name}')
 
-        # TODO: Check for primary table vs. incoming table schema mismatch and raise error
-        # entity_primary_df.schema vs. entity_incoming_df.schema (with hudi columns removed)
-        # Hudi schema evolution support: https://hudi.apache.org/docs/schema_evolution/
+        # Do not check for schema change
+        # Evolution supported by Iceberg: https://iceberg.apache.org/docs/latest/evolution/
 
         entity_incoming_prematched_df, entity_incoming_tomatch_df = split_dataframe(entity_incoming_df, global_id_field)
         entity_incoming_df.unpersist()
@@ -446,7 +418,7 @@ def main():
         print(f'Recordlinkage-match matched {entity_incoming_recordlinkage_matched_df.count()} records')
 
         # Anything unmatched after matching is assumed to be new records
-        entity_incoming_filled_df = fill_global_id(entity_incoming_tomatch_df, global_id_field)
+        entity_incoming_filled_df = fill_global_id(entity_incoming_tomatch_df, global_id_field, args, lineage)
         entity_incoming_tomatch_df.unpersist()
         print(f'Generated a global ID for {entity_incoming_filled_df.count()} new records')
 
@@ -461,18 +433,25 @@ def main():
         entity_incoming_exact_matched_df.unpersist()
         entity_incoming_recordlinkage_matched_df.unpersist()
 
+        print(f'Writing {entity_incoming_df.count()} incoming records to primary entity table:'
+            f' {consume_database}.{entity_primary_table_name}')
 
-    print(f'Writing {entity_incoming_df.count()} incoming records to primary entity table: '
-        f'{consume_database}.{entity_primary_table_name}')
+        # Creates a temporary view using the DataFrame
+        entity_incoming_df.createOrReplaceTempView('entity_incoming')
 
-    writedatatoprimaryentitytable(
-        entity_incoming_df,
-        consume_database,
-        entity_primary_table_name,
-        storage_location,
-        global_id_field,
-        sort_field,
-    )
+        update_list = ', '.join([ f"{entity_primary_table_name}.{field.name} = entity_incoming.{field.name}"
+            for field in entity_incoming_df.schema ])
+
+        # Bandit check suppressed due to parameters being from trusted, known source
+        spark_sql = f"""MERGE INTO
+            {args['iceberg_catalog']}.`{consume_database}`.`{entity_primary_table_name}`
+            USING entity_incoming
+            ON {entity_primary_table_name}.{global_id_field} = entity_incoming.{global_id_field}
+            WHEN MATCHED THEN UPDATE SET {update_list}
+            WHEN NOT MATCHED THEN INSERT *
+            """     # nosec B608
+        spark.sql(spark_sql)
+        lineage.update_lineage(entity_primary_df, args['source_key'], 'sparksql', transform=[ spark_sql ])
 
     job.commit()
 

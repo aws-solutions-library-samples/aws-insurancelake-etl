@@ -29,6 +29,7 @@ mock_args = [
     '--txn_spec_prefix_path=/etl/transformation-spec/',
     f'--source_bucket={mock_collect_bucket}',
     f'--target_bucket=file:///tmp/{mock_resource_prefix}-cleanse-bucket',
+    f'--source_path={mock_database_name}/{mock_table_name}',
     f'--source_key={mock_database_name}/{mock_table_name}',
     f'--target_database_name={mock_database_name}',
     f'--table_name={mock_table_name}',

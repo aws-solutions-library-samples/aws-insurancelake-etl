@@ -90,7 +90,7 @@ def athena_execute_query(database: str, query: str, result_bucket: str, max_atte
             raise RuntimeError("athena_execute_query() failed with query engine error: "
                 f"{query_details['QueryExecution']['Status'].get('StateChangeReason', '')}")
         if status != 'SUCCEEDED':
-            time.sleep(1)
+            time.sleep(1)   # nosemgrep
         attempts -= 1
 
     return status
@@ -110,6 +110,14 @@ def main():
     substitution_data = args.copy()
     sql_prefix = args['txn_sql_prefix_path']
     source_key_dashes = args['source_database_name'] + '-' + args['table_name']
+
+    # Job parameter supplied date partition strategy
+    partition = {
+        # Strongly type job arguments to reduce risk of SQL injection
+        'year': f"{int(args['p_year'])}",
+        'month': f"{int(args['p_month']):02}",
+        'day': f"{int(args['p_day']):02}",
+    }
 
     # Read Data Quality rules
     dq_rules_key = 'etl/dq-rules/dq-' + source_key_dashes + '.json'
@@ -164,7 +172,7 @@ def main():
         lineage = DataLineageGenerator(args)
         lineage.update_lineage(df, args['source_key'], 'sparksql', transform=[ spark_sql ])
 
-        dataquality = DataQualityCheck(rules_json_data, args, lineage, sc)
+        dataquality = DataQualityCheck(rules_json_data, partition, args, lineage, sc)
         filtered_df = dataquality.run_data_quality(df, rules_json_data, 'after_sparksql')
         filtered_df.cache()
         # Post Spark SQL and DQ filter numeric audit
@@ -180,7 +188,7 @@ def main():
             filtered_df,
             args['target_database_name'],
             target_table,
-            ['year', 'month', 'day'],
+            partition.keys(),
             storage_location,
             # Permissive schema change because we are rewriting the entire table
             allow_schema_change='permissive',
@@ -194,8 +202,8 @@ def main():
         spark.conf.set('hive.exec.dynamic.partition', 'true')
         spark.conf.set('hive.exec.dynamic.partition.mode', 'nonstrict')
 
-        filtered_df.repartition('year', 'month', 'day'). \
-            write.partitionBy('year', 'month', 'day').saveAsTable(
+        filtered_df.repartition(*partition.keys()). \
+            write.partitionBy(*partition.keys()).saveAsTable(
                 f"{args['target_database_name']}.{target_table}",
                 path=storage_location,
                 format='hive',

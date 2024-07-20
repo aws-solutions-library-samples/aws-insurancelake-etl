@@ -128,6 +128,19 @@ class GlueStack(cdk.Stack):
             for subnet_number in range(len(vpc.subnets))
         ]
 
+        common_default_arguments = {
+                '--enable-auto-scaling': 'true',
+                '--enable-continuous-cloudwatch-log': 'true',
+                '--enable-metrics': 'true',
+                '--enable-glue-datacatalog': 'true',
+                '--user-jars-first': 'true',
+                '--extra-jars': ','.join(spark_libraries) if spark_libraries else None,
+                '--extra-py-files': ','.join(glue_libraries),
+                '--environment': self.target_environment,
+                '--txn_bucket': f's3://{self.glue_scripts_bucket.bucket_name}',
+                '--data_lineage_table': data_lineage_table.table_name if data_lineage_table else None,
+        }
+
         self.collect_to_cleanse_job = glue.CfnJob(
             self,
             f'{target_environment}{self.logical_id_prefix}CollectToCleanseJob',
@@ -144,18 +157,9 @@ class GlueStack(cdk.Stack):
             ) if job_connections else None,
             # These arguments are common to all Glue job runs and are overlayed by the arguments
             # definition in the calling Step Functions GlueStartJobRun
-            default_arguments={
-                '--enable-auto-scaling': 'true',
-                '--enable-continuous-cloudwatch-log': 'true',
-                '--enable-metrics': 'true',
-                '--enable-glue-datacatalog': 'true',
-                '--user-jars-first': 'true',
-                '--extra-jars': ','.join(spark_libraries) if spark_libraries else None,
+            default_arguments=common_default_arguments | {
                 '--additional-python-modules': 'rapidfuzz',
-                '--extra-py-files': ','.join(glue_libraries),
-                '--environment': self.target_environment,
                 '--TempDir': f's3://{self.glue_scripts_temp_bucket.bucket_name}/etl/collect_to_cleanse',
-                '--txn_bucket': f's3://{self.glue_scripts_bucket.bucket_name}',
                 '--txn_spec_prefix_path': '/etl/transformation-spec/',
                 '--source_bucket': f's3://{buckets.raw.bucket_name}',
                 '--target_bucket': f's3://{buckets.conformed.bucket_name}',
@@ -163,7 +167,6 @@ class GlueStack(cdk.Stack):
                 '--value_lookup_table': value_lookup_table.table_name,
                 '--multi_lookup_table': multi_lookup_table.table_name,
                 '--dq_results_table': dq_results_table.table_name,
-                '--data_lineage_table': data_lineage_table.table_name if data_lineage_table else None,
             },
             execution_property=glue.CfnJob.ExecutionPropertyProperty(
                 max_concurrent_runs=10,
@@ -196,22 +199,12 @@ class GlueStack(cdk.Stack):
             ) if job_connections else None,
             # These arguments are common to all Glue job runs and are overlayed by the arguments
             # definition in the calling Step Functions GlueStartJobRun
-            default_arguments={
-                '--enable-auto-scaling': 'true',
-                '--enable-glue-datacatalog': 'true',
-                '--enable-continuous-cloudwatch-log': 'true',
-                '--enable-metrics': 'true',
-                '--user-jars-first': 'true',
-                '--extra-jars': ','.join(spark_libraries) if spark_libraries else None,
-                '--extra-py-files': ','.join(glue_libraries),
-                '--environment': self.target_environment,
+            default_arguments=common_default_arguments | {
                 '--TempDir': f's3://{self.glue_scripts_temp_bucket.bucket_name}/etl/cleanse_to_consume',
-                '--txn_bucket': f's3://{self.glue_scripts_bucket.bucket_name}',
                 '--txn_sql_prefix_path': '/etl/transformation-sql/',
                 '--source_bucket': f's3://{buckets.conformed.bucket_name}',
                 '--target_bucket': f's3://{buckets.purposebuilt.bucket_name}',
                 '--dq_results_table': dq_results_table.table_name,
-                '--data_lineage_table': data_lineage_table.table_name if data_lineage_table else None,
             },
             execution_property=glue.CfnJob.ExecutionPropertyProperty(
                 max_concurrent_runs=10,
@@ -244,25 +237,14 @@ class GlueStack(cdk.Stack):
             ) if job_connections else None,
             # These arguments serve as defaults and base values that are overlayed and/or overriden
             # by the arguments definition in the calling Step Functions GlueStartJobRun
-            default_arguments={
-                '--enable-auto-scaling': 'true',
-                '--enable-glue-datacatalog': 'true',
-                '--enable-continuous-cloudwatch-log': 'true',
-                '--enable-metrics': 'true',
-                '--user-jars-first': 'true',
-                '--environment': self.target_environment,
+            default_arguments=common_default_arguments | {
+                '--additional-python-modules': 'recordlinkage',
                 '--source_bucket': f's3://{buckets.conformed.bucket_name}',
                 '--target_bucket': f's3://{buckets.purposebuilt.bucket_name}',
-                '--txn_bucket': f's3://{self.glue_scripts_bucket.bucket_name}',
-                '--txn_sql_prefix_path': '/etl/transformation-sql/',
                 '--txn_spec_prefix_path': '/etl/transformation-spec/',
                 '--TempDir': f's3://{self.glue_scripts_temp_bucket.bucket_name}/etl/consume_entity_match',
-                '--extra-py-files': ','.join(glue_libraries),
-                '--extra-jars': ','.join(spark_libraries) if spark_libraries else None,
-                '--data_lineage_table': data_lineage_table.table_name if data_lineage_table else None,
-                '--conf': 'spark.serializer=org.apache.spark.serializer.KryoSerializer',
-                '--datalake-formats': 'hudi',
-                '--additional-python-modules': 'recordlinkage',
+                '--iceberg_catalog': 'glue_catalog',
+                '--datalake-formats': 'iceberg',
             },
             execution_property=glue.CfnJob.ExecutionPropertyProperty(
                 max_concurrent_runs=10,
@@ -274,9 +256,6 @@ class GlueStack(cdk.Stack):
             number_of_workers=50,
             role=glue_role.role_arn,
             worker_type='G.1X',
-            # TODO: Allow the user to specify a user-managed, out-of-stack security group name
-            # Glue security configurations cannot be updated by Cloudformation and break all stack updates
-            #security_configuration='',
         )
         # Recommended encryption settings for account Glue Data Catalog
         # Applies to all databases and tables in the account; uncomment to apply
