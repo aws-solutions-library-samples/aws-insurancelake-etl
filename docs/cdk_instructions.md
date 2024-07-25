@@ -1,5 +1,16 @@
 # CDK Instructions
 
+## Contents
+
+* [Prerequisities](#prerequisites)
+* [Setup Instruction](#setup-instructions)
+* [Useful Commands](#useful-commands)
+* [Visual Studio Code Debugging](#visual-studio-code-debugging)
+* [Clean-up Workflow-created Resources](#clean-up-workflow-created-resources)
+* [Clean-up ETL Stacks](#clean-up-etl-stacks)
+* [Clean-up Infrastructure Stacks](#clean-up-infrastructure-stacks)
+* [Clean-up CDK Bootstrap](#clean-up-cdk-bootstrap-optional)
+
 ## Prerequisites
 
 1. Install [Python](https://www.python.org/downloads/) on your local computer
@@ -68,7 +79,7 @@ command.
 
  ---
 
- ## Visual Studio Code Debugging
+## Visual Studio Code Debugging
 
  To configure Visual Studio Code for debugging CDK, use the following launch configuration in `launch.json`:
 

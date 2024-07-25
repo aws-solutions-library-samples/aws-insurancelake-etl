@@ -1,6 +1,6 @@
-## Data Quality with Glue Data Quality Reference
+# Data Quality with Glue Data Quality Reference
 
-### Contents
+## Contents
 
 * [Getting Started](#getting-started)
 * [Configuration](#configuration)
@@ -8,7 +8,7 @@
 * [Using Data Freshness to Manage Dependent Workflows](#using-data-freshness-to-manage-dependent-workflows)
 
 
-### Getting Started
+## Getting Started
 
 Generally, we recommend loading your data into Glue Catalog with minimal or no transforms as a first step to building data quality rules. After loading your data, AWS Glue Data Quality Recommendations and AWS Glue Studio can help build rules based on exploring and understanding the data.
 
@@ -27,7 +27,7 @@ Consider the following steps for building and testing new data quality rules:
 1. Select the IAM role for Glue created by InsuranceLake
     ![Configuring Glue Data Quality Recommendations](./glue_catalog_recommend_data_quality_rules.png)
 1. After the analyzer runs, recommendations will be avilable to add to your set of rules
-![Using Data Quality recommendations from Glue Data Catalog](./glue_catalog_data_quality_recommendations.png)
+    ![Using Data Quality recommendations from Glue Data Catalog](./glue_catalog_data_quality_recommendations.png)
 1. Insert recommendations, create your own rules, and test run the rules using the console interface
     - For more details, see the AWS Glue documentation [Getting started with AWS Glue Data Quality for the Data Catalog](https://docs.aws.amazon.com/glue/latest/dg/data-quality-getting-started.html)
 1. Copy and paste the rules into the `dq-rules` [configuration file](#configuration) for your dataset
@@ -36,7 +36,7 @@ Consider the following steps for building and testing new data quality rules:
 You can also refer to the [Getting started with AWS Glue Data Quality for ETL Pipelines](https://aws.amazon.com/blogs/big-data/getting-started-with-aws-glue-data-quality-for-etl-pipelines/) blog for guidance and examples.
 
 
-### Configuration
+## Configuration
 
 Data quality in InsuranceLake is provided using Glue Data Quality rules managed in a per-workflow JSON configuration file. 
 
@@ -124,7 +124,7 @@ Example data quality configuration file:
 ```
 
 
-### CustomSQL and ETL Behavior Notes
+## CustomSQL and ETL Behavior Notes
 
 * Glue Data Quality CustomSQL shares its syntax with Spark SQL with some limitations. Refer to the [AWS Glue DQDL documentation on CustomSQL](https://docs.aws.amazon.com/glue/latest/dg/dqdl.html#dqdl-rule-types-CustomSql) for specific examples as well as the [Apache Spark SQL Reference documentation](https://spark.apache.org/docs/latest/sql-ref.html).
 
@@ -146,7 +146,7 @@ Example data quality configuration file:
 * Refer to [Measure performance of AWS Glue Data Quality for ETL pipelines](https://aws.amazon.com/blogs/big-data/measure-performance-of-aws-glue-data-quality-for-etl-pipelines/) for detailed information on data quality rule performance and cost.
 
 
-### Using Data Freshness to Manage Dependent Workflows
+## Using Data Freshness to Manage Dependent Workflows
 
 In this section, we show an alternative to the traditional approach of building dependency trees for data pipeline jobs to ensure that the most recent dependent data is joined and published.
 

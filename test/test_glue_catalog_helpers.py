@@ -200,11 +200,11 @@ def test_gluecatalogdecimal_init():
 def test_gluecatalogdecimal_gt():
     test_decimal = GlueCatalogDecimal('decimal(10,6)')
     test_other_decimal = GlueCatalogDecimal('decimal(10,2)')
-    assert not test_decimal > test_decimal  # greater than, not equal
+    assert not test_decimal > GlueCatalogDecimal('decimal(10,6)')  # equal, not greater
     assert test_decimal > test_other_decimal    # greater than should be true
     assert not test_other_decimal > test_decimal    # flipping around should be false
 
 def test_gluecatalogdecimal_mixed():
     test_decimal = GlueCatalogDecimal('decimal(10,6)')
     test_other_decimal = GlueCatalogDecimal('decimal(11,2)')
-    assert not test_decimal < test_other_decimal    # not strictly less than
+    assert not test_other_decimal > test_decimal    # scale is not greater

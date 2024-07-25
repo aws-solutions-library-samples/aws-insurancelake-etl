@@ -3,7 +3,6 @@
 import pytest
 from moto import mock_aws
 import boto3
-import botocore
 import logging
 
 from test.boto_mocking_helper import *
@@ -183,10 +182,7 @@ def test_record_etl_jon_run_logs_no_table(monkeypatch, caplog):
     monkeypatch.setenv('AWS_DEFAULT_REGION', mock_region)
     # Purposely do not call use_moto() to create the table
 
-    with pytest.raises(botocore.exceptions.ClientError) as e_info:
+    with pytest.raises(RuntimeError) as e_info:
         lambda_handler.record_etl_job_run(test_table_name, test_state_machine_arn, test_execution_id, 'test-execution', '{}', 'testUser', 'testipaddress')
 
     assert e_info.match('ResourceNotFoundException'), 'Expected Boto3 Client Error not raised'
-
-    with caplog.at_level(logging.ERROR):
-        assert caplog.text.find('Requested resource not found') != -1

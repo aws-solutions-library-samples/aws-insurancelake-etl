@@ -122,10 +122,10 @@ Convert specified numeric field with currency formatting to Decimal (fixed preci
 |field    |required    |Name of (destination) field to hold the resulting decimal conversion, and source field if source not specified separately
 |format    |optional    |Decimal precision and scale (separated by comma), defaults to 16,2
 |source    |optional    |Name of source field, defaults to destination field
-|euro    |optional    |If `true`, handle European (5.000.000,12) currency format, otherwise handle 5,000,000.12; defaults to `false`
+|euro    |optional    |If `true`, handle European (5.000.000,12 or 5 000 000,12) currency format, otherwise handle 5,000,000.12; defaults to `false`
 
 - While this transform will work on numeric fields, we recommend `changetype` to convert to decimal values because it is more efficient when combined with other data type changes.
-- This conversion essentially extracts any valid number from a string value; it removes any character that is not in `[0-9,-.]`
+- This conversion essentially extracts any valid number from a string value; it removes any character that is not in `[0-9,-.]`.
 
 ```json
 "currency": [
@@ -675,7 +675,7 @@ Replace or add specified column values with values looked up from an DynamoDB ta
 |source |optional   |Source field with values matching the lookup data; defaults to destination field
 |lookup    |required   |Name of lookup set of data which is used to match the `column_name` attribute in the DynamoDB table
 |nomatch  |optional   |Value to use for lookups that have no match; defaults to null. **Must be the same data type as the looked up data.**
-|source_system  |optional   |Value to use for the `source_system` attribute in the DynamoDB table; defaults to the database name or ([first level folder structure name in the Collect bucket](../README.md#bucket-layout)). Use this override parameter to share lookups across different databases.
+|source_system  |optional   |Value to use for the `source_system` attribute in the DynamoDB table; defaults to the database name or ([first level folder structure name in the Collect bucket](loading_data.md#bucket-layout)). Use this override parameter to share lookups across different databases.
 
 ```json
 "lookup": [
@@ -698,7 +698,7 @@ Replace or add specified column values with values looked up from an DynamoDB ta
     - Script parameters:
         |Parameter  |Type   |Description    |
         |---    |---    |---    |
-        |source_system  |required   |String value that should match the source system name ([first level folder structure name in the Collect bucket](../README.md#bucket-layout)) for the workflow that will use the lookup
+        |source_system  |required   |String value that should match the source system name ([first level folder structure name in the Collect bucket](loading_data.md#bucket-layout)) for the workflow that will use the lookup
         |table_name |required   |The name of the DynamoDB table deployed by the InsuranceLake CDK stack for single value lookups, in the form `<environment>-<resource prefix>-etl-value-lookup`
         |data_file  |required   |Filename of the local JSON file containing lookup data to load into DynamoDB (format below)
 
@@ -797,7 +797,7 @@ Filter out rows based on standard SQL WHERE statement
 |condition    |required    |String filter condition using [Spark WHERE clause syntax](https://spark.apache.org/docs/latest/sql-ref-syntax-qry-select-where.html); **rows that match will remain in the data set**
 |description    |optional    |This parameter will be ignored, but we recommend using it to document the purpose of each filter condition
 
-- Use only when certain rows can be systematically and confidently discarded. Examples of usage include removing blank rows, removing a totals rows, or removing subtotal rows. If review of filtered data is desired, consider using [data quality quarantine rules](./data_quality.md).
+- Use only when certain rows can be systematically and confidently discarded. Examples of usage include removing blank rows, removing a totals rows, or removing subtotal rows. If review of filtered data is desired, consider using [data quality quarantine rules](data_quality.md). An example of both options can be found in the [Corrupt Data section of the Loading Data with InsurnaceLake Documentation](loading_data.md#corrupt-data).
 
 ```json
 "filterrows": [

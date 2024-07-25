@@ -8,11 +8,6 @@ from pyspark.sql.types import StructType, StructField, ArrayType
 from pyspark.sql.functions import col
 from awsglue.dynamicframe import DynamicFrame
 from awsglue.transforms import ApplyMapping
-from pyspark.sql.dataframe import DataFrame
-from pyspark.sql.functions import col
-from rapidfuzz import fuzz
-from rapidfuzz import process as fuzz_process
-from rapidfuzz.utils import default_process
 
 
 def flatten_schema(schema: StructType, prefix: str = '') -> StructType:

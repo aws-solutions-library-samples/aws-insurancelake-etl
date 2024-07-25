@@ -16,14 +16,17 @@ Both SQL files are **optional** in a data pipeline. A pipeline can succeed with 
 * [Athena SQL](#athena-sql)
 * [Variable Substitution](#variable-substitution)
 * [Pattern Library](#pattern-library)
-    * [Simple SQL Example](#simple-sql-example)
+    * [Simplest Method to Populate Consume](#simplest-method-to-populate-consume)
     * [Join Example](#join-example)
-    * [Partition Snapshot](#partition-snapshot)
-    * [Cast Statement Examples](#case-statement-examples)
+    * [Override Table Name Example](#override-table-name-example)
+    * [Override Partition Fields in Consume](#override-partition-fields-in-consume)
+    * [Partition Snapshot View](#partition-snapshot-view)
+    * [Union Example with Literals as Placeholders](#union-example-with-literals-as-placeholders)
+    * [Case Statement Examples](#case-statement-examples)
     * [Unpivot / Stack](#unpivot--stack)
     * [Key Value Pivot](#key-value-pivot)
     * [Athena Fixed Width View](#athena-fixed-width-view)
-* [FAQ](#frequentyly-asked-questions)
+* [FAQ](#frequently-asked-questions)
 
 
 ## Spark SQL

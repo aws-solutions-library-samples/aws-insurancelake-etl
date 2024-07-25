@@ -7,7 +7,7 @@
 
 ## Overview
 
-The InsuranceLake solution is comprised of two codebases: [Infrastructure](https://github.com/aws-samples/aws-insurancelake-infrastructure) and [ETL](https://github.com/aws-samples/aws-insurancelake-etl). This codebase is specific to the ETL features (both infrastructure and application code), but the documentation that follows applies to the solution as a whole. For documentation with specific details on the Infrastructure, refer to the [InsuranceLake Infrastructure with CDK Pipeline README](https://github.com/aws-samples/aws-insurancelake-infrastructure/blob/main/README.md).
+The InsuranceLake solution is comprised of two codebases: [Infrastructure](https://github.com/aws-solutions-library-samples/aws-insurancelake-infrastructure) and [ETL](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl). This codebase is specific to the ETL features (both infrastructure and application code), but the documentation that follows applies to the solution as a whole. For documentation with specific details on the Infrastructure, refer to the [InsuranceLake Infrastructure with CDK Pipeline README](https://github.com/aws-solutions-library-samples/aws-insurancelake-infrastructure/blob/main/README.md).
 
 This solution helps you deploy ETL processes and data storage resources to create InsuranceLake. It uses Amazon S3 buckets for storage, [AWS Glue](https://docs.aws.amazon.com/glue/) for data transformation, and [AWS CDK Pipelines](https://docs.aws.amazon.com/cdk/latest/guide/cdk_pipeline.html). The solution is originally based on the AWS blog [Deploy data lake ETL jobs using CDK Pipelines](https://aws.amazon.com/blogs/devops/deploying-data-lake-etl-jobs-using-cdk-pipelines/).
 
@@ -23,7 +23,7 @@ Specifically, this solution helps you to:
 * Leverage the benefit of self-mutating feature of CDK Pipelines; specifically, the pipeline itself is infrastructure as code and can be changed as part of the deployment
 * Increase the speed of prototyping, testing, and deployment of new ETL jobs
 
-![InsuranceLake High Level Architecture](https://raw.githubusercontent.com/aws-samples/aws-insurancelake-etl/main/docs/insurancelake-highlevel-architecture.png)
+![InsuranceLake High Level Architecture](https://raw.githubusercontent.com/aws-solutions-library-samples/aws-insurancelake-etl/main/docs/insurancelake-highlevel-architecture.png)
 
 ## Contents
 
@@ -44,17 +44,17 @@ Specifically, this solution helps you to:
     * [Infrastructure Code](#infrastructure-code)
     * [Application Code](#application-code)
 * User Documentation
-    * [Loading Data with InsuranceLake](https://github.com/aws-samples/aws-insurancelake-etl/blob/main/docs/loading_data.md)
-    * [Detailed Collect-to-Cleanse Transform Reference](https://github.com/aws-samples/aws-insurancelake-etl/blob/main/docs/transforms.md)
-    * [Schema Mapping Documentation](https://github.com/aws-samples/aws-insurancelake-etl/blob/main/docs/schema_mapping.md)
-    * [File Formats and Input Specification Documentation](https://github.com/aws-samples/aws-insurancelake-etl/blob/main/docs/file_formats.md)
-    * [Data Quality with Glue Data Quality Reference](https://github.com/aws-samples/aws-insurancelake-etl/blob/main/docs/data_quality.md)
-    * [Using SQL for Cleanse-to-Consume](https://github.com/aws-samples/aws-insurancelake-etl/blob/main/docs/using_sql.md)
-    * [Schema Evolution Details](https://github.com/aws-samples/aws-insurancelake-etl/blob/main/docs/schema_evolution.md)
+    * [Loading Data with InsuranceLake](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/docs/loading_data.md)
+    * [Detailed Collect-to-Cleanse Transform Reference](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/docs/transforms.md)
+    * [Schema Mapping Documentation](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/docs/schema_mapping.md)
+    * [File Formats and Input Specification Documentation](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/docs/file_formats.md)
+    * [Data Quality with Glue Data Quality Reference](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/docs/data_quality.md)
+    * [Using SQL for Cleanse-to-Consume](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/docs/using_sql.md)
+    * [Schema Evolution Details](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/docs/schema_evolution.md)
 * Developer Documentation
-    * [Developer Guide](https://github.com/aws-samples/aws-insurancelake-etl/blob/main/docs/developer_guide.md)
-    * [Full Deployment Guide](https://github.com/aws-samples/aws-insurancelake-etl/blob/main/docs/full_deployment_guide.md)
-    * [AWS CDK Detailed Instructions](https://github.com/aws-samples/aws-insurancelake-etl/blob/main/docs/cdk_instructions.md)
+    * [Developer Guide](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/docs/developer_guide.md)
+    * [Full Deployment Guide](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/docs/full_deployment_guide.md)
+    * [AWS CDK Detailed Instructions](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/docs/cdk_instructions.md)
 * [Additional resources](#additional-resources)
 * [Authors](#authors)
 * [License Summary](#license-summary)
@@ -95,8 +95,8 @@ If you'd like to get started quickly transforming some sample raw insurance data
 1. Open the environment you created and wait until it is available for use
 1. Clone the repositories
     ```bash
-    git clone https://github.com/aws-samples/aws-insurancelake-infrastructure.git
-    git clone https://github.com/aws-samples/aws-insurancelake-etl.git
+    git clone https://github.com/aws-solutions-library-samples/aws-insurancelake-infrastructure.git
+    git clone https://github.com/aws-solutions-library-samples/aws-insurancelake-etl.git
     ```
 1. Use a terminal or command prompt and change the working directory to the location of the _infrastructure_ code
     ```bash
@@ -149,9 +149,9 @@ If you'd like to get started quickly transforming some sample raw insurance data
 ### Try out the ETL Process
 
 1. Populate the DynamoDB lookup table with sample lookup data
-```bash
-   AWS_DEFAULT_REGION=us-east-2 resources/load_dynamodb_lookup_table.py SyntheticGeneralData dev-insurancelake-etl-value-lookup resources/syntheticgeneral_lookup_data.json
-```
+    ```bash
+    AWS_DEFAULT_REGION=us-east-2 resources/load_dynamodb_lookup_table.py SyntheticGeneralData dev-insurancelake-etl-value-lookup resources/syntheticgeneral_lookup_data.json
+    ```
 1. Transfer the sample claim data to the Collect bucket
     ```bash
     aws s3 cp resources/syntheticgeneral-claim-data.csv s3://<Collect S3 Bucket>/SyntheticGeneralData/ClaimData/
@@ -161,9 +161,9 @@ If you'd like to get started quickly transforming some sample raw insurance data
     aws s3 cp resources/syntheticgeneral-policy-data.csv s3://<Collect S3 Bucket>/SyntheticGeneralData/PolicyData/
     ```
 1. Open [Step Functions](https://console.aws.amazon.com/states/home) in the AWS Console and select `dev-insurancelake-etl-state-machine`
-    ![AWS Step Functions Selecting State Machine](https://raw.githubusercontent.com/aws-samples/aws-insurancelake-etl/main/docs/step_functions_select_state_machine.png)
+    ![AWS Step Functions Selecting State Machine](https://raw.githubusercontent.com/aws-solutions-library-samples/aws-insurancelake-etl/main/docs/step_functions_select_state_machine.png)
 1. Open the state machine execution in progress and monitor the status until completed
-    ![AWS Step Functions Selecting Running Execution](https://raw.githubusercontent.com/aws-samples/aws-insurancelake-etl/main/docs/step_functions_select_running_execution.png)
+    ![AWS Step Functions Selecting Running Execution](https://raw.githubusercontent.com/aws-solutions-library-samples/aws-insurancelake-etl/main/docs/step_functions_select_running_execution.png)
 1. Open [Athena](https://console.aws.amazon.com/athena/home) in the AWS Console
 1. Select Launch Query Editor, and change the Workgroup to `insurancelake`
 1. Run the following query to view a sample of prepared data in the consume bucket:
@@ -175,7 +175,7 @@ If you'd like to get started quickly transforming some sample raw insurance data
 
 * Take the [InsuranceLake Deep Dive Workshop](https://catalog.us-east-1.prod.workshops.aws/workshops/0a85653e-07e9-41a8-960a-2d1bb592331b)
     * You may skip to the [Modify and test a transform](https://catalog.us-east-1.prod.workshops.aws/workshops/0a85653e-07e9-41a8-960a-2d1bb592331b/en-US/modify-a-transform) step, as the prior steps overlap with the Quickstart instructions
-* Try out [loading your own data](https://github.com/aws-samples/aws-insurancelake-etl/blob/main/docs/loading_data.md#landing-source-data)
+* Try out [loading your own data](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/docs/loading_data.md#landing-source-data)
 * Try the [Quickstart with CI/CD](#quickstart-with-cicd)
 * Dive deeper with the included [user documentation](#contents)
 * Contact your AWS account team for a solution deep dive, workshops, or Professional Services support
@@ -198,7 +198,7 @@ If you've determined the AWS CDK InsuranceLake is a good starting point for your
     cdk deploy Deploy-InsuranceLakeInfrastructureMirrorRepository
     ```
     - While this stack is designed for a mirror repository, it can also be used as a main repository for your InsuranceLake code. You can follow links to help setup other repository types here:
-        - [Github](https://github.com/aws-samples/aws-insurancelake-etl/blob/main/docs/developer_guide.md##aws-codepipeline-and-github-integration)
+        - [Github](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/docs/developer_guide.md##aws-codepipeline-and-github-integration)
         - [Bitbucket](https://complereinfosystem.com/2021/02/26/atlassian-bitbucket-to-aws-codecommit-using-bitbucket-pipelines/)
         - [Gitlab](https://klika-tech.com/blog/2022/07/12/repository-mirroring-gitlab-to-codecommit/)
 1. If you plan to use CodeCommit as the main repository, [install the Git CodeCommit Helper](https://docs.aws.amazon.com/codecommit/latest/userguide/setting-up-git-remote-codecommit.html):
@@ -224,9 +224,9 @@ If you've determined the AWS CDK InsuranceLake is a good starting point for your
     - Wait for deployment to finish (approx. 5 mins)
 1. Open CodePipeline in the AWS Console and select the `dev-insurancelake-infrastructure-pipeline` Pipeline
     - The first run of the pipeline starts automatically after the Pipeline stack is deployed.
-    ![Select Infrastructure CodePipeline](https://raw.githubusercontent.com/aws-samples/aws-insurancelake-etl/main/docs/codepipeline_infrastructure_select_pipeline.png)
+    ![Select Infrastructure CodePipeline](https://raw.githubusercontent.com/aws-solutions-library-samples/aws-insurancelake-etl/main/docs/codepipeline_infrastructure_select_pipeline.png)
 1. Monitor the status of the pipeline until completed
-    ![Infrastructure CodePipeline progress](https://raw.githubusercontent.com/aws-samples/aws-insurancelake-etl/main/docs/codepipeline_infrastructure_monitor_progress.png)
+    ![Infrastructure CodePipeline progress](https://raw.githubusercontent.com/aws-solutions-library-samples/aws-insurancelake-etl/main/docs/codepipeline_infrastructure_monitor_progress.png)
 1. Switch the working directory to the location of the etl code
     ```bash/
     cd ../aws-insurancelake-etl
@@ -255,9 +255,9 @@ If you've determined the AWS CDK InsuranceLake is a good starting point for your
     - Wait for deployment to finish (approx. 5 mins)
 1. Open CodePipeline in the AWS Console and select the `dev-insurancelake-etl-pipeline` Pipeline
     - The first run of the pipeline starts automatically after the Pipeline stack is deployed.
-   ![Select ETL CodePipeline](https://raw.githubusercontent.com/aws-samples/aws-insurancelake-etl/main/docs/codepipeline_etl_select_pipeline.png)
+   ![Select ETL CodePipeline](https://raw.githubusercontent.com/aws-solutions-library-samples/aws-insurancelake-etl/main/docs/codepipeline_etl_select_pipeline.png)
 1. Monitor the status of the pipeline until completed
-    ![ETL CodePipeline progress](https://raw.githubusercontent.com/aws-samples/aws-insurancelake-etl/main/docs/codepipeline_etl_monitor_progress.png)
+    ![ETL CodePipeline progress](https://raw.githubusercontent.com/aws-solutions-library-samples/aws-insurancelake-etl/main/docs/codepipeline_etl_monitor_progress.png)
 
 ## Deployment Validation
 
@@ -324,7 +324,7 @@ We use AWS Lambda and AWS Step Functions for orchestration and scheduling of ETL
 
 **Note:** [AWS Lake Formation](https://aws.amazon.com/lake-formation/) is a service that makes it easy to set up a secure data lake in days. [Amazon QuickSight](https://aws.amazon.com/quicksight/) is a scalable, serverless, embeddable, machine learning-powered business intelligence (BI) service built for the cloud. [Amazon DataZone](https://aws.amazon.com/datazone/) is a data management service that makes it faster and easier for customers to catalog, discover, share, and govern data stored across AWS, on premises, and third-party sources. These three services are not used in this solution but can be added.
 
-![Conceptual Data Lake](https://raw.githubusercontent.com/aws-samples/aws-insurancelake-etl/main/docs/Aws-cdk-insurancelake-data_lake.png)
+![Conceptual Data Lake](https://raw.githubusercontent.com/aws-solutions-library-samples/aws-insurancelake-etl/main/docs/Aws-cdk-insurancelake-data_lake.png)
 
 ### ETL
 
@@ -346,7 +346,7 @@ The figure below represents the ETL resources we provision for the data lake.
 14. Sends SNS notification
 15. Data engineers or analysts analyze data using Amazon Athena
 
-![Data Lake Infrastructure Architecture](https://raw.githubusercontent.com/aws-samples/aws-insurancelake-etl/main/docs/Aws-cdk-insurancelake-etl.png)
+![Data Lake Infrastructure Architecture](https://raw.githubusercontent.com/aws-solutions-library-samples/aws-insurancelake-etl/main/docs/Aws-cdk-insurancelake-etl.png)
 
 ---
 
@@ -366,7 +366,7 @@ When this operation is complete, you will also have access to the CDK-nag report
 
 By default the [AWS Solutions Rules Pack](https://github.com/cdklabs/cdk-nag/blob/main/RULES.md#aws-solutions) is used, but any combination of CDK Nag Rules packs can be selected by adjusting the source code **in four locations** (two for both the Infrastructure and ETL codebases):
 
-[Infrastructure app.py Line 21](https://github.com/aws-samples/aws-insurancelake-infrastructure/blob/main/app.py#L21), [ETL app.py Line 20](https://github.com/aws-samples/aws-insurancelake-etl/blob/main/app.py#L20):
+[Infrastructure app.py Line 21](https://github.com/aws-solutions-library-samples/aws-insurancelake-infrastructure/blob/main/app.py#L21), [ETL app.py Line 20](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/app.py#L20):
 
 ```python
 # Enable CDK Nag for the Mirror repository, Pipeline, and related stacks
@@ -374,7 +374,7 @@ By default the [AWS Solutions Rules Pack](https://github.com/cdklabs/cdk-nag/blo
 cdk.Aspects.of(app).add(AwsSolutionsChecks())
 ```
 
-[Infrastructure pipeline_stack.py Line 148](https://github.com/aws-samples/aws-insurancelake-infrastructure/blob/main/lib/pipeline_stack.py#L148), [ETL pipeline_stack.py Line 147](https://github.com/aws-samples/aws-insurancelake-etl/blob/main/lib/pipeline_stack.py#L147)
+[Infrastructure pipeline_stack.py Line 148](https://github.com/aws-solutions-library-samples/aws-insurancelake-infrastructure/blob/main/lib/pipeline_stack.py#L148), [ETL pipeline_stack.py Line 147](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/lib/pipeline_stack.py#L147)
 ```python
         # Enable CDK Nag for environment stacks before adding to
         # pipeline, which are deployed with CodePipeline
@@ -393,14 +393,7 @@ To scan all application code using bandit, use the following command:
 bandit -r --ini .bandit
 ```
 
-Note that without a AWS Glue Docker container, the Glue job tests will be skipped with a message like:
-```
-test/test_custom_mapping.py::test_custommapping_renames_field SKIPPED (No pySpark environment found)                                    [ 17%]
-```
-
-To setup your local environment with a Glue container, retrieve the container image from [the AWS Glue Dockerhub repository](https://hub.docker.com/r/amazon/aws-glue-libs/tags). Ensure you use the right tag for the version of AWS Glue used in the stack (currently v4). Detailed instructions can be found on [Developing AWS Glue ETL jobs locally using a container](https://aws.amazon.com/blogs/big-data/developing-aws-glue-etl-jobs-locally-using-a-container)
-
----
+When this operation is complete, you will also have access to the CDK-nag reports in CSV format in the `cdk.out` directory and assembly directories.
 
 ## Additional Resources
 

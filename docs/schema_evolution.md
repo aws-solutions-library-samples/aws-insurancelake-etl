@@ -3,6 +3,7 @@
 ## Contents
 
 * [Schema Change Setting](#schema-change-setting)
+    * [Evolve Setting Data Type Change Details](#evolve-setting-data-type-change-details)
 * [Cleanse Layer](#cleanse-layer)
 * [Consume Layer](#consume-layer)
 * [Parquet/Hadoop](#parquethadoop)
@@ -93,7 +94,7 @@ When data types change, Spark will attempt to coerce the partition data type to 
 
 * **Importante Note:** We recommend testing all schema changes before publishing data and using Glue Data Quality rules to check for expected values and completeness in columns.
 
-For example, suppose you have a partition with a field of `decimal(10,6)`, and a Glue Data Catalog table definition of `decimal(9,6)`. Spark will attempt to coerce all values, and if some data for the field does not fit in `decimal(9,6)` (in other words, a value of the field has 10 significant digits) _no error will be raised_ and the field values that do not fit will be null. In contrast, Athena _will give an error_ when trying to merge the partitions if there are values that do not fit in the new precision and scale.
+For example, suppose you have a partition with a field of `decimal(10,6)`, and a Glue Data Catalog table definition of `decimal(9,6)`. Spark will attempt to coerce all values, and if some data for the field does not fit in `decimal(9,6)` (in other words, a value of the field has 10 significant digits) _no error will be raised_ and the field values that do not fit will be `null`. In contrast, Athena _will give an error_ when trying to merge the partitions if there are values that do not fit in the new precision and scale.
 
 Details on Spark's data type coercion can be found in the [Apache Spark ANSI Compliance Documentation](https://spark.apache.org/docs/latest/sql-ref-ansi-compliance.html#type-coercion).
 
@@ -104,12 +105,12 @@ org.apache.hadoop.hive.serde2.io.TimestampWritable cannot be cast to org.apache.
 
 ### Athena SQL
 
-Amazon Athena is behaves similar to Spark when merging partitions with different schemas. AWS documentation is available in the following locations:
+Amazon Athena behaves similar to Spark when merging partitions with different schemas. AWS documentation is available in the following locations:
 
-For Athena supported schema changes and explanation of behavior, refer to the [Updates and data formats in Athena](https://docs.aws.amazon.com/athena/latest/ug/handling-schema-updates-chapter.html#summary-of-updates) and [Updates in tables with partitions](https://docs.aws.amazon.com/athena/latest/ug/updates-and-partitions.html).
+* For Athena supported schema changes and an explanation of behavior, refer to the [Updates and data formats in Athena](https://docs.aws.amazon.com/athena/latest/ug/handling-schema-updates-chapter.html#summary-of-updates) and [Updates in tables with partitions](https://docs.aws.amazon.com/athena/latest/ug/updates-and-partitions.html).
 
-For compatible data type changes refer to [Changing a column's data type](https://docs.aws.amazon.com/athena/latest/ug/types-of-updates.html#updates-changing-column-type).
-* NOTE: Some supported data type conversions are not listed, for example, changing decimal precision and scale.
+* For compatible data type changes refer to [Changing a column's data type](https://docs.aws.amazon.com/athena/latest/ug/types-of-updates.html#updates-changing-column-type).
+    * NOTE: Some supported data type conversions are not listed, for example, changing decimal precision and scale.
 
 An unsupported data type change will generate an error similar to the following examples:
 ```log

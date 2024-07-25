@@ -3,7 +3,6 @@
 import pytest
 from moto import mock_aws
 import boto3
-import botocore
 import json
 from lib.etl_job_auditor.lambda_handler import lambda_handler
 
@@ -175,6 +174,6 @@ def test_wrong_table_returns_error(monkeypatch, use_moto):
     monkeypatch.setenv('DYNAMODB_TABLE_NAME', 'wrong_table_name')
     use_moto()
 
-    with pytest.raises(botocore.exceptions.ClientError) as e_info:
+    with pytest.raises(RuntimeError) as e_info:
         lambda_handler(state_machine_success_event, test_context)
         assert e_info.match('Requested resource not found')

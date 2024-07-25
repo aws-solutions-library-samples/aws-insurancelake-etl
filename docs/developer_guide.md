@@ -122,7 +122,7 @@ Table below explains how this source code is structured:
 
 | File / Folder    | Description
 |---    |---
-| [app.py](app.py) | Application entry point
+| [app.py](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/app.py) | Application entry point
 | [code_commit_stack](https://github.com/aws-samples/aws-insurancelake-etl/blob/main/lib/code_commit_stack.py) | Optional stack to deploy an empty CodeCommit respository for mirroring |
 | [pipeline_stack](https://github.com/aws-samples/aws-insurancelake-etl/blob/main/lib/pipeline_stack.py) | Pipeline stack entry point
 | [pipeline_deploy_stage](https://github.com/aws-samples/aws-insurancelake-etl/blob/main/lib/pipeline_deploy_stage.py) | Pipeline deploy stage entry point
@@ -172,8 +172,8 @@ pre-commit install
 
 The above will create a git hook which will validate code prior to commits using [flake8](https://flake8.pycqa.org/en/latest/). Configuration for standards can be found in:
 
-* [.flake8](../.flake8)
-* [.pre-commit-config.yaml](../.pre-commit-config.yaml)
+* [.flake8](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/.flake8)
+* [.pre-commit-config.yaml](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/.pre-commit-config.yaml)
 
 ### Glue Job/Spark Code
 

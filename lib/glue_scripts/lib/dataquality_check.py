@@ -211,34 +211,33 @@ class DataQualityCheck:
         # Failed records will be quarantined
         failed_df = dq_rowleveloutcomes_df.filter(col('DataQualityEvaluationResult').contains('Failed'))
 
-        # Clear partition regardless of quarantined rows in case user is reloading the partition
+        cols_map = {}
+        if ruleset_name == 'before_transform':
+            # DataFrame before transforms will not have partition or execution_id columns yet
+            cols_map.update({
+                name: lit(value) for name, value in self.partition.items()
+            })
+            cols_map.update({'execution_id': lit(self.args['execution_id'])})
+        cols_map.update({ 'quarantine_timestamp': current_timestamp() })
+        failed_df = failed_df.withColumns(cols_map)
+
+        # Create table and clear partition regardless of number of quarantined rows
+        storage_location = \
+            f"{self.args['target_bucket']}/quarantine/{ruleset_name}/{self.args['source_key']}"
+        upsert_catalog_table(
+            failed_df,
+            self.args['target_database_name'],
+            self.args['table_name'] + '_quarantine_' + ruleset_name,
+            self.partition.keys(),
+            storage_location,
+            # Allow schema changes, because we don't want a failure when saving quarantined rows
+            allow_schema_change='permissive',
+        )
         clear_partition(self.args['target_database_name'],
             self.args['table_name'] + '_quarantine_' + ruleset_name,
             self.partition, self.glueContext)
 
         if failed_df.count() > 0:
-            cols_map = {}
-            if ruleset_name == 'before_transform':
-                # DataFrame before transforms will not have partition or execution_id columns yet
-                cols_map.update({
-                    name: lit(value) for name, value in self.partition.items()
-                })
-                cols_map.update({'execution_id': lit(self.args['execution_id'])})
-            cols_map.update({ 'quarantine_timestamp': current_timestamp() })
-            failed_df = failed_df.withColumns(cols_map)
-
-            storage_location = \
-                f"{self.args['target_bucket']}/quarantine/{ruleset_name}/{self.args['source_key']}"
-            upsert_catalog_table(
-                failed_df,
-                self.args['target_database_name'],
-                self.args['table_name'] + '_quarantine_' + ruleset_name,
-                self.partition.keys(),
-                storage_location,
-                # Allow schema changes, because we don't want a failure when saving quarantined rows
-                allow_schema_change='permissive',
-            )
-
             # saveAsTable on new tables fails in strict mode even with only 1 partition
             self.spark.conf.set('hive.exec.dynamic.partition.mode', 'nonstrict')
             # Writing with append tells Spark to use the Hive (Glue Catalog) schema

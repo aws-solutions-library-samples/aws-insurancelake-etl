@@ -454,6 +454,7 @@ def main():
         lineage.update_lineage(entity_primary_df, args['source_key'], 'sparksql', transform=[ spark_sql ])
 
     job.commit()
+    print('Data successfully written to Consume Primary Entity table; job complete')
 
 
 if __name__ == '__main__':

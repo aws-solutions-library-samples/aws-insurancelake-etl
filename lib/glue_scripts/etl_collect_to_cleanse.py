@@ -321,6 +321,7 @@ def main():
     )
 
     job.commit()
+    print('Data successfully written to Cleanse table; job complete')
 
 
 if __name__ == '__main__':

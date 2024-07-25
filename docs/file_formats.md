@@ -23,7 +23,7 @@ Input specification configuration is defined in the `input_spec` section of the 
 |Parameter  |Description
 |---    |---
 |table_description  |Text string description to use for the table in the AWS Glue Catalog; only applies to the table in the Cleanse bucket
-|allow_schema_change    |Setting to control permitted schema evolution; supported values: `permissive`, `strict`, `reorder`; more information is provided in the [Schema Evolution Documentation](schema_evolution.md#schema-change-setting)
+|allow_schema_change    |Setting to control permitted schema evolution; supported values: `permissive`, `strict`, `reorder`, `evolve`; more information is provided in the [Schema Evolution Documentation](schema_evolution.md#schema-change-setting)
 |strict_schema_mapping  |Boolean value that controls whether to halt the pipeline operation if fields specified in the schema mapping are not present in the input file; more information is provided in the [Schema Mapping Dropping Columns Documentation](schema_mapping.md#dropping-columns)
 |csv    |Section to specify CSV file specific configuration
 |tsv    |Section to specify TSV file specific configuration
@@ -313,7 +313,7 @@ Example configuration:
     As a temporary workaround, consider setting a higher override value with IOUtils.setByteArrayMaxOverride()
     ```
 
-    You can correct this issue by increasing the [Apache POI ByteArrayMaxOverride](https://poi.apache.org/apidocs/5.0/org/apache/poi/util/IOUtils.html#setByteArrayMaxOverride-int-) value in the Spark Excel read options in [etl_collect_to_cleanse.py](../lib/glue_scripts/etl_collect_to_cleanse.py#L166).
+    You can correct this issue by increasing the [Apache POI ByteArrayMaxOverride](https://poi.apache.org/apidocs/5.0/org/apache/poi/util/IOUtils.html#setByteArrayMaxOverride-int-) value in the Spark Excel read options in [etl_collect_to_cleanse.py](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/lib/glue_scripts/etl_collect_to_cleanse.py#L166).
 
     Example supporting up to 2 GB files:
     ```python

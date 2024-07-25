@@ -214,6 +214,7 @@ def main():
             )
 
         filtered_df.unpersist()
+        print('Data successfully written to Consume table')
 
     # Athena SQL is used to create views
     athena_sql_key = sql_prefix[1:] + 'athena-' + source_key_dashes + '.sql'
@@ -238,6 +239,7 @@ def main():
                 print(f'Athena query execution status: {status}')
 
     job.commit()
+    print('Job complete')
 
 
 if __name__ == '__main__':

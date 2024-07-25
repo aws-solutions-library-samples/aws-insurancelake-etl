@@ -70,6 +70,9 @@ def create_database(database_name: str, database_description: str = None):
 
 
 class GlueCatalogDecimal:
+    """Class to help compare Spark DecimalType schema
+    Implements only the methods needed for schema evolution logic
+    """
     def __init__(self, decimalstring: str):
         decimal_re = re.compile(r'decimal\((\d+),(\d+)\)')
         match = decimal_re.match(decimalstring)

@@ -79,27 +79,27 @@ Formats that could require no configuration for initial loading follow (with exc
 
 |Format	|Exceptions
 |---	|---
-|[CSV](./file_formats.md#csv-comma-separated-value)	|The ETL will default to using the first row of a CSV file as the header. If your CSV file has no header, you must provide an `input_spec` configuration indicating no header.
-|[Parquet](./file_formats.md#parquet)	|Parquet files that do not end with a `parquet` extension will need to be renamed or you must provide an `input_spec` configuration indicating the file format. Multi-file Parquet data sources will require pipeline customization detailed in [Handling Multi-file Data Sets](file_formats.md#handling-multi-file-data-sets).
-|[Excel](./file_formats.md#microsoft-excel-format-support)	|Excel files are identified by the extensions `xls`, `xlsx`, `xlm`, `xlsm`. Loading Excel files requires the [installation of the Spark Excel libraries](./file_formats.md#obtaining-the-driver). In addition, the ETL will default to using the first sheet in an Excel workbook, the data at cell A1, and assume the first row of data is the header. If your Excel file has data on a different sheet, in a different position, has no header, or requires a password, you must provide [an `input_spec` configuration](./file_formats.md#configuration).
-|[JSON](./file_formats.md#json)	|JSON files are identified by the extensions `json`, `.jsonl`. The ETL will default to loading JSON files as JSON Lines (each line contains one JSON object). If your JSON file uses multiple lines for a single object, you must provide an `input_spec` configuration.
+|[CSV](file_formats.md#csv-comma-separated-value)	|The ETL will default to using the first row of a CSV file as the header. If your CSV file has no header, you must provide an `input_spec` configuration indicating no header.
+|[Parquet](file_formats.md#parquet)	|Parquet files that do not end with a `parquet` extension will need to be renamed or you must provide an `input_spec` configuration indicating the file format. Multi-file Parquet data sources will require pipeline customization detailed in [Handling Multi-file Data Sets](file_formats.md#handling-multi-file-data-sets).
+|[Excel](file_formats.md#microsoft-excel-format-support)	|Excel files are identified by the extensions `xls`, `xlsx`, `xlm`, `xlsm`. Loading Excel files requires the [installation of the Spark Excel libraries](file_formats.md#obtaining-the-driver). In addition, the ETL will default to using the first sheet in an Excel workbook, the data at cell A1, and assume the first row of data is the header. If your Excel file has data on a different sheet, in a different position, has no header, or requires a password, you must provide [an `input_spec` configuration](file_formats.md#configuration).
+|[JSON](file_formats.md#json)	|JSON files are identified by the extensions `json`, `.jsonl`. The ETL will default to loading JSON files as JSON Lines (each line contains one JSON object). If your JSON file uses multiple lines for a single object, you must provide an `input_spec` configuration.
 
 Other formats require some configuration even for the first load.
 
 ### TSV
 
-The ETL will not attempt to detect source data files containing Tab Seperated Values (TSV). If your source data file uses a TSV format, you must specify an `input_spec` configuration indicating the file format (and optionally whether there is a header). Refer to the [TSV file format documentation](./file_formats.md#tsv-tab-separated-value) for configuration details.
+The ETL will not attempt to detect source data files containing Tab Seperated Values (TSV). If your source data file uses a TSV format, you must specify an `input_spec` configuration indicating the file format (and optionally whether there is a header). Refer to the [TSV file format documentation](file_formats.md#tsv-tab-separated-value) for configuration details.
 
 ### Fixed Width
 
-With no configuration, the ETL will load fixed width data files as single column data sets. In order to load the source data with multiple columns, you must specify the field widths using the schema mapping configuration file. Refer to the [Fixed Width File Format Schema Mapping Documentation](./schema_mapping.md#fixed-width-file-format) for details on how to do this.
+With no configuration, the ETL will load fixed width data files as single column data sets. In order to load the source data with multiple columns, you must specify the field widths using the schema mapping configuration file. Refer to the [Fixed Width File Format Schema Mapping Documentation](schema_mapping.md#fixed-width-file-format) for details on how to do this.
 
 
 ## Corrupt Data
 
 When loading source data, you will likely encounter files with some corrupt rows of data. Examples of corruption include missing columns (such as a totals row), text in numeric columns, shifted columns, and unrecognized encoding for characters in a field.
 
-Corrupt data in source data files can cause unexpected behavior with Spark's ability to infer schema types, and with performing required aggregate operations, such as a summation of a numeric column. To work around these issues and make your data pipeline more resiliant, we recommend using data quality rules to quarantine corrupt data, or interrupt the pipeline. Configuration details can be found in the [Data Quality with Glue Data Quality Reference](./data_quality.md#configuration).
+Corrupt data in source data files can cause unexpected behavior with Spark's ability to infer schema types, and with performing required aggregate operations, such as a summation of a numeric column. To work around these issues and make your data pipeline more resiliant, we recommend using data quality rules to quarantine corrupt data, or interrupt the pipeline. Configuration details can be found in the [Data Quality with Glue Data Quality Reference](data_quality.md#configuration).
 
 Example data set with a totals row that causes schema problems:
 
@@ -107,14 +107,13 @@ Example data set with a totals row that causes schema problems:
 |---	|---	|---
 |WC	|2024-01-01	|50000
 |Auto	|2024-02-01	|2500
-|	|	|
 |	|Total	|52500
 
 The value of "Total" in the `EffectiveDate` column will cause Spark to infer a field type of `string`, which is not desirable. If we simply use a `date` transform to convert the field type, Spark will convert the value "Total" to `null`, and we will be left with an extra $52,500 of written premium. To work around this issue, we can use one of two methods:
 
 ### Method 1
 
-This method uses a [`before_transform` data quality rule](./data_quality.md#configuration) to quarantine the row of data with the value "Total" in the `EffectiveDate` column. The data quality rule identifies the row by looking for values that match a standard date pattern, and removing rows that do not match. Because the `before_transform` rule runs before transforms, we can next use a [`date` transform](./transforms.md#date) to convert the clean column of `data` to a date field type.
+This method uses a [`before_transform` data quality rule](data_quality.md#configuration) to quarantine the row of data with the value "Total" in the `EffectiveDate` column. The data quality rule identifies the row by looking for values that match a standard date pattern, and removing rows that do not match. Because the `before_transform` rule runs before transforms, we can next use a [`date` transform](transforms.md#date) to convert the clean column of `data` to a date field type.
 
 `dq-rules` configuration:
 ```json
@@ -143,7 +142,7 @@ This method uses a [`before_transform` data quality rule](./data_quality.md#conf
 
 ### Method 2
 
-This method uses a [`filterrows` transform](./transforms.md#filterrows) to remove the row of data with the value "Total" in the `EffectiveDate` column. The `filterrows` condition looks for `null` values in the `CoverageCode` column, and filters out those rows. Because the `filterrows` transform occurs first in the `transfom_spec` section, we can next use a [`date` transform](./transforms.md#date) to convert the clean column of data to a `date` field type.
+This method uses a [`filterrows` transform](transforms.md#filterrows) to remove the row of data with the value "Total" in the `EffectiveDate` column. The `filterrows` condition looks for `null` values in the `CoverageCode` column, and filters out those rows. Because the `filterrows` transform occurs first in the `transfom_spec` section, we can next use a [`date` transform](transforms.md#date) to convert the clean column of data to a `date` field type.
 
 `transformation-spec` configuration:
 ```json
@@ -172,10 +171,10 @@ When the ETL loads source data with no schema mapping or transformation configur
 Using these recommendations help accelerate your creation of configuration files with a syntactically correct template and complete list of fields in the schema.
 
 More details are available on how the ETL generates these recommendations:
-* [Behavior When There is No Schema Mapping](./schema_mapping.md#behavior-when-there-is-no-schema-mapping)
-* [Behavior When There is No Transformation Specification](./transforms.md#behavior-when-there-is-no-transformation-specification)
+* [Behavior When There is No Schema Mapping](schema_mapping.md#behavior-when-there-is-no-schema-mapping)
+* [Behavior When There is No Transformation Specification](transforms.md#behavior-when-there-is-no-transformation-specification)
 
-To get started quickly building a set of data quality rules with recommendations, use [Glue Data Quality Recommendations](./data_quality.md#getting-started).
+To get started quickly building a set of data quality rules with recommendations, use [Glue Data Quality Recommendations](data_quality.md#getting-started).
 
 
 ## Execute Pipeline without Upload
@@ -188,9 +187,9 @@ Using the Start Execution capability of Step Functions on historical executions 
 1. Select the ETL State Machine which follows the naming convention `<environment>-insurancelake-etl-state-machine`
 1. Click on a prior execution for the workflow you want to rerun, which will open the detailed view
 1. Click `New Execution` at the top of the screen
-	![Step Functions New Execution](./step_functions_new_execution.png)
+	![Step Functions New Execution](step_functions_new_execution.png)
 1. Inspect the execution parameters to ensure you are loading the correct source file with the correct partition values
-	![Step Functions Start Execution](./step_functions_start_execution.png)
+	![Step Functions Start Execution](step_functions_start_execution.png)
 1. Optionally edit the exection name to something easier to identify in the execution history
 1. Click `Start Execution`
 	* The new execution detail will automatically open in the AWS console.
@@ -206,16 +205,16 @@ For historical data loads or replacing an existing partition with new data, the 
 
 Specifically, within the table level (2nd level) folder, you can create a folder representing the `year` partition value, another folder representing the `month` partition value, and another folder representing the `day` partition value. The source data file can then be landed in this nested folder structure and folder names will override the values from the created date of the Collect S3 bucket source file.
 
-When you override partition values, keep in mind the behavior of the ETL loading data in the [Cleanse](./schema_evolution.md#cleanse-layer) and [Consume](./schema_evolution.md#consume-layer) layers.
+When you override partition values, keep in mind the behavior of the ETL loading data in the [Cleanse](schema_evolution.md#cleanse-layer) and [Consume](schema_evolution.md#consume-layer) layers.
 
 Example bucket layout with partition value overrides follows:
 
-![Bucket Layout with Partition Override Example](./bucket-layout-partition-override-example.png)
+![Bucket Layout with Partition Override Example](bucket-layout-partition-override-example.png)
 
-NOTE: If you've made changes to the Collect to Cleanse Glue Job in order to support multi-file Parquet data sets, the partition value override functionality may be disabled. More details can be found in the [Handling Multi-file Data Sets Documentation](./file_formats.md#handling-multi-file-data-sets).
+NOTE: If you've made changes to the Collect to Cleanse Glue Job in order to support multi-file Parquet data sets, the partition value override functionality may be disabled. More details can be found in the [Handling Multi-file Data Sets Documentation](file_formats.md#handling-multi-file-data-sets).
 
 Other methods to override partition values are covered in other sections of the documentation:
 
 * Using the [Step Functions New Execution capability](#execute-pipeline-without-upload), a pipeline maintainer can repeat a previously completed workflow, skipping the file upload step, and override execution parameters such as partition year, month, day, and source file S3 location. For details see the [Pipeline Usage Documentation](#execute-pipeline-without-upload).
 
-* Glue jobs can be manually executed with override parameters for individual Glue jobs. For details on how to manually initiate Glue jobs and override parameters, see the [InsuranceLake Developer Documentation on Glue Jobs](./developer_guide.md#glue-jobspark-code).
+* Glue jobs can be manually executed with override parameters for individual Glue jobs. For details on how to manually initiate Glue jobs and override parameters, see the [InsuranceLake Developer Documentation on Glue Jobs](developer_guide.md#glue-jobspark-code).
