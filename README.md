@@ -40,6 +40,7 @@ Specifically, this solution helps you to:
 * [Architecture](#architecture)
     * [InsuranceLake](#insurancelake-3-cs)
     * [ETL](#etl)
+    * [Well Architected Pillars](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/docs/well_architected.md)
 * [Security](#security)
     * [Infrastructure Code](#infrastructure-code)
     * [Application Code](#application-code)
@@ -352,6 +353,8 @@ The figure below represents the ETL resources we provision for the data lake.
 
 ## Security
 
+For more information on how AWS services come together in InsuranceLake to align with the [Security Pillar of the AWS Well-Architected Framework](https://docs.aws.amazon.com/wellarchitected/latest/financial-services-industry-lens/security.html) refer to the [InsuranceLake Well-Architected Pillar Alignment for Security](docs/well_architected.md#security).
+
 ### Infrastructure Code
 
 InsuranceLake uses [CDK-nag](https://github.com/cdklabs/cdk-nag) to ensure AWS resource security recommendations are followed. CDK-nag can generate warnings, which may need to be fixed depending on the context, and errors, which will interrupt the stack synthesis and prevent any deployment.
@@ -401,6 +404,8 @@ When this operation is complete, you will also have access to the CDK-nag report
 - [InsuranceLake Deep Dive AWS Workshop](https://catalog.us-east-1.prod.workshops.aws/workshops/0a85653e-07e9-41a8-960a-2d1bb592331b)
 - [General Insurance dashboard](https://democentral.learnquicksight.online/#Dashboard-DashboardDemo-General-Insurance) on Quicksight's DemoCentral using Consume-ready-data
 - [Life Insurance dashboard](https://democentral.learnquicksight.online/#Dashboard-DashboardDemo-Life-Insurance) also on Quicksight's DemoCentral
+- [AWS Solutions Library Guidance for Modern Insurance Data Lakes](https://aws.amazon.com/solutions/guidance/modern-insurance-data-lakes-on-aws)
+- [InsuranceLake in the AWS Well-Architected Framework Financial Services Industry Lens](https://docs.aws.amazon.com/wellarchitected/latest/financial-services-industry-lens/insurance-lake.html)
 
 ## Authors
 

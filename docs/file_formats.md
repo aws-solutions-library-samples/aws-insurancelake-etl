@@ -27,7 +27,7 @@ Input specification configuration is defined in the `input_spec` section of the 
 |strict_schema_mapping  |Boolean value that controls whether to halt the pipeline operation if fields specified in the schema mapping are not present in the input file; more information is provided in the [Schema Mapping Dropping Columns Documentation](schema_mapping.md#dropping-columns)
 |csv    |Section to specify CSV file specific configuration
 |tsv    |Section to specify TSV file specific configuration
-|parquet    |Section to indicate parquet input file support
+|parquet    |Section to indicate Apache Parquet input file support
 |json   |Section to specify JSON file specific configuration
 |fixed   |Section to indicate fixed width input file support
 |excel  |Section to specify Excel file specific configuration

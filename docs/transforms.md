@@ -693,6 +693,8 @@ Replace or add specified column values with values looked up from an DynamoDB ta
 ]
 ```
 
+- If your lookup data exceeds the [DynamoDB item size limit](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ServiceQuotas.html#limits-items), consider using the [multilookup](#multilookup) transform instead, which will split the lookup data into multiple items.
+
 - The provided `resources/load_dynamodb_lookup_table.py` script can be used to load prepared JSON data into the DynamoDB table:
 
     - Script parameters:
