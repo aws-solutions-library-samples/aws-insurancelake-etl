@@ -149,8 +149,7 @@ class PipelineStack(cdk.Stack):
         pipeline.add_stage(pipeline_deploy_stage)
 
         # Force Pipeline construct creation during synth so we can add
-        # Nag Supressions. Artifact bucket policies, and access Build
-        # stages
+        # Nag Supressions. Artifact bucket policies, and access Build stages
         pipeline.build_pipeline()
 
         # Loop through Stages and Actions looking for Build actions
@@ -161,8 +160,7 @@ class PipelineStack(cdk.Stack):
                     logs.LogGroup(
                         self, 
                         id=f'CodeBuildAction{action.action_properties.action_name}LogGroup',
-                        # Name the log after the project name so it
-                        # matches where CodeBuild writes
+                        # Name the log after the project name so it matches where CodeBuild writes
                         # resource object is a PipelineProject
                         log_group_name=f'/aws/codebuild/{action.action_properties.resource.project_name}',
                         removal_policy=self.removal_policy,

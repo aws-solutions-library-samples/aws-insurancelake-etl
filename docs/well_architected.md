@@ -61,6 +61,8 @@ InsuranceLake ETL uses DynamoDB to capture metadata from the ETL process and mak
 
 [InsuranceLake Infrastructure and ETL support unified tagging](full_deployment_guide.md#application-configuration) of all resources across all stacks that can easily be customized by a user from a central location in CDK. These tags make it easy for administrators locate resources that belong to the data lake and comply with cloud operations policies.
 
+ For scalable fine-grained data access management and governance, data lake administrators can optionally [configure Lakeformation permissions](https://docs.aws.amazon.com/lake-formation/latest/dg/initial-lf-config.html) on the InsuranceLake S3 buckets.
+
 
 ## Security
 
@@ -79,6 +81,8 @@ InsuranceLake ETL Glue jobs help users protect sensitive data through [built-in 
 InsuranceLake Lambda functions use an [AWS-maintained runtime with the latest version of Python](https://docs.aws.amazon.com/lambda/latest/dg/lambda-python.html). Functions are triggered by AWS service events only. Access to and access for the Lambda functions is provided only via IAM.
 
 [CodePipeline](https://docs.aws.amazon.com/codepipeline/latest/userguide/welcome.html) provided with InsuranceLake enables continuous automated version-controlled deployment of infrastructure and application code changes to multiple environments.
+
+For centrally managed column and row data access through Glue Data Catalog and Athena, a data lake administrator can optionally [configure Lakeformation permissions](https://docs.aws.amazon.com/lake-formation/latest/dg/initial-lf-config.html) on the InsuranceLake S3 buckets.
 
 
 ## Reliability

@@ -1,5 +1,7 @@
 # InsuranceLake Collect-to-Cleanse Transform Reference
 
+The following reference guide describes each of the user-configured data transforms provided with the InsuranceLake ETL. The library of transforms can be extended by users of InsuranceLake using pySpark.
+
 |Formatting	|Description
 |---	|---
 |[currency](#currency)	|Convert specified numeric field with currency formatting to Decimal (fixed precision)
@@ -746,7 +748,7 @@ Add columns looked up from an external table using multiple conditions, returnin
 
 - The `match_columns` names only refer to the incoming dataset. The column names in your lookup data (in DynamoDB) do not matter, because all the lookup column values are stored in a concatenated string in the lookup_item sort key.
 
-- **Important Note:** If a column already exists, a duplicate column will be created, which will raise an error when saving to Parquet format. Take care to map your incoming dataset correctly so that it has unique column names after performing the multilookup transform. For example, suppose your incoming data has a `lineofbusiness` column, but it is composed of bespoke values that you want to normalize. Best practice would be to use the schema map to rename `lineofbusiness` to `originallineofbusiness` so the incoming data is preserved, and use the multilookup to return a new (normalized) `lineofbusiness` attribute value.
+- **Important Note:** If a column specified in `return_attributes` already exists, a duplicate column will be created, which will raise an error when saving to Parquet format. Take care to map your incoming dataset correctly so that it has unique column names after performing the multilookup transform. For example, suppose your incoming data has a `lineofbusiness` column, but it is composed of bespoke values that you want to normalize. Best practice would be to use the schema map to rename `lineofbusiness` to `originallineofbusiness` so the incoming data is preserved, and use the multilookup to return a new (normalized) `lineofbusiness` attribute value.
 
 - The provided `resources/load_dynamodb_multilookup_table.py` script can be used to load prepared CSV data into the DynamoDB table:
 
@@ -764,6 +766,8 @@ Add columns looked up from an external table using multiple conditions, returnin
         ```
 
     - The lookup data file should be saved as CSV and include all the match columns and return value columns. It is ok to have some columns that are not used, because the transform specification allows the user to select the specific return columns they want in each transform.
+
+    - All columns that are not specified as lookup columns in the CSV file will be imported as separate attributes in the DynamoDB table and be available as return attributes.
 
 ### filldown
 Fill starting column value down the columns for all null values until the next non-null

@@ -191,22 +191,32 @@ def main():
             .load(source_path)
 
     elif ext.lower() == '.parquet' or 'parquet' in input_spec:
-        # TODO: Support partitioned Parquet folder structures (read correctly and repartition later)
+        # TODO: Support multi-file Parquet folder structures through configuration
         initial_df = spark.read.format('parquet').load(source_path)
 
     else:
-        # Comma delimited is default, with support for tab delimited if specified
+        # Comma delimited is default, with support for tab and pipe delimited if specified
         delimiter = ','
-        header = True
+        format_spec = {}
         if 'csv' in input_spec:
-            header = input_spec['csv'].get('header', True)
+            format_spec = input_spec['csv']
         if 'tsv' in input_spec:
             delimiter = '\t'
-            header = input_spec['tsv'].get('header', True)
+            format_spec = input_spec['tsv']
+        if 'pipe' in input_spec:
+            delimiter = '|'
+            format_spec = input_spec['pipe']
+
+        header = format_spec.get('header', True)
+        delimiter = format_spec.get('delimiter', delimiter)
+        quote_character = format_spec.get('quote_character', '"')
+        escape_character = format_spec.get('escape_character', '"')
 
         initial_df = spark.read.format('csv') \
             .option('header', header) \
             .option('delimiter', delimiter) \
+            .option('quote', quote_character) \
+            .option('escape', escape_character) \
             .option('inferSchema', 'true') \
             .option('mode', 'PERMISSIVE') \
             .load(source_path)

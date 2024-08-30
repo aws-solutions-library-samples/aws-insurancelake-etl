@@ -33,7 +33,7 @@ if raw_mappings[DEPLOYMENT][CODECOMMIT_MIRROR_REPOSITORY_NAME] != '':
     mirror_repository_stack = CodeCommitStack(
         app,
         f'{DEPLOYMENT}-{logical_id_prefix}EtlMirrorRepository',
-        description='InsuranceLake stack for ETL repository mirror (SO9489)',
+        description='InsuranceLake stack for ETL repository mirror (SO9489) (uksb-1tu7mtee2)',
         target_environment=DEPLOYMENT,
         env=deployment_aws_env,
     )
@@ -50,7 +50,7 @@ if os.environ.get('ENV', DEV) == DEV:
     dev_pipeline_stack = PipelineStack(
         app,
         f'{target_environment}-{logical_id_prefix}EtlPipeline',
-        description=f'InsuranceLake stack for ETL pipeline - {DEV} environment (SO9489)',
+        description=f'InsuranceLake stack for ETL pipeline - {DEV} environment (SO9489) (uksb-1tu7mtee2)',
         target_environment=DEV,
         target_branch=raw_mappings[DEV][CODE_BRANCH],
         target_aws_env=dev_aws_env,
@@ -70,7 +70,7 @@ if os.environ.get('ENV', TEST) == TEST:
     test_pipeline_stack = PipelineStack(
         app,
         f'{target_environment}-{logical_id_prefix}EtlPipeline',
-        description=f'InsuranceLake stack for ETL pipeline - {TEST} environment (SO9489)',
+        description=f'InsuranceLake stack for ETL pipeline - {TEST} environment (SO9489) (uksb-1tu7mtee2)',
         target_environment=TEST,
         target_branch=raw_mappings[TEST][CODE_BRANCH],
         target_aws_env=test_aws_env,
@@ -89,7 +89,7 @@ if os.environ.get('ENV', PROD) == PROD:
     prod_pipeline_stack = PipelineStack(
         app,
         f'{target_environment}-{logical_id_prefix}EtlPipeline',
-        description=f'InsuranceLake stack for ETL pipeline - {PROD} environment (SO9489)',
+        description=f'InsuranceLake stack for ETL pipeline - {PROD} environment (SO9489) (uksb-1tu7mtee2)',
         target_environment=PROD,
         target_branch=raw_mappings[PROD][CODE_BRANCH],
         target_aws_env=prod_aws_env,

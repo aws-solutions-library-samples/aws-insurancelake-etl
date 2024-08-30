@@ -1,15 +1,10 @@
-<!--
-  Title: AWS InsuranceLake
-  Description: Serverless modern data lake solution and reference architecture fit for the insurance industry built on AWS
-  Author: cvisi@amazon.com
-  -->
-# InsuranceLake ETL
+# InsuranceLake
 
 ## Overview
 
-The InsuranceLake solution is comprised of two codebases: [Infrastructure](https://github.com/aws-solutions-library-samples/aws-insurancelake-infrastructure) and [ETL](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl). This codebase is specific to the ETL features (both infrastructure and application code), but the documentation that follows applies to the solution as a whole. For documentation with specific details on the Infrastructure, refer to the [InsuranceLake Infrastructure with CDK Pipeline README](https://github.com/aws-solutions-library-samples/aws-insurancelake-infrastructure/blob/main/README.md).
+This solution guidance helps you deploy ETL processes and data storage resources to create InsuranceLake. It uses Amazon S3 buckets for storage, [AWS Glue](https://docs.aws.amazon.com/glue/) for data transformation, and [AWS CDK Pipelines](https://docs.aws.amazon.com/cdk/latest/guide/cdk_pipeline.html). The solution is originally based on the AWS blog [Deploy data lake ETL jobs using CDK Pipelines](https://aws.amazon.com/blogs/devops/deploying-data-lake-etl-jobs-using-cdk-pipelines/).
 
-This solution helps you deploy ETL processes and data storage resources to create InsuranceLake. It uses Amazon S3 buckets for storage, [AWS Glue](https://docs.aws.amazon.com/glue/) for data transformation, and [AWS CDK Pipelines](https://docs.aws.amazon.com/cdk/latest/guide/cdk_pipeline.html). The solution is originally based on the AWS blog [Deploy data lake ETL jobs using CDK Pipelines](https://aws.amazon.com/blogs/devops/deploying-data-lake-etl-jobs-using-cdk-pipelines/).
+The InsuranceLake solution is comprised of two codebases: [Infrastructure](https://github.com/aws-solutions-library-samples/aws-insurancelake-infrastructure) and [ETL](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl).
 
 [CDK Pipelines](https://docs.aws.amazon.com/cdk/api/latest/docs/pipelines-readme.html) is a construct library module for painless continuous delivery of CDK applications. CDK stands for Cloud Development Kit. It is an open source software development framework to define your cloud application resources using familiar programming languages.
 
@@ -23,7 +18,7 @@ Specifically, this solution helps you to:
 * Leverage the benefit of self-mutating feature of CDK Pipelines; specifically, the pipeline itself is infrastructure as code and can be changed as part of the deployment
 * Increase the speed of prototyping, testing, and deployment of new ETL jobs
 
-![InsuranceLake High Level Architecture](https://raw.githubusercontent.com/aws-solutions-library-samples/aws-insurancelake-etl/main/docs/insurancelake-highlevel-architecture.png)
+![InsuranceLake High Level Architecture](insurancelake-highlevel-architecture.png)
 
 ## Contents
 
@@ -40,24 +35,25 @@ Specifically, this solution helps you to:
 * [Architecture](#architecture)
     * [InsuranceLake](#insurancelake-3-cs)
     * [ETL](#etl)
-    * [Well Architected Pillars](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/docs/well_architected.md)
+    * [Well Architected Pillars](well_architected.md)
 * [Security](#security)
     * [Infrastructure Code](#infrastructure-code)
     * [Application Code](#application-code)
 * User Documentation
-    * [Loading Data with InsuranceLake](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/docs/loading_data.md)
-    * [Detailed Collect-to-Cleanse Transform Reference](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/docs/transforms.md)
-    * [Schema Mapping Documentation](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/docs/schema_mapping.md)
-    * [File Formats and Input Specification Documentation](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/docs/file_formats.md)
-    * [Data Quality with Glue Data Quality Reference](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/docs/data_quality.md)
-    * [Using SQL for Cleanse-to-Consume](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/docs/using_sql.md)
-    * [Schema Evolution Details](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/docs/schema_evolution.md)
+    * [Loading Data with InsuranceLake](loading_data.md)
+    * [Detailed Collect-to-Cleanse Transform Reference](transforms.md)
+    * [Schema Mapping Documentation](schema_mapping.md)
+    * [File Formats and Input Specification Documentation](file_formats.md)
+    * [Data Quality with Glue Data Quality Reference](data_quality.md)
+    * [Using SQL for Cleanse-to-Consume](using_sql.md)
+    * [Schema Evolution Details](schema_evolution.md)
 * Developer Documentation
-    * [Developer Guide](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/docs/developer_guide.md)
-    * [Full Deployment Guide](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/docs/full_deployment_guide.md)
-    * [AWS CDK Detailed Instructions](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/docs/cdk_instructions.md)
+    * [Developer Guide](developer_guide.md)
+    * [Full Deployment Guide](full_deployment_guide.md)
+    * [AWS CDK Detailed Instructions](cdk_instructions.md)
 * [Additional resources](#additional-resources)
 * [Authors](#authors)
+* [Notices](#notices)
 * [License Summary](#license-summary)
 
 ## Cost
@@ -162,9 +158,9 @@ If you'd like to get started quickly transforming some sample raw insurance data
     aws s3 cp resources/syntheticgeneral-policy-data.csv s3://<Collect S3 Bucket>/SyntheticGeneralData/PolicyData/
     ```
 1. Open [Step Functions](https://console.aws.amazon.com/states/home) in the AWS Console and select `dev-insurancelake-etl-state-machine`
-    ![AWS Step Functions Selecting State Machine](https://raw.githubusercontent.com/aws-solutions-library-samples/aws-insurancelake-etl/main/docs/step_functions_select_state_machine.png)
+    ![AWS Step Functions Selecting State Machine](step_functions_select_state_machine.png)
 1. Open the state machine execution in progress and monitor the status until completed
-    ![AWS Step Functions Selecting Running Execution](https://raw.githubusercontent.com/aws-solutions-library-samples/aws-insurancelake-etl/main/docs/step_functions_select_running_execution.png)
+    ![AWS Step Functions Selecting Running Execution](step_functions_select_running_execution.png)
 1. Open [Athena](https://console.aws.amazon.com/athena/home) in the AWS Console
 1. Select Launch Query Editor, and change the Workgroup to `insurancelake`
 1. Run the following query to view a sample of prepared data in the consume bucket:
@@ -176,7 +172,7 @@ If you'd like to get started quickly transforming some sample raw insurance data
 
 * Take the [InsuranceLake Deep Dive Workshop](https://catalog.us-east-1.prod.workshops.aws/workshops/0a85653e-07e9-41a8-960a-2d1bb592331b)
     * You may skip to the [Modify and test a transform](https://catalog.us-east-1.prod.workshops.aws/workshops/0a85653e-07e9-41a8-960a-2d1bb592331b/en-US/modify-a-transform) step, as the prior steps overlap with the Quickstart instructions
-* Try out [loading your own data](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/docs/loading_data.md#landing-source-data)
+* Try out [loading your own data](loading_data.md#landing-source-data)
 * Try the [Quickstart with CI/CD](#quickstart-with-cicd)
 * Dive deeper with the included [user documentation](#contents)
 * Contact your AWS account team for a solution deep dive, workshops, or Professional Services support
@@ -199,7 +195,7 @@ If you've determined the AWS CDK InsuranceLake is a good starting point for your
     cdk deploy Deploy-InsuranceLakeInfrastructureMirrorRepository
     ```
     - While this stack is designed for a mirror repository, it can also be used as a main repository for your InsuranceLake code. You can follow links to help setup other repository types here:
-        - [Github](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/docs/developer_guide.md##aws-codepipeline-and-github-integration)
+        - [Github](developer_guide.md#aws-codepipeline-and-github-integration)
         - [Bitbucket](https://complereinfosystem.com/2021/02/26/atlassian-bitbucket-to-aws-codecommit-using-bitbucket-pipelines/)
         - [Gitlab](https://klika-tech.com/blog/2022/07/12/repository-mirroring-gitlab-to-codecommit/)
 1. If you plan to use CodeCommit as the main repository, [install the Git CodeCommit Helper](https://docs.aws.amazon.com/codecommit/latest/userguide/setting-up-git-remote-codecommit.html):
@@ -225,9 +221,9 @@ If you've determined the AWS CDK InsuranceLake is a good starting point for your
     - Wait for deployment to finish (approx. 5 mins)
 1. Open CodePipeline in the AWS Console and select the `dev-insurancelake-infrastructure-pipeline` Pipeline
     - The first run of the pipeline starts automatically after the Pipeline stack is deployed.
-    ![Select Infrastructure CodePipeline](https://raw.githubusercontent.com/aws-solutions-library-samples/aws-insurancelake-etl/main/docs/codepipeline_infrastructure_select_pipeline.png)
+    ![Select Infrastructure CodePipeline](codepipeline_infrastructure_select_pipeline.png)
 1. Monitor the status of the pipeline until completed
-    ![Infrastructure CodePipeline progress](https://raw.githubusercontent.com/aws-solutions-library-samples/aws-insurancelake-etl/main/docs/codepipeline_infrastructure_monitor_progress.png)
+    ![Infrastructure CodePipeline progress](codepipeline_infrastructure_monitor_progress.png)
 1. Switch the working directory to the location of the etl code
     ```bash/
     cd ../aws-insurancelake-etl
@@ -256,9 +252,9 @@ If you've determined the AWS CDK InsuranceLake is a good starting point for your
     - Wait for deployment to finish (approx. 5 mins)
 1. Open CodePipeline in the AWS Console and select the `dev-insurancelake-etl-pipeline` Pipeline
     - The first run of the pipeline starts automatically after the Pipeline stack is deployed.
-   ![Select ETL CodePipeline](https://raw.githubusercontent.com/aws-solutions-library-samples/aws-insurancelake-etl/main/docs/codepipeline_etl_select_pipeline.png)
+    ![Select ETL CodePipeline](codepipeline_etl_select_pipeline.png)
 1. Monitor the status of the pipeline until completed
-    ![ETL CodePipeline progress](https://raw.githubusercontent.com/aws-solutions-library-samples/aws-insurancelake-etl/main/docs/codepipeline_etl_monitor_progress.png)
+    ![ETL CodePipeline progress](codepipeline_etl_monitor_progress.png)
 
 ## Deployment Validation
 
@@ -306,7 +302,7 @@ If you've determined the AWS CDK InsuranceLake is a good starting point for your
 
 ## Cleanup
 
-Refer to the [CDK Instructions, Cleanup section](docs/cdk_instructions.md#clean-up-workflow-created-resources).
+Refer to the [CDK Instructions, Cleanup section](cdk_instructions.md#clean-up-workflow-created-resources).
 
 ## Architecture
 
@@ -315,9 +311,9 @@ In this section we talk about the overall InsuranceLake architecture and the ETL
 ### InsuranceLake 3 Cs
 
 As shown in the figure below, we use Amazon S3 for storage. We use three S3 buckets:
-    1. Collect bucket to store raw data in its original format
-    1. Cleanse/Curate bucket to store the data that meets the quality and consistency requirements of the lake
-    1. Consume bucket for data that is used by analysts and data consumers of the lake (for example, Amazon Quicksight, Amazon Sagemaker)
+   1. Collect bucket to store raw data in its original format
+   1. Cleanse/Curate bucket to store the data that meets the quality and consistency requirements of the lake
+   1. Consume bucket for data that is used by analysts and data consumers of the lake (e.g. Amazon Quicksight, Amazon Sagemaker)
 
 InsuranceLake is designed to support a number of source systems with different file formats and data partitions. To demonstrate, we have provided a CSV parser and sample data files for a source system with two data tables, which are uploaded to the Collect bucket.
 
@@ -325,7 +321,7 @@ We use AWS Lambda and AWS Step Functions for orchestration and scheduling of ETL
 
 **Note:** [AWS Lake Formation](https://aws.amazon.com/lake-formation/) is a service that makes it easy to set up a secure data lake in days. [Amazon QuickSight](https://aws.amazon.com/quicksight/) is a scalable, serverless, embeddable, machine learning-powered business intelligence (BI) service built for the cloud. [Amazon DataZone](https://aws.amazon.com/datazone/) is a data management service that makes it faster and easier for customers to catalog, discover, share, and govern data stored across AWS, on premises, and third-party sources. These three services are not used in this solution but can be added.
 
-![Conceptual Data Lake](https://raw.githubusercontent.com/aws-solutions-library-samples/aws-insurancelake-etl/main/docs/Aws-cdk-insurancelake-data_lake.png)
+![Conceptual Data Lake](Aws-cdk-insurancelake-data_lake.png)
 
 ### ETL
 
@@ -347,13 +343,11 @@ The figure below represents the ETL resources we provision for the data lake.
 14. Sends SNS notification
 15. Data engineers or analysts analyze data using Amazon Athena
 
-![Data Lake Infrastructure Architecture](https://raw.githubusercontent.com/aws-solutions-library-samples/aws-insurancelake-etl/main/docs/Aws-cdk-insurancelake-etl.png)
-
----
+![Data Lake Infrastructure Architecture](Aws-cdk-insurancelake-etl.png)
 
 ## Security
 
-For more information on how AWS services come together in InsuranceLake to align with the [Security Pillar of the AWS Well-Architected Framework](https://docs.aws.amazon.com/wellarchitected/latest/financial-services-industry-lens/security.html) refer to the [InsuranceLake Well-Architected Pillar Alignment for Security](docs/well_architected.md#security).
+For more information on how AWS services come together in InsuranceLake to align with the [Security Pillar of the AWS Well-Architected Framework](https://docs.aws.amazon.com/wellarchitected/latest/financial-services-industry-lens/security.html) refer to the [InsuranceLake Well-architected Pillar Alignment for Security](well_architected.html#security).
 
 ### Infrastructure Code
 
@@ -396,7 +390,7 @@ To scan all application code using bandit, use the following command:
 bandit -r --ini .bandit
 ```
 
-When this operation is complete, you will also have access to the CDK-nag reports in CSV format in the `cdk.out` directory and assembly directories.
+---
 
 ## Additional Resources
 
@@ -419,6 +413,11 @@ The following people are involved in the design, architecture, development, test
 1. **Justiono Putro**, Cloud Infrastructure Architect, Amazon Web Services
 1. **Mike Apted**, Principal Solutions Architect, Amazon Web Services
 1. **Nikunj Vaidya**, Senior DevOps Specialist, Amazon Web Services
+
+## Notices
+
+Customers are responsible for making their own independent assessment of the information in this document. This document: (a) is for informational purposes only, (b) represents AWS current product offerings and practices, which are subject to change without notice, and (c) does not create any commitments or assurances from AWS and its affiliates, suppliers or licensors. AWS products or services are provided "as is" without warranties, representations, or conditions of any kind, whether express or implied. AWS responsibilities and liabilities to its customers are controlled by AWS agreements, and this
+document is not part of, nor does it modify, any agreement between AWS and its customers.
 
 ## License Summary
 

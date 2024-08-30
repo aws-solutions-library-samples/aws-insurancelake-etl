@@ -190,11 +190,11 @@ Use data quality rules to require (a failing rule halts the pipeline) claim data
 ```json
 {
     "after_sparksql": {
-		"warn_rules": [
+        "warn_rules": [
             "CustomSql 'SELECT count(*) FROM primary WHERE claims_last_updated >= now() - interval 8 hours' >= 1",
             "CustomSql 'SELECT count(*) FROM primary WHERE policies_last_updated >= now() - interval 1 month' >= 100"
         ],
-		"halt_rules": [
+        "halt_rules": [
             "CustomSql 'SELECT count(*) FROM primary WHERE claims_last_updated >= now() - interval 24 hours' >= 1",
             "CustomSql 'SELECT count(*) FROM primary WHERE policies_last_updated >= now() - interval 1 month' >= 1"
         ]

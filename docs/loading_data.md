@@ -5,14 +5,14 @@
 * [Landing Source Data](#landing-source-data)
 * [Bucket Layout](#bucket-layout)
 	* [Naming convention and location of configuration files](#naming-convention-and-location-of-configuration-files)
+* [Configuration Recommendations](#configuration-recommendations)
 * [File Format Identification](#file-format-identification)
 	* [Auto Detection Formats](#auto-detection-formats)
-	* [TSV](#tsv)
+	* [TSV, Pipe-delimited, Other Delimiters](#tsv-pipe-delimited-other-delimiter)
 	* [Fixed Width](#fixed-width)
 * [Corrupt Data](#corrupt-data)
 	* [Method 1](#method-1)
 	* [Method 2](#method-2)
-* [Configuration Recommendations](#configuration-recommendations)
 * [Execute Pipeline without Upload](#execute-pipeline-without-upload)
 * [Override Partition Values](#override-partition-values)
 
@@ -45,7 +45,7 @@ When you create the folder structure for storing source files in the Collect buc
 
 * S3 objects landed with *less than two levels of folder depth* will be ignored by the state-machine-trigger Lambda function; no ETL workflow will be triggered. S3 objects landed with *more than two levels of folder depth* will be processed with [Partition Value Override](#override-partition-values).
 
-* The Cleanse-to-Consume Glue job [can be configured](./using_sql.md#override-table-name-example) to create multiple tables in the Consume layer, and can be configured to override the table name provided in the folder structure. Therefore, the Consume layer will not always match the Collect bucket layout.
+* The Cleanse-to-Consume Glue job [can be configured](using_sql.md#override-table-name-example) to create multiple tables in the Consume layer, and can be configured to override the table name provided in the folder structure. Therefore, the Consume layer will not always match the Collect bucket layout.
 
 Example bucket layout follows:
 
@@ -59,19 +59,32 @@ The files for the transformation/input configuration, schema mapping, data quali
 
 |Purpose  |ETL Scripts Bucket Location  |Naming Convention
 |---   |---  |---
-|[Schema Mapping](./schema_mapping.md) |/etl/transformation-spec |`<database name>-<table name>.csv`
-|[Transformation](./transforms.md)/[Input Config](./file_formats.md#input-specification)   |/etl/transformation-spec |`<database name>-<table name>.json`
-|[Data Quality Rules](./data_quality.md)   |/etl/dq-rules   |`dq-<database name>-<table name>.json`
-|[Spark SQL](./using_sql.md#spark-sql)   |/etl/transformation-sql  |`spark-<database name>-<table name>.sql`
-|[Athena SQL](./using_sql.md#athena-sql)  |/etl/transformation-sql  |`athena-<database name>-<table name>.sql`
-|Entity Match Config   |/etl/transformation-spec |`<database name>-entitymatch.json`
+|[Schema Mapping](schema_mapping.md) |/etl/transformation-spec |`<database name>-<table name>.csv`
+|[Transformation](transforms.md)/[Input Config](file_formats.md#input-specification)   |/etl/transformation-spec |`<database name>-<table name>.json`
+|[Data Quality Rules](data_quality.md)   |/etl/dq-rules   |`dq-<database name>-<table name>.json`
+|[Spark SQL](using_sql.md#spark-sql)   |/etl/transformation-sql  |`spark-<database name>-<table name>.sql`
+|[Athena SQL](using_sql.md#athena-sql)  |/etl/transformation-sql  |`athena-<database name>-<table name>.sql`
+|[Entity Match Config](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/lib/glue_scripts/transformation-spec/Customer-entitymatch.json)   |/etl/transformation-spec |`<database name>-entitymatch.json`
+
+
+## Configuration Recommendations
+
+When the ETL loads source data with no schema mapping or transformation configuration files, it will create *recommended* configurations. These recommendations are saved to the Glue Temp bucket, which follows the naming convention `<environment>-insurancelake-<account>-<region>-glue-temp`, in the folder `/etl/collect_to_cleanse` which following the naming convention `<database>-<table>` (extension `csv` for schema mapping and `json` for transformations). Simply copy the files to your development environment, edit them as needed, and upload them to the ETL Scripts S3 Bucket in the [appropriate location](#naming-convention-and-location-of-configuration-files).
+
+Using these recommendations help accelerate your creation of configuration files with a syntactically correct template and complete list of fields in the schema.
+
+More details are available on how the ETL generates these recommendations:
+* [Behavior When There is No Schema Mapping](schema_mapping.md#behavior-when-there-is-no-schema-mapping)
+* [Behavior When There is No Transformation Specification](transforms.md#behavior-when-there-is-no-transformation-specification)
+
+To get started quickly building a set of data quality rules with recommendations, use [Glue Data Quality Recommendations](data_quality.md#getting-started).
 
 
 ## File Format Identification
 
 ### Auto Detection Formats
 
-The ETL can load many source file formats for the first time with no configuration (in other words, no schema mapping file, no input/transformation specification file, no data quality file, and no SQL files).
+The ETL can load many source file formats for the first time with no configuration (in other words, no schema mapping file, no input/transformation specification file, no data quality file, and no SQL files). We recommend using this minimalistic configuration approach whenever possible, because it reduces the time to load and publish data.
 
 **Comma Separated Value (CSV) is the default file format for the ETL.** If no other file format is identified or configured, the ETL will assume the file is CSV.
 
@@ -79,16 +92,16 @@ Formats that could require no configuration for initial loading follow (with exc
 
 |Format	|Exceptions
 |---	|---
-|[CSV](file_formats.md#csv-comma-separated-value)	|The ETL will default to using the first row of a CSV file as the header. If your CSV file has no header, you must provide an `input_spec` configuration indicating no header.
+|[CSV](file_formats.md#csv-comma-separated-value)	|The ETL will default to using the first row of a CSV file as the header, `"` as the quote character, and `"` as the escape character. To change these options, you must provide [an `input_spec` configuration](file_formats.md#csv-comma-separated-value). Other Spark CSV read defaults affect the way the ETL interprets CSV files. Refer to the [Spark CSV File Data Source Option Documentation](https://spark.apache.org/docs/latest/sql-data-sources-csv.html#data-source-option) for details.
 |[Parquet](file_formats.md#parquet)	|Parquet files that do not end with a `parquet` extension will need to be renamed or you must provide an `input_spec` configuration indicating the file format. Multi-file Parquet data sources will require pipeline customization detailed in [Handling Multi-file Data Sets](file_formats.md#handling-multi-file-data-sets).
 |[Excel](file_formats.md#microsoft-excel-format-support)	|Excel files are identified by the extensions `xls`, `xlsx`, `xlm`, `xlsm`. Loading Excel files requires the [installation of the Spark Excel libraries](file_formats.md#obtaining-the-driver). In addition, the ETL will default to using the first sheet in an Excel workbook, the data at cell A1, and assume the first row of data is the header. If your Excel file has data on a different sheet, in a different position, has no header, or requires a password, you must provide [an `input_spec` configuration](file_formats.md#configuration).
 |[JSON](file_formats.md#json)	|JSON files are identified by the extensions `json`, `.jsonl`. The ETL will default to loading JSON files as JSON Lines (each line contains one JSON object). If your JSON file uses multiple lines for a single object, you must provide an `input_spec` configuration.
 
 Other formats require some configuration even for the first load.
 
-### TSV
+### TSV, Pipe-delimited, Other Delimiters
 
-The ETL will not attempt to detect source data files containing Tab Seperated Values (TSV). If your source data file uses a TSV format, you must specify an `input_spec` configuration indicating the file format (and optionally whether there is a header). Refer to the [TSV file format documentation](file_formats.md#tsv-tab-separated-value) for configuration details.
+The ETL will not attempt to detect source data files containing Tab Seperated Values (TSV), pipe (`|`) delimiters, or other delimiter characters. If your source data file uses a delimiter other than commas, you must specify an `input_spec` configuration indicating the file format (and optionally whether there is a header). Refer to the [Pipe-delimited file format documentation](file_formats.md#pipe-delimited) and [TSV file format documentation](file_formats.md#tsv-tab-separated-value) for configuration details.
 
 ### Fixed Width
 
@@ -162,19 +175,6 @@ This method uses a [`filterrows` transform](transforms.md#filterrows) to remove 
 	}
 }
 ```
-
-
-## Configuration Recommendations
-
-When the ETL loads source data with no schema mapping or transformation configuration files, it will create *recommended* configurations. These recommendations are saved to the Glue Temp bucket, which follows the naming convention `<environment>-insurancelake-<account>-<region>-glue-temp`, in the folder `/etl/collect_to_cleanse` which following the naming convention `<database>-<table>` (extension `csv` for schema mapping and `json` for transformations). Simply copy the files to your development environment, edit them as needed, and upload them to the ETL Scripts S3 Bucket in the [appropriate location](#naming-convention-and-location-of-configuration-files).
-
-Using these recommendations help accelerate your creation of configuration files with a syntactically correct template and complete list of fields in the schema.
-
-More details are available on how the ETL generates these recommendations:
-* [Behavior When There is No Schema Mapping](schema_mapping.md#behavior-when-there-is-no-schema-mapping)
-* [Behavior When There is No Transformation Specification](transforms.md#behavior-when-there-is-no-transformation-specification)
-
-To get started quickly building a set of data quality rules with recommendations, use [Glue Data Quality Recommendations](data_quality.md#getting-started).
 
 
 ## Execute Pipeline without Upload

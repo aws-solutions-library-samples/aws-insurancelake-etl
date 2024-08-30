@@ -5,7 +5,7 @@
 * [Local CDK Deployment](#local-cdk-deployment)
 * [Local Glue/Spark Development](#local-gluespark-development)
    * [Local Iceberg Development](#local-iceberg-development)
-   * [Visual Code](#visual-code)
+   * [Visual Studio Code](#visual-studio-code)
 * [Codebase](#codebase)
     * [Source Code Structure](#source-code-structure)
     * [Transformation Modules](#transformation-modules)
@@ -61,9 +61,9 @@ py4j.protocol.Py4JJavaError: An error occurred while calling o119.create.
 : org.apache.spark.SparkException: Cannot find catalog plugin class for catalog 'local': org.apache.iceberg.spark.SparkCatalog
 ```
 
-### Visual Code
+### Visual Studio Code
 
-To run and debug the ETL Glue jobs in Visual Code, you'll need a launch configuration defined in `launch.json`. The following configuration provides the required parameters for all three of the InsuranceLake ETL Glue jobs:
+To run and debug the ETL Glue jobs in Visual Studio Code, you'll need a launch configuration defined in `launch.json`. The following configuration provides the required parameters for all three of the InsuranceLake ETL Glue jobs. You can also find this sample configuration in [the `launch.json.default` Visual Studio Code configuration file included in the repository](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/.vscode/launch.json.default). Be sure to replace the AWS Account ID placeholders with the AWS Account ID where InsuranceLake is deployed.
 
 ```json
       {
@@ -74,9 +74,7 @@ To run and debug the ETL Glue jobs in Visual Code, you'll need a launch configur
          "console": "integratedTerminal",
          "justMyCode": true,
          "args": [
-            "--JOB_NAME=VisualCode",
-            "--state_machine_name=dev-insurancelake-etl-state-machine",
-            "--execution_id=test_execution_id",
+            "--JOB_NAME=VisualStudioCode",
             "--enable-glue-datacatalog=true",
             "--TempDir=s3://dev-insurancelake-ACCOUNT_ID-us-east-2-glue-temp/etl/collect-to-cleanse",
             "--enable-metrics=true",
@@ -84,18 +82,20 @@ To run and debug the ETL Glue jobs in Visual Code, you'll need a launch configur
             "--spark-event-logs-path=s3://dev-insurancelake-ACCOUNT_ID-us-east-2-glue-temp/etl/collect-to-cleanse/",
             "--enable-job-insights=true",
             "--enable-continuous-cloudwatch-log=true",
+            "--state_machine_name=dev-insurancelake-etl-state-machine",
+            "--execution_id=test_execution_id",
             "--environment=Dev",
-            "--target_database_name=SyntheticGeneralData",
-            "--target_bucket=s3://dev-insurancelake-ACCOUNT_ID-us-east-2-cleanse",
             "--source_bucket=s3://dev-insurancelake-ACCOUNT_ID-us-east-2-collect",
             "--source_key=SyntheticGeneralData/PolicyData",
             "--source_path=SyntheticGeneralData/PolicyData",
+            "--target_database_name=SyntheticGeneralData",
+            "--target_bucket=s3://dev-insurancelake-ACCOUNT_ID-us-east-2-cleanse",
             "--base_file_name=syntheticgeneral-policy-data.csv",
             "--p_year=2024",
             "--p_month=07",
             "--p_day=15",
             "--table_name=PolicyData",
-            "--txn_bucket=s3://dev-insurancelake-ACCOUNT-us-east-2-etl-scripts",
+            "--txn_bucket=s3://dev-insurancelake-ACCOUNT_ID-us-east-2-etl-scripts",
             "--txn_spec_prefix_path=/etl/transformation-spec/",
             "--txn_sql_prefix_path=/etl/transformation-sql/",
             "--hash_value_table=dev-insurancelake-etl-hash-values",
@@ -386,7 +386,7 @@ Integration between AWS CodePipeline and GitHub requires a personal access token
       Enabling [S3 Object Lock](https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lock.html) on the Cleanse or Consume S3 buckets breaks ETL data writes to the buckets. This is caused by known limitations to Hadoop's S3A driver used by Spark. These open issues are being tracking as [HADOOP-19080](https://issues.apache.org/jira/browse/HADOOP-19080) and [HADOOP-15224](https://issues.apache.org/jira/browse/HADOOP-15224). Enabling S3 Object Lock on these S3 buckets will result in an error similar to the following:
 
       ```log
-      py4j.protocol.Py4JJavaError: An error occurred while calling o121.save. : org.apache.hadoop.fs.s3a.AWSBadRequestException: PUT 0-byte object  on datalake/showroom_variants: com.amazonaws.services.s3.model.AmazonS3Exception: Content-MD5 OR x-amz-checksum- HTTP header is required for Put Object requests with Object Lock parameters (Service: Amazon S3; Status Code: 400; Error Code: InvalidRequest; Request ID: <request_id>; S3 Extended Request ID: <request_id>; Proxy: null), S3 Extended Request ID: <some_id>:InvalidRequest: Content-MD5 OR x-amz-checksum- HTTP header is required for Put Object requests with Object Lock parameters (Service: Amazon S3; Status Code: 400; Error Code: InvalidRequest; Request ID: <request_id>; S3 Extended Request ID: <extended_request_id>; Proxy: null)
+      An error occurred while calling o237.saveAsTable. Content-MD5 OR x-amz-checksum- HTTP header is required for Put Object requests with Object Lock parameters (Service: Amazon S3; Status Code: 400; Error Code: InvalidRequest; Request ID: <request_id>; S3 Extended Request ID: <extended_request_id>; Proxy: null)
       ```
 
       It is possible to convert the ETL data write operations to use the [GlueContext getSink method](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-api-crawler-pyspark-extensions-glue-context.html#aws-glue-api-crawler-pyspark-extensions-glue-context-get-sink) which supports writing to S3 buckets with Object Lock. However, this introduces a side effect of creating a new version of the Glue Data Catalog table schema for every write operation.

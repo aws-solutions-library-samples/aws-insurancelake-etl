@@ -94,6 +94,8 @@ Considerations and requirements for InsuranceLake's integration with Athena SQL:
 
     * **Note:** The multi-query implementation relies on the Python `split` function and may not support all variations of query syntax.
 
+* Athena SQL supports [dot notation](https://docs.aws.amazon.com/athena/latest/ug/rows-and-structs.html) for working with arrays, maps, and structured data types for nested data.
+
 * The ETL will ignore any returned data from the Athena SQL query. Only success or failure of the query will impact the workflow. You should design your Athena queries to be self-contained operations, such as creating a view or table.
 
 * If no Athena SQL file exists, there will be no error in the workflow. The Athena SQL file is optional, and the execution step will be skipped.

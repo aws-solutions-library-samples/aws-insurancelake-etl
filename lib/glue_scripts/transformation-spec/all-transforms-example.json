@@ -8,16 +8,26 @@
 		"strict_schema_mapping": true,
 
 		"csv": {
-			"header": true
+			"header": true,
+			"quote_character": "'",
+			"escape_character": "\\"
+		},
+
+		"csv": {
+			"description": "4 space custom delimiter input format",
+			"delimiter": "    "
 		},
 
 		"tsv": {
-			"header": true
+			"header": false
 		},
 
-        "json": {
-            "multiline": true
-        },
+		"pipe": {
+		},
+
+		"json": {
+			"multiline": true
+		},
 
 		"fixed": {},
 
@@ -76,7 +86,7 @@
 		],
 
 		"date": [
-		   	{
+			{
 				"field": "StartDate",
 				"format": "M/d/yy"
 			},
@@ -122,7 +132,7 @@
 			"GrowingCount": "bigint",
 			"PolicyKey": "string",
 			"notes_struct": "json",
-            "policyaddress": "struct<addressline1:string,addressline2:string,city:string,country:string,county:string,displayname:string,id:string,policyaddress:boolean,postalcode:string,state:struct<code:string,name:string>>"
+			"policyaddress": "struct<addressline1:string,addressline2:string,city:string,country:string,county:string,displayname:string,id:string,policyaddress:boolean,postalcode:string,state:struct<code:string,name:string>>"
 		},
 
 		"implieddecimal": [
@@ -165,7 +175,7 @@
 		],
 
 		"tokenize": [
-		    "EIN"
+			"EIN"
 		],
 
 		"lookup": [
@@ -317,22 +327,22 @@
 			}
 		],
 
-        "jsonexpandmap": [
-            {
-                "field": "activities",
-                "index_field": "activity_index",
-                "key_field": "activity_id"
+		"jsonexpandmap": [
+			{
+				"field": "activities",
+				"index_field": "activity_index",
+				"key_field": "activity_id"
 
-            }
-        ],
+			}
+		],
 
-        "jsonexpandarray": [
-            {
-                "field": "policyaddress",
-                "source": "policyaddresses",
-                "index_field": "policyaddress_index"
-            }
-        ]
+		"jsonexpandarray": [
+			{
+				"field": "policyaddress",
+				"source": "policyaddresses",
+				"index_field": "policyaddress_index"
+			}
+		]
 
 	}
 }

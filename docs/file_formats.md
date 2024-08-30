@@ -1,10 +1,11 @@
-# InsuranceLake File Formats and Input Specification Documentation
+# InsuranceLake File Formats and Input Specification
 
 ## Contents
 
 * [Input Specification](#input-specification)
 * [CSV](#csv-comma-separated-value)
 * [TSV](#tsv-tab-separated-value)
+* [Pipe-delimited](#pipe-delimited)
 * [JSON](#json)
 * [Fixed Width](#fixed-width)
     * [Handling Encoding Issues](#handling-encoding-issues)
@@ -27,6 +28,7 @@ Input specification configuration is defined in the `input_spec` section of the 
 |strict_schema_mapping  |Boolean value that controls whether to halt the pipeline operation if fields specified in the schema mapping are not present in the input file; more information is provided in the [Schema Mapping Dropping Columns Documentation](schema_mapping.md#dropping-columns)
 |csv    |Section to specify CSV file specific configuration
 |tsv    |Section to specify TSV file specific configuration
+|pipe   |Section to specify pipe-delimited file specific configuration
 |parquet    |Section to indicate Apache Parquet input file support
 |json   |Section to specify JSON file specific configuration
 |fixed   |Section to indicate fixed width input file support
@@ -49,17 +51,32 @@ Example of other data pipeline configuration parameters:
 
 ## CSV (Comma Separated Value)
 
-Comma separated value file format is the default file format for the InsuranceLake ETL. If no input specification configuration is specified, and the file extension is not recognized, the ETL will assume that CSV file format is desired.
+Comma separated value file format is **the default file format for the InsuranceLake ETL**. If no input specification configuration is specified, and the file extension is not recognized, the ETL will assume that CSV file format is desired.
 
-The `csv` configuration section can be used to indicate if a header row is expected. To understand the schema when no header row is present, refer to the [Schema Mapping Files with No Header Documentation](schema_mapping.md#files-with-no-header).
+The `csv` configuration section can be used to specify additional format options, **including a custom field delimiter**:
 
-Example of configuration for a CSV file with no header:
+|Format Option   |Default    |Description
+|---    |---    |---
+|header |true   |Specifies whether the first row should be interpreted as a header row; to understand the schema when no header row is present, refer to the [Schema Mapping Files with No Header Documentation](schema_mapping.md#files-with-no-header)
+|quote_character    |`"`  |Character used for escaping quoted field values containing the field separator
+|escape_character   |`"`  |Character used for escaping quotes inside an already quoted field value
+|delimiter  |Dependent on the section header   |Field separator character or characters; overrides the character indicated by the specified file format
+
+* Spark CSV read defaults differ in some ways from [RFC 4180](https://www.rfc-editor.org/rfc/rfc4180) definitions for CSV. For example, multi-line quoted is not supported by default, and the escape character is backslash by default. **InsuranceLake ETL** changes the default escape character to `"` to match RFC 4180. However, multi-line quoted is not supported, due to its [negative impact on parallelization in Spark](https://issues.apache.org/jira/browse/SPARK-22236).
+
+* Other Spark CSV read defaults affect the way the ETL interprets delimited files. Refer to the [Spark CSV File Data Source Option Documentation](https://spark.apache.org/docs/latest/sql-data-sources-csv.html#data-source-option) for details.
+
+* Overriding the delimiter indicated by the section header could reduce the self-documenting effectiveness of your input specification configuration.
+
+Example of configuration for a CSV file with no header, single quote for the quote character, and a backslash escape character (instead of the default double-quote character):
 
 ```json
 {
     "input_spec": {
         "csv": {
-            "header": false
+            "header": false,
+            "quote_character": "'",
+            "escape_character": "\\"
         }
     }
 }
@@ -69,7 +86,7 @@ Example of configuration for a CSV file with no header:
 
 Tab separated value input files are not identified by any file extension; the ETL will only interpret an input file as tab separated value if the file format is specified in the `input_spec` configuration.
 
-The `tsv` configuration section can be used to indicate if a header row is expected. To understand the schema when no header row is present, refer to the [Schema Mapping Files with No Header Documentation](schema_mapping.md#files-with-no-header).
+The `tsv` configuration section can be used to indicate if a header row is expected, to specify a different quote character, to specify a different escape character, or to specify a custom field delimiter. CSV, TSV, and pipe-delimited formats share the same configuration section options. Complete details can be found in the [CSV format documentation](#csv-comma-separated-value).
 
 Example of a configuration for a TSV file with a header row:
 
@@ -77,6 +94,24 @@ Example of a configuration for a TSV file with a header row:
 {
     "input_spec": {
         "tsv": {
+            "header": true
+        }
+    }
+}
+```
+
+## Pipe-delimited
+
+Pipe-delimited input files are not identified by any file extension; the ETL will only interpret an input file as pipe-delimited if the file format is specified in the `input_spec` configuration.
+
+The `pipe` configuration section can be used to indicate if a header row is expected, to specify a different quote character, to specify a different escape character, or to specify a custom field delimiter. CSV, TSV, and pipe-delimited formats share the same configuration section options. Complete details can be found in the [CSV format documentation](#csv-comma-separated-value).
+
+Example of a configuration for a pipe-delimited file with a header row:
+
+```json
+{
+    "input_spec": {
+        "pipe": {
             "header": true
         }
     }
@@ -123,7 +158,7 @@ Fixed width format data files may have characters encoded in formats that are no
 
 To work around this issue, the ETL's fixed width handling can be modified to decode the text data using US-ASCII or ISO-8859-1, and split the line based on the width of fields in the schema mapping. This will allow all bytes of the multi-byte characters to count towards the field width, thus parsing the field width correctly.
 
-To implement this change, modify the fixed width parsing Spark statement in [etl_collect_to_cleanse.py](https://github.com/aws-samples/aws-insurancelake-etl/blob/main/lib/glue_scripts/etl_collect_to_cleanse.py#L135) by adding a `decode()` function as shown.
+To implement this change, modify the fixed width parsing Spark statement in [etl_collect_to_cleanse.py](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/lib/glue_scripts/etl_collect_to_cleanse.py#L135) by adding a `decode()` function as shown.
 
 * NOTE: Remember to add the `decode` function to the list of imports from `pyspark.sql.functions`.
 
@@ -155,7 +190,7 @@ The following compression formats are supported transparently: uncompressed, sna
 
 In the future, handling of multi-file Parquet data sources will be better integrated into InsuranceLake. The instructions in this section will detail how to modify the source code of the collect-to-cleanse PySpark Glue Job, and the etl-trigger Python Lambda function to support multi-file Parquet data sources.
 
-Multi-file incoming data sets are often landed in the Collect S3 bucket in a nested folder structure. A nested folder structure for a Parquet data set could look similar to a partition override folder structure. For this reason you must comment out and disable the partition override support in the [etl-trigger Lambda function on line 127](https://github.com/aws-samples/aws-insurancelake-etl/blob/main/lib/state_machine_trigger/lambda_handler.py#L127) as follows:
+Multi-file incoming data sets are often landed in the Collect S3 bucket in a nested folder structure. A nested folder structure for a Parquet data set could look similar to a partition override folder structure. For this reason you must comment out and disable the partition override support in the [etl-trigger Lambda function on line 127](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/lib/state_machine_trigger/lambda_handler.py#L127) as follows:
 
 ```python
     # try:
