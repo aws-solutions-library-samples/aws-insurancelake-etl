@@ -29,6 +29,10 @@
 			"multiline": true
 		},
 
+		"xml": {
+			"row_tag": "xmlrow"
+		},
+
 		"fixed": {},
 
 		"parquet": {},
@@ -342,6 +346,14 @@
 				"source": "policyaddresses",
 				"index_field": "policyaddress_index"
 			}
+		],
+
+		"xml": [
+			"xmlfield"
+		],
+
+		"json": [
+			"jsonfield"
 		]
 
 	}

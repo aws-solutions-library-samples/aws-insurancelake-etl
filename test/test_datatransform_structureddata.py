@@ -14,7 +14,7 @@ except ModuleNotFoundError as e:
         raise e
     from test.glue_job_mocking_helper_stub import *
 
-pytestmark = pytest.mark.skipif('pyspark' not in sys.modules, reason='No pySpark environment found')
+pytestmark = pytest.mark.skipif('pyspark' not in sys.modules, reason='No PySpark environment found')
 
 mock_args = {
     'source_key': mock_database_name + '/' + mock_table_name
@@ -102,3 +102,45 @@ def test_transform_jsonexpandmap_expands_in_place():
     assert df.count() == 8
     assert 'name' in df.columns
     assert len(df.columns) == 7
+
+
+mock_xml_column_table_data = [
+    ((1, """<?xml version="1.0" encoding="UTF-8"?>
+<metadata>
+    <metd>20230541</metd>
+    <cntorgp>
+        <cntorg>TestData</cntorg>
+    </cntorgp>
+</metadata>"
+""")),
+    ((2, """<?xml version="1.0" encoding="UTF-8"?>
+<metadata>
+    <metd>20230551</metd>
+    <cntorgp>
+        <cntorg>TestData2</cntorg>
+    </cntorgp>
+</metadata>"
+""")),
+]
+
+def test_transform_xmlstructured_from_string():
+    mock_table_schema = 'id int, xmldata string'
+    lineage = mock_lineage([])
+    df = spark.createDataFrame(mock_xml_column_table_data, schema=mock_table_schema)
+    df = transform_xmlstructured(df, [ 'xmldata' ], mock_args, lineage, spark.sparkContext)
+    assert df.filter('`xmldata` is null').count() == 0
+    assert df.filter('`xmldata`.`cntorgp`.`cntorg` is not null').count() == 2
+
+
+mock_json_column_table_data = [
+    ((1, '{ "myjson": { "key1": "value1", "key2": "value2" }, "version": 1 }')),
+    ((2, '{ "myjson": {}, "version": 1 }')),
+]
+
+def test_transform_jsonstructured_from_string():
+    mock_table_schema = 'id int, jsondata string'
+    lineage = mock_lineage([])
+    df = spark.createDataFrame(mock_json_column_table_data, schema=mock_table_schema)
+    df = transform_jsonstructured(df, [ 'jsondata' ], mock_args, lineage, spark.sparkContext)
+    assert df.filter('`jsondata` is null').count() == 0
+    assert df.filter('`jsondata`.`myjson`.`key1` is not null').count() == 1

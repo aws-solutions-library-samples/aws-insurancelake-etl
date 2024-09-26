@@ -132,6 +132,8 @@ class GlueStack(cdk.Stack):
                 '--enable-auto-scaling': 'true',
                 '--enable-continuous-cloudwatch-log': 'true',
                 '--enable-metrics': 'true',
+                '--enable-observability-metrics': 'true',
+                '--enable-spark-ui': 'true',
                 '--enable-glue-datacatalog': 'true',
                 '--user-jars-first': 'true',
                 '--extra-jars': ','.join(spark_libraries) if spark_libraries else None,
@@ -159,7 +161,8 @@ class GlueStack(cdk.Stack):
             # definition in the calling Step Functions GlueStartJobRun
             default_arguments=common_default_arguments | {
                 '--additional-python-modules': 'rapidfuzz',
-                '--TempDir': f's3://{self.glue_scripts_temp_bucket.bucket_name}/etl/collect_to_cleanse',
+                '--TempDir': f's3://{self.glue_scripts_temp_bucket.bucket_name}/etl/collect_to_cleanse/',
+                '--spark-event-logs-path': f's3://{self.glue_scripts_temp_bucket.bucket_name}/spark-ui/collect_to_cleanse/',
                 '--txn_spec_prefix_path': '/etl/transformation-spec/',
                 '--source_bucket': f's3://{buckets.raw.bucket_name}',
                 '--target_bucket': f's3://{buckets.conformed.bucket_name}',
@@ -200,7 +203,8 @@ class GlueStack(cdk.Stack):
             # These arguments are common to all Glue job runs and are overlayed by the arguments
             # definition in the calling Step Functions GlueStartJobRun
             default_arguments=common_default_arguments | {
-                '--TempDir': f's3://{self.glue_scripts_temp_bucket.bucket_name}/etl/cleanse_to_consume',
+                '--TempDir': f's3://{self.glue_scripts_temp_bucket.bucket_name}/etl/cleanse_to_consume/',
+                '--spark-event-logs-path': f's3://{self.glue_scripts_temp_bucket.bucket_name}/spark-ui/cleanse_to_consume/',
                 '--txn_sql_prefix_path': '/etl/transformation-sql/',
                 '--source_bucket': f's3://{buckets.conformed.bucket_name}',
                 '--target_bucket': f's3://{buckets.purposebuilt.bucket_name}',
@@ -239,10 +243,11 @@ class GlueStack(cdk.Stack):
             # by the arguments definition in the calling Step Functions GlueStartJobRun
             default_arguments=common_default_arguments | {
                 '--additional-python-modules': 'recordlinkage',
+                '--TempDir': f's3://{self.glue_scripts_temp_bucket.bucket_name}/etl/consume_entity_match/',
+                '--spark-event-logs-path': f's3://{self.glue_scripts_temp_bucket.bucket_name}/spark-ui/consume_entity_match/',
                 '--source_bucket': f's3://{buckets.conformed.bucket_name}',
                 '--target_bucket': f's3://{buckets.purposebuilt.bucket_name}',
                 '--txn_spec_prefix_path': '/etl/transformation-spec/',
-                '--TempDir': f's3://{self.glue_scripts_temp_bucket.bucket_name}/etl/consume_entity_match',
                 '--iceberg_catalog': 'glue_catalog',
                 '--datalake-formats': 'iceberg',
             },

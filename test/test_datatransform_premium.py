@@ -14,7 +14,7 @@ except ModuleNotFoundError as e:
         raise e
     from test.glue_job_mocking_helper_stub import *
 
-pytestmark = pytest.mark.skipif('pyspark' not in sys.modules, reason='No pySpark environment found')
+pytestmark = pytest.mark.skipif('pyspark' not in sys.modules, reason='No PySpark environment found')
 
 mock_args = {
     'source_key': mock_database_name + '/' + mock_table_name

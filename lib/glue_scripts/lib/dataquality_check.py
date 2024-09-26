@@ -126,7 +126,8 @@ class DataQualityCheck:
             frame=dyf,
             ruleset=rule_string,
             publishing_options={
-                'dataQualityEvaluationContext': self.args['source_key'].replace('/', '-') + '-halt-on-failure',
+                'dataQualityEvaluationContext': self.args['source_key'].replace('/', '-') +
+                    '-' + ruleset_name + '-halt',
                 'enableDataQualityCloudWatchMetrics': True,
                 'enableDataQualityResultsPublishing': True,
             },
@@ -154,7 +155,8 @@ class DataQualityCheck:
             frame=dyf,
             ruleset=rule_string,
             publishing_options={
-                'dataQualityEvaluationContext': self.args['source_key'].replace('/', '-') + '-warn-on-failure',
+                'dataQualityEvaluationContext': self.args['source_key'].replace('/', '-') +
+                    '-' + ruleset_name + '-warn',
                 'enableDataQualityCloudWatchMetrics': True,
                 'enableDataQualityResultsPublishing': True,
             },
@@ -188,7 +190,8 @@ class DataQualityCheck:
             frame=dyf,
             ruleset=rule_string,
             publishing_options={
-                'dataQualityEvaluationContext': self.args['source_key'].replace('/', '-') + '-quarantine-on-failure',
+                'dataQualityEvaluationContext': self.args['source_key'].replace('/', '-') +
+                    '-' + ruleset_name + '-quarantine',
                 'enableDataQualityCloudWatchMetrics': True,
                 'enableDataQualityResultsPublishing': True,
             },

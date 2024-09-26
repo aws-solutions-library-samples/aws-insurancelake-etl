@@ -2,30 +2,37 @@
 # SPDX-License-Identifier: MIT-0
 from pyspark.sql.dataframe import DataFrame
 from pyspark.sql.functions import (
-    col, to_date, to_timestamp, regexp_extract, concat_ws, regexp_replace, initcap, to_json )
+    col, to_date, to_timestamp, regexp_extract, concat_ws, regexp_replace, initcap, to_json)
 from pyspark.sql.types import StringType
+
+"""
+Transform Common Parameters
+----------
+df
+    pySpark DataFrame on which to apply transform
+args
+    Glue job arguments, from which source_key and base_file_name are used by most transforms
+lineage
+    Initialized lineage class object from the calling job
+sc
+    Spark Context class from the calling job
+
+Transform Returns
+-------
+DataFrame
+    pySpark DataFrame with transform applied
+"""
 
 def transform_date(df: DataFrame, date_formats: list, args: dict, lineage, *extra):
     """Convert specified date fields to ISO format based on known input format
 
     Parameters
     ----------
-    df
-        pySpark DataFrame on which to apply date format conversion
     date_formats
         List of fieldnames and expected date format to convert _from_ in the form:
             field: 'FieldName'
             source: "SourceFieldName" (optional, if omitted, field will be changed in place)
             format: 'ExpectedDateFormat'
-    args
-        Glue job arguments, from which source_key and base_file_name are used
-    lineage
-        Initialized lineage class object from the calling job
-
-    Returns
-    -------
-    DataFrame
-        pySpark DataFrame with date format conversion applied
     """
     cols_map = {
         conversion['field']: to_date(
@@ -43,22 +50,11 @@ def transform_timestamp(df: DataFrame, timestamp_formats: list, args: dict, line
 
     Parameters
     ----------
-    df
-        pySpark DataFrame on which to apply timestamp format conversion
     timestamp_formats
         List of fieldnames and expected timestamp format to convert _from_ in the form:
             field: 'FieldName'
             source: "SourceFieldName" (optional, if omitted, field will be changed in place)
             format: 'ExpectedTimestampFormat'
-    args
-        Glue job arguments, from which source_key and base_file_name are used
-    lineage
-        Initialized lineage class object from the calling job
-
-    Returns
-    -------
-    DataFrame
-        pySpark DataFrame with timestamp format conversion applied
     """
     cols_map = {
         conversion['field']: to_timestamp(
@@ -88,22 +84,11 @@ def transform_changetype(df: DataFrame, field_types: dict, args: dict, lineage, 
 
     Parameters
     ----------
-    df
-        pySpark DataFrame on which to apply column type conversion
-    columns
+    field_types
         Dictionary of field -> type mappings in the form:
             field_name_1: bigint,
             field_name_2: decimal(10,2),
             field_name_3: string
-    args
-        Glue job arguments, from which source_key and base_file_name are used
-    lineage
-        Initialized lineage class object from the calling job
-
-    Returns
-    -------
-    DataFrame
-        pySpark DataFrame with field type conversion applied
     """
     cols_map = {
         field: to_json(field) if field_type.lower() == 'json' else col(field).cast(field_type)
@@ -121,23 +106,12 @@ def transform_implieddecimal(df: DataFrame, decimal_formats: list, args: dict, l
 
     Parameters
     ----------
-    df
-        pySpark DataFrame on which to apply decimal conversion
     decimal_formats
         List of fieldnames and decimal precision, scale in the form:
             field: 'FieldName'
             source: "SourceFieldName" (optional, if omitted, field will be changed in place)
             format: 'precision,scale'
             num_implied: (optional) number of implied decimal points, default 2
-    args
-        Glue job arguments, from which source_key and base_file_name are used
-    lineage
-        Initialized lineage class object from the calling job
-
-    Returns
-    -------
-    DataFrame
-        pySpark DataFrame with decimal conversion applied
     """
     implied_decimal_pattern = r'([+-]?\d+)(\d{{{num_implied}}})$'
 
@@ -165,23 +139,12 @@ def transform_currency(df: DataFrame, currency_formats: list, args: dict, lineag
 
     Parameters
     ----------
-    df
-        pySpark DataFrame on which to apply currency conversion
     currency_formats
         List of fieldnames and decimal precision, scale in the form:
             field: "FieldName"
             source: "SourceFieldName" (optional, if omitted, field will be changed in place)
             format: "precision,scale" (optional, defaults to 16,2)
             euro: boolean (if true, expects European 5.000.000,12 format, default false)
-    args
-        Glue job arguments, from which source_key and base_file_name are used
-    lineage
-        Initialized lineage class object from the calling job
-
-    Returns
-    -------
-    DataFrame
-        pySpark DataFrame with currency conversion applied
     """
     cols_map = {}
     for conversion in currency_formats:
@@ -213,19 +176,8 @@ def transform_titlecase(df: DataFrame, titlecase_fields: list, args: dict, linea
 
     Parameters
     ----------
-    df
-        pySpark DataFrame on which to apply title case conversion
     titlecase_fields
         Simple list of fieldnames
-    args
-        Glue job arguments, from which source_key and base_file_name are used
-    lineage
-        Initialized lineage class object from the calling job
-
-    Returns
-    -------
-    DataFrame
-        pySpark DataFrame with title case conversion applied
     """
     cols_map = {
         field: initcap(col(field))

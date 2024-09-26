@@ -106,11 +106,12 @@ class DataLineageGenerator:
             # No table is defined so no data lineage is possible
             return
 
-        try:
-            dataset_filename = df.select(input_file_name()).limit(1).collect()[0][0]
-        except:
-            # input_file_name() does not support more than one source, some source types do not capture input_file_name
-            dataset_filename = 'N/A'
+        # try:
+        #     dataset_filename = df.select(input_file_name()).limit(1).collect()[0][0]
+        # except:
+        #     # input_file_name() does not support more than one source, some source types do not capture input_file_name
+        # Do not provide data set filename by default due to negative performance impact
+        dataset_filename = 'N/A'
 
         # Read / Write
         if operation == 'read':

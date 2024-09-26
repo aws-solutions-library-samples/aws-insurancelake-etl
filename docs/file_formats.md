@@ -1,36 +1,36 @@
+---
+title: File Formats and Input Specification
+parent: User Documentation
+nav_order: 4
+last_modified_date: 2024-09-26
+---
 # InsuranceLake File Formats and Input Specification
+{: .no_toc }
+
+This section provides details on file formats and input specification.
 
 ## Contents
+{: .no_toc }
 
-* [Input Specification](#input-specification)
-* [CSV](#csv-comma-separated-value)
-* [TSV](#tsv-tab-separated-value)
-* [Pipe-delimited](#pipe-delimited)
-* [JSON](#json)
-* [Fixed Width](#fixed-width)
-    * [Handling Encoding Issues](#handling-encoding-issues)
-* [Parquet](#parquet)
-    * [Handling Multi-file Data Sets](#handling-multi-file-data-sets)
-* [Microsoft Excel Format Support](#microsoft-excel-format-support)
-    * [Obtaining the Driver](#obtaining-the-driver)
-    * [Driver Installation](#driver-installation)
-    * [Configuration](#configuration)
-    * [Notes on Excel Support](#notes-on-excel-support)
+* TOC
+{:toc}
+
 
 ## Input Specification
 
-Input specification configuration is defined in the `input_spec` section of the workflow's JSON configuration file. The filename follows the convention of `<database name>-<table name>.json` and is stored in the `/etl/transformation-spec` folder in the `etl-scripts` bucket. When using CDK for deployment, the contents of the `/lib/glue_scripts/lib/transformation-spec` directory will be automatically deployed to this location. The `input_spec` section is used to specify input file format configuration and other data pipeline configuration, and co-exists with the `transform_spec` section.
+Input specification configuration is defined in the `input_spec` section of the workflow's JSON configuration file. The filename follows the convention of `<database name>-<table name>.json` and is stored in the `/etl/transformation-spec` folder in the `etl-scripts` bucket. When using AWS CDK for deployment, the contents of the `/lib/glue_scripts/lib/transformation-spec` directory will be automatically deployed to this location. The `input_spec` section is used to specify input file format configuration and other data pipeline configuration and co-exists with the `transform_spec` section.
 
 |Parameter  |Description
 |---    |---
-|table_description  |Text string description to use for the table in the AWS Glue Catalog; only applies to the table in the Cleanse bucket
-|allow_schema_change    |Setting to control permitted schema evolution; supported values: `permissive`, `strict`, `reorder`, `evolve`; more information is provided in the [Schema Evolution Documentation](schema_evolution.md#schema-change-setting)
-|strict_schema_mapping  |Boolean value that controls whether to halt the pipeline operation if fields specified in the schema mapping are not present in the input file; more information is provided in the [Schema Mapping Dropping Columns Documentation](schema_mapping.md#dropping-columns)
+|table_description  |Text string description to use for the table in the Data Catalog; only applies to the table in the Cleanse bucket
+|allow_schema_change    |Setting to control permitted schema evolution; supported values: `permissive`, `strict`, `reorder`, `evolve`; more information is provided in the [Schema Evolution](schema_evolution.md#schema-change-setting) documentation
+|strict_schema_mapping  |Boolean value that controls whether to halt the pipeline operation if fields specified in the schema mapping are not present in the input file; more information is provided in the [Schema Mapping Dropping Columns](schema_mapping.md#dropping-columns) documenatation
 |csv    |Section to specify CSV file specific configuration
 |tsv    |Section to specify TSV file specific configuration
 |pipe   |Section to specify pipe-delimited file specific configuration
 |parquet    |Section to indicate Apache Parquet input file support
 |json   |Section to specify JSON file specific configuration
+|xml    |Section to specify XML file specific configuration
 |fixed   |Section to indicate fixed width input file support
 |excel  |Section to specify Excel file specific configuration
 
@@ -57,18 +57,18 @@ The `csv` configuration section can be used to specify additional format options
 
 |Format Option   |Default    |Description
 |---    |---    |---
-|header |true   |Specifies whether the first row should be interpreted as a header row; to understand the schema when no header row is present, refer to the [Schema Mapping Files with No Header Documentation](schema_mapping.md#files-with-no-header)
+|header |true   |Specifies whether the first row should be interpreted as a header row; to understand the schema when no header row is present, refer to the [Schema Mapping Files with No Header](schema_mapping.md#files-with-no-header) documentation
 |quote_character    |`"`  |Character used for escaping quoted field values containing the field separator
 |escape_character   |`"`  |Character used for escaping quotes inside an already quoted field value
 |delimiter  |Dependent on the section header   |Field separator character or characters; overrides the character indicated by the specified file format
 
-* Spark CSV read defaults differ in some ways from [RFC 4180](https://www.rfc-editor.org/rfc/rfc4180) definitions for CSV. For example, multi-line quoted is not supported by default, and the escape character is backslash by default. **InsuranceLake ETL** changes the default escape character to `"` to match RFC 4180. However, multi-line quoted is not supported, due to its [negative impact on parallelization in Spark](https://issues.apache.org/jira/browse/SPARK-22236).
+* Spark CSV read defaults differ in some ways from [Request For Comments (RFC) 4180](https://www.rfc-editor.org/rfc/rfc4180) definitions for CSV. For example, multi-line quoted is not supported by default, and the escape character is backslash by default. **InsuranceLake ETL** changes the default escape character to `"` to match RFC 4180. However, multi-line quoted is not supported due to its [negative impact on parallelization in Spark](https://issues.apache.org/jira/browse/SPARK-22236).
 
-* Other Spark CSV read defaults affect the way the ETL interprets delimited files. Refer to the [Spark CSV File Data Source Option Documentation](https://spark.apache.org/docs/latest/sql-data-sources-csv.html#data-source-option) for details.
+* Other Spark CSV read defaults affect the way the ETL interprets delimited files. Refer to the [Spark CSV File Data Source Option](https://spark.apache.org/docs/latest/sql-data-sources-csv.html#data-source-option) documentation for details.
 
 * Overriding the delimiter indicated by the section header could reduce the self-documenting effectiveness of your input specification configuration.
 
-Example of configuration for a CSV file with no header, single quote for the quote character, and a backslash escape character (instead of the default double-quote character):
+The following is an example of an input specification for a CSV file with no header, single quote for the quote character, and a backslash escape character (instead of the default double-quote character):
 
 ```json
 {
@@ -86,9 +86,9 @@ Example of configuration for a CSV file with no header, single quote for the quo
 
 Tab separated value input files are not identified by any file extension; the ETL will only interpret an input file as tab separated value if the file format is specified in the `input_spec` configuration.
 
-The `tsv` configuration section can be used to indicate if a header row is expected, to specify a different quote character, to specify a different escape character, or to specify a custom field delimiter. CSV, TSV, and pipe-delimited formats share the same configuration section options. Complete details can be found in the [CSV format documentation](#csv-comma-separated-value).
+The `tsv` configuration section can be used to indicate if a header row is expected, to specify a different quote character, to specify a different escape character, or to specify a custom field delimiter. CSV, TSV, and pipe-delimited formats share the same configuration section options. Complete details can be found in the [CSV format support](#csv-comma-separated-value) documentation.
 
-Example of a configuration for a TSV file with a header row:
+The following is an example of a configuration for a TSV file with a header row:
 
 ```json
 {
@@ -104,9 +104,9 @@ Example of a configuration for a TSV file with a header row:
 
 Pipe-delimited input files are not identified by any file extension; the ETL will only interpret an input file as pipe-delimited if the file format is specified in the `input_spec` configuration.
 
-The `pipe` configuration section can be used to indicate if a header row is expected, to specify a different quote character, to specify a different escape character, or to specify a custom field delimiter. CSV, TSV, and pipe-delimited formats share the same configuration section options. Complete details can be found in the [CSV format documentation](#csv-comma-separated-value).
+The `pipe` configuration section can be used to indicate if a header row is expected, to specify a different quote character, to specify a different escape character, or to specify a custom field delimiter. CSV, TSV, and pipe-delimited formats share the same configuration section options. Complete details can be found in the [CSV format support](#csv-comma-separated-value) documentation.
 
-Example of a configuration for a pipe-delimited file with a header row:
+The following is an example of a configuration for a pipe-delimited file with a header row:
 
 ```json
 {
@@ -136,11 +136,53 @@ Example of a configuration for a single-record multiline JSON file:
 }
 ```
 
+
+## XML
+
+While AWS Glue has [support for XML parsing through DynamicFrames](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-format-xml-home.html), InsuranceLake uses the [Databricks Spark-XML driver](https://github.com/databricks/spark-xml) for full XML parsing functionality through Spark DataFrames.
+
+### Obtaining the XML Driver
+
+{: .important }
+This library is not provided by AWS Glue or AWS; you must download the library and its dependencies from a 3rd party and install them in your environment.
+
+You can download the pre-compiled Spark XML library at [MVN Repository](https://mvnrepository.com/artifact/com.databricks/spark-xml).
+
+The last version known to work with AWS Glue 4.0 is: [2.12 / 0.18.0](https://mvnrepository.com/artifact/com.databricks/spark-xml_2.12/0.18.0). AWS Glue 4.0 provides all the required dependencies for this version.
+
+### XML Driver Installation
+
+To include the Spark JAR package in the AWS Glue session, simply copy the JAR files to the `lib/glue_scripts/lib` folder and redeploy the AWS Glue stack using CDK. The CDK code will automatically identify the new libraries and include them in the `--extra-jars` parameter for all AWS Glue jobs.
+
+If you attempt to load an XML file without installing the driver properly, you will see the following error:
+```log
+py4j.protocol.Py4JJavaError: An error occurred while calling o125.load.: java.lang.ClassNotFoundException: Failed to find data source: xml. Please find packages at https://spark.apache.org/third-party-projects.html
+```
+
+### XML Configuration
+
+XML input files are identified with the file extension `.xml`.
+
+The Spark XML driver is designed to read multiple rows of data from an XML file. This is accomplished by identifying a tag in the XML file that represents a new row, called the row tag. InsuranceLake ETL uses `row` as the default row tag. If your data uses a different tag to identify rows of data, you must specify it in the input specification using the `row_tag` parameter. If the row tag is not found in the XML source data, the ETL will not load any rows of data.
+
+Example of a configuration for an XML file:
+
+```json
+{
+    "input_spec": {
+		"xml": {
+			"row_tag": "xmlrow"
+		}
+    }
+}
+```
+
+
 ## Fixed Width
 
-The InsuranceLake ETL will only interpret an input file as fixed width if the file format is specified in the `input_spec` configuration; fixed width input files are not identified by any file extension. The `fixed` configuration section has no other parameters; the value should defined as an empty JSON object (for forward compatibility).
+The InsuranceLake ETL will only interpret an input file as fixed width if the file format is specified in the `input_spec` configuration; fixed width input files are not identified by any file extension. The `fixed` configuration section has no other parameters; the value should be defined as an empty JSON object (for forward compatibility).
 
-To specify the width and position of each column in the file, use the schema mapping file with the extra column `Width`. More details and an example schema mapping file is available in the [Schema Mapping Fixed Width File Format Documentation](schema_mapping.md#fixed-width-file-format).
+To specify the width and position of each column in the file, use the schema mapping file with the extra column `Width`. More details and an example schema mapping file is available in the [Schema Mapping Fixed Width File Format](schema_mapping.md#fixed-width-file-format) documentation.
 
 Example of a configuration for a fixed width file:
 
@@ -154,13 +196,14 @@ Example of a configuration for a fixed width file:
 
 ### Handling Encoding Issues
 
-Fixed width format data files may have characters encoded in formats that are not expected by the source system (for example, from more modern upsteam systems). Specifically, there may be multi-byte single characters in the fixed width file that are counted as the multiple characters for the width of field. [Spark text file reading](https://spark.apache.org/docs/latest/sql-data-sources-text.html) will detect and encode these characters automatically, which can result in incorrectly calculated widths for specific rows.
+Fixed width format data files may have characters encoded in formats that are not expected by the source system (for example, from more modern upstream systems). Specifically, there may be multi-byte single characters in the fixed width file that are counted as the multiple characters for the width of field. [Spark text file reading](https://spark.apache.org/docs/latest/sql-data-sources-text.html) will detect and encode these characters automatically, which can result in incorrectly calculated widths for specific rows.
 
 To work around this issue, the ETL's fixed width handling can be modified to decode the text data using US-ASCII or ISO-8859-1, and split the line based on the width of fields in the schema mapping. This will allow all bytes of the multi-byte characters to count towards the field width, thus parsing the field width correctly.
 
 To implement this change, modify the fixed width parsing Spark statement in [etl_collect_to_cleanse.py](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/lib/glue_scripts/etl_collect_to_cleanse.py#L135) by adding a `decode()` function as shown.
 
-* NOTE: Remember to add the `decode` function to the list of imports from `pyspark.sql.functions`.
+{: .note }
+Remember to add the `decode` function to the list of imports from `pyspark.sql.functions`.
 
 ```python
         initial_df = spark.read.text(source_path)
@@ -178,19 +221,20 @@ To implement this change, modify the fixed width parsing Spark statement in [etl
         )
 ```
 
+
 ## Parquet
 
-Parquet files are identified either by the input file extension `parquet` or by specifying `parquet` in the `input_spec` configuration (for Parquet files with varying extensions).
+Apache Parquet files are identified either by the input file extension `parquet` or by specifying `parquet` in the `input_spec` configuration (for Apache Parquet files with varying extensions).
 
-By default Parquet files will be read one at a time, each initiating a separate ETL pipeline execution, and no folder structure discovery will be performed. Refer to the next section, [Handling Multi-file Data Sets](#handling-multi-file-data-sets) for instructions on how to change this default behavior.
+By default, Parquet files will be read one at a time, each initiating a separate ETL pipeline execution, and no folder structure discovery will be performed. Refer to the next section, [Handling Multi-file Data Sets](#handling-multi-file-data-sets) for instructions on how to change this default behavior.
 
 The following compression formats are supported transparently: uncompressed, snappy, gzip, lzo ([AWS Glue documentation reference](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-format-parquet-home.html#aws-glue-programming-etl-format-parquet-reference)).
 
 ### Handling Multi-file Data Sets
 
-In the future, handling of multi-file Parquet data sources will be better integrated into InsuranceLake. The instructions in this section will detail how to modify the source code of the collect-to-cleanse PySpark Glue Job, and the etl-trigger Python Lambda function to support multi-file Parquet data sources.
+In the future, handling of multi-file Parquet data sources will be better integrated into InsuranceLake. The instructions in this section will detail how to modify the source code of the Collect-to-Cleanse AWS Glue job, and the etl-trigger Lambda function to support multi-file Parquet data sources.
 
-Multi-file incoming data sets are often landed in the Collect S3 bucket in a nested folder structure. A nested folder structure for a Parquet data set could look similar to a partition override folder structure. For this reason you must comment out and disable the partition override support in the [etl-trigger Lambda function on line 127](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/lib/state_machine_trigger/lambda_handler.py#L127) as follows:
+Multi-file incoming data sets are often landed in the Collect S3 bucket in a nested folder structure. A nested folder structure for a Parquet data set could look similar to a partition override folder structure. For this reason, you must comment out and disable the partition override support in the [etl-trigger Lambda function on line 127](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/lib/state_machine_trigger/lambda_handler.py#L127) as follows:
 
 ```python
     # try:
@@ -203,9 +247,9 @@ Multi-file incoming data sets are often landed in the Collect S3 bucket in a nes
     #     pass
 ```
 
-To support multiple files that belong to the same dataset landed in the Collect bucket, we will expect one file to be added to the collection with a unique prefix that can be used to trigger the workflow; all other files will be ignored by the etl-trigger Lambda function.
+To support multiple files that belong to the same dataset landed in the Collect bucket, we will expect one file to be added to the collection with a unique prefix that can be used to trigger the workflow; all other files will be ignored by the etl-trigger AWS Lambda function.
 
-Add the following code at [Line 123 of the same Lambda function](https://github.com/aws-samples/aws-insurancelake-etl/blob/main/lib/state_machine_trigger/lambda_handler.py#L123) to skip processing of all files except the "success" or "trigger" file. The code assumes the trigger filename will start with the `_` character.
+Add the following code at [Line 123 of the same AWS Lambda function](https://github.com/aws-samples/aws-insurancelake-etl/blob/main/lib/state_machine_trigger/lambda_handler.py#L123) to skip processing of all files except the "success" or "trigger" file. The code assumes the trigger filename will start with the `_` character.
 
 ```python
     if len(path_components) > 2 and not object_base_file_name.startswith('_'):
@@ -216,7 +260,7 @@ Add the following code at [Line 123 of the same Lambda function](https://github.
         }
 ```
 
-Lastly add the following code to the [collect-to-cleanse PySpark Glue job on Line 194](https://github.com/aws-samples/aws-insurancelake-etl/blob/main/lib/glue_scripts/etl_collect_to_cleanse.py#L194) to handle ETL executions initiated by the trigger file. Specifically, we want to load the entire folder in which the trigger file exists, and otherwise load individual files for all other executions.
+Lastly, add the following code to the [Collect-to-Cleanse AWS Glue job on Line 194](https://github.com/aws-samples/aws-insurancelake-etl/blob/main/lib/glue_scripts/etl_collect_to_cleanse.py#L194) to handle ETL executions initiated by the trigger file. This change ensures that you load the entire folder in which the trigger file exists, and otherwise load individual files for all other executions.
 
 ```python
     elif ext.lower() == '.parquet' or ( 'parquet' in input_spec and args['base_file_name'].startswith('_') ):
@@ -234,31 +278,32 @@ InsuranceLake has been designed to support Microsoft Excel format input files us
 
 ### Obtaining the Driver
 
-**Note: This library and the mentioned dependencies are not provided by AWS Glue or AWS; you must download the library and its dependencies from a 3rd party and install them in your environment.**
+{: .important }
+This library and the mentioned dependencies are not provided by AWS Glue or AWS; you must download the library and its dependencies from a 3rd party and install them in your environment.
 
-You can download the Spark Excel library from Crealytics at [MVN Repository](https://mvnrepository.com/artifact/com.crealytics/spark-excel).
+You can download the pre-compiled Spark Excel library at [MVN Repository](https://mvnrepository.com/artifact/com.crealytics/spark-excel).
 
 The last version known to work with AWS Glue 4.0 is: [2.12 / 3.3.1_0.18.7](https://mvnrepository.com/artifact/com.crealytics/spark-excel_2.12/3.3.1_0.18.7)
 
-The Spark Excel library also has dependencies that are not included with Glue by default. Specifically, you must also download the [Apache POI API Based On OPC and OOXML Schemas](https://mvnrepository.com/artifact/org.apache.poi/poi-ooxml) library and a newer version of [XML Beans](https://mvnrepository.com/artifact/org.apache.xmlbeans/xmlbeans).
+The Spark Excel library also has dependencies that are not included with AWS Glue by default. Specifically, you must also download the [Apache POI API Based On OPC and OOXML Schemas](https://mvnrepository.com/artifact/org.apache.poi/poi-ooxml) library and a newer version of [XML Beans](https://mvnrepository.com/artifact/org.apache.xmlbeans/xmlbeans).
 
 The versions that are required for the Spark Excel version 3.3.1_0.18.7 are [poi-ooxml-5.2.3](https://mvnrepository.com/artifact/org.apache.poi/poi-ooxml/5.2.3) and [xmlbeans-5.1.1](https://mvnrepository.com/artifact/org.apache.xmlbeans/xmlbeans/5.1.1).
 
 If you want to work with another version of Spark Excel, follow these steps to ensure AWS Glue compatibility:
 
-1. Verify the version of Spark included with the Glue version [in the AWS documentation](https://docs.aws.amazon.com/glue/latest/dg/release-notes.html).
+1. Verify the version of Apache Spark included with the AWS Glue version [in the AWS documentation](https://docs.aws.amazon.com/glue/latest/dg/release-notes.html).
 
-2. Verify the version of Scala included with the Spark version either from [the Spark package dependencies](https://mvnrepository.com/artifact/org.apache.spark/spark-core) or [the Spark compatibility matrix](https://sparkbyexamples.com/spark/spark-versions-supportability-matrix/).
+1. Verify the version of Scala included with the Apache Spark version either from [the Spark package dependencies](https://mvnrepository.com/artifact/org.apache.spark/spark-core) or [the Spark compatibility matrix](https://sparkbyexamples.com/spark/spark-versions-supportability-matrix/).
 
-3. Download the version of Spark Excel corresponding to the desired Spark and Scala version. If the Spark version doesn't exist, find the closest match. For example, Glue 4.0 uses Spark 3.3.0 and Scala 2.12. The closest match from the pre-built Spark Excel packages is Spark 3.3.1 and Scala 2.12.
+1. Download the version of Spark Excel corresponding to the desired Apache Spark and Scala version. If the Apache Spark version doesn't exist, find the closest match. For example, AWS Glue 4.0 uses Apache Spark 3.3.0 and Scala 2.12. The closest match from the pre-built Spark Excel packages is Spark 3.3.1 and Scala 2.12.
 
-1. Check the Compile Dependencies of [the Spark Excel library](https://mvnrepository.com/artifact/com.crealytics/spark-excel_2.13/3.3.1_0.18.7), specifically looking for the Apache POI version, XML Beans and Apache Commons. Library version details included with Glue can be found [here](https://docs.aws.amazon.com/glue/latest/dg/migrating-version-40.html#migrating-version-40-appendix-dependencies). Take note of libraries missing from Glue or where a significantly newer version is needed than the version included with Glue. Typically, this is limited to Apache POI and XML Beans.
+1. Check the Compile Dependencies of [the Spark Excel library](https://mvnrepository.com/artifact/com.crealytics/spark-excel_2.13/3.3.1_0.18.7), specifically looking for the Apache POI version, XML Beans and Apache Commons. Library version details included with AWS Glue can be found [here](https://docs.aws.amazon.com/glue/latest/dg/migrating-version-40.html#migrating-version-40-appendix-dependencies). Take note of libraries missing from AWS Glue or where a significantly newer version is needed than the version included with AWS Glue. Typically, this is limited to Apache POI and XML Beans.
 
 1. Download the required versions of the dependency libraries.
 
 ### Driver Installation
 
-To include all Spark JAR packages in the Glue session, simply copy the JAR files to the `lib/glue_scripts/lib` folder and redeploy the Glue stack using CDK. The CDK Glue Stack will automatically identify the new libraries and include them in the `--extra-jars` parameter for all Glue jobs.
+To include all Spark JAR packages in the AWS Glue session, simply copy the JAR files to the `lib/glue_scripts/lib` folder and redeploy the AWS Glue stack using CDK. The CDK code will automatically identify the new libraries and include them in the `--extra-jars` parameter for all AWS Glue jobs.
 
 If you attempt to load an Excel file without installing the driver properly, you will see the following error:
 ```log
@@ -267,9 +312,9 @@ py4j.protocol.Py4JJavaError: An error occurred while calling o124.load.: java.la
 
 ### Configuration
 
-InsuranceLake recognizes Excel files by their extension. Currently the following two extensions (case insensative) are supported: `xls`, `xlsx`, `xlm`, `xlsm`. Regardless of your configuration, the source data file must have one of these extensions to be detected as Excel.
+InsuranceLake recognizes Excel files by their extension. Currently, the following extensions (case insensitive) are supported: `xls`, `xlsx`, `xlm`, `xlsm`. Regardless of your configuration, the source data file must have one of these extensions to be detected as Excel.
 
-With no additional configuration, InsuranceLake will attempt to read tabular data from the 1st sheet in the workbook, starting at cell `A1`.
+With no additional configuration, InsuranceLake will attempt to read tabular data from the first sheet in the workbook, starting at cell `A1`.
 
 |Parameter  |Type   |Description    |
 |---    |---    |---    |
@@ -293,12 +338,13 @@ Example configuration:
 }
 ```
 
-**Note: To load multiple sheets of data in the workbook into multiple tables, simply copy the same Excel file to multiple Collect bucket folders, each with their own transformation spec file and Excel configuration (which references each sheet).**
+{: .note }
+To load multiple sheets of data in the workbook into multiple tables, simply copy the same Excel file to multiple Collect bucket folders, each with their own transformation spec file and Excel configuration (which references each sheet).
 
 ### Notes on Excel Support
 
 * Original date formats in Excel are not always visible in some versions of Excel. In other words, when viewing values of date fields in Excel, the date format you see on the screen may not be what is stored in the file. This is important if you are writing a `date` or `timestamp` transform spec and need to specify the correct date pattern. If you have an incorrect date format, symptoms include:
-    * Null/empty date field values
+    * Null/empty date field values.
     * An error similar to one of the following:
         ```log
         You may get a different result due to the upgrading of Spark 3.0
@@ -317,14 +363,14 @@ Example configuration:
         ```
 
     To avoid this issue, we recommend importing the Excel file first with no date conversion. Specifically:
-    1. Import the Excel workbook with no `date` or `timestamp` transform
-    1. Note the field type that Spark chooses for your date columns
-    1. If the field is already a date or timestamp, it may mean that Spark was able to detect the date format and there is no need for a date transform. To confirm, ensure the date field values are correct.
+    1. Import the Excel workbook with no `date` or `timestamp` transform.
+    1. Note the field type that Spark chooses for your date columns.
+    1. If the field is already a date or timestamp, it may mean that Apache Spark was able to detect the date format and there is no need for a date transform. To confirm, ensure the date field values are correct.
     1. If the field is a string, note the format of the date field values and add a `date` or `timestamp` transform for the field.
 
 * You may experience issues importing Excel workbooks with macros that are used to write cells containing data you want to import. The Spark Excel library is subject to the [limitations of the Apache POI project](https://poi.apache.org/components/spreadsheet/limitations.html).
 
-* You may encoutner an error `Zip bomb detected` when reading some Excel workbooks. The error message will look similar to this:
+* You may encounter the error `Zip bomb detected` when reading some Excel workbooks. The error message will look similar to this:
 
     ```log
     py4j.protocol.Py4JJavaError: An error occurred while calling o37.load.
@@ -335,11 +381,11 @@ Example configuration:
     Limits: MIN_INFLATE_RATIO: 0.010000
     ```
 
-    This is a security feature of the Apache POI library that tries to detect and block malicious Excel files. It has lead to false positives for many users of Spark Excel. You can read details and support a solution in the [Spark Excel Issue Tracker](https://github.com/crealytics/spark-excel/issues/231).
+    This is a security feature of the Apache POI library that tries to detect and block malicious Excel files. It has led to false positives for many users of Spark Excel. You can read details and support a solution in the [Spark Excel Issue Tracker](https://github.com/crealytics/spark-excel/issues/231).
 
-    Beacuse there is no method to access setMinInflateRatio() from pySpark, **we recommend working around the issue** by opening the Excel file, saving the desired tab in a separate file, and uploading the newly saved file into the Collect bucket.
+    Because there is no method to access `setMinInflateRatio()` from PySpark at this time, **we recommend working around the issue** by opening the Excel file, saving the desired tab in a separate file, and uploading the newly saved file into the Collect bucket.
 
-* The Spark Excel driver has a file size limit by default. If you exceed this limit you will see an error message similar to this:
+* The Spark Excel driver has a file size limit by default. If you exceed this limit, you will see an error message similar to this:
  
     ```log
     Caused by: org.apache.poi.util.RecordFormatException: Tried to allocate an array of length 322,589,970, but the maximum length for this record type is 100,000,000.

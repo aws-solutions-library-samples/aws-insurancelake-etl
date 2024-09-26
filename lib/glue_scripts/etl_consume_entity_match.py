@@ -449,7 +449,7 @@ def main():
             ON {entity_primary_table_name}.{global_id_field} = entity_incoming.{global_id_field}
             WHEN MATCHED THEN UPDATE SET {update_list}
             WHEN NOT MATCHED THEN INSERT *
-            """     # nosec B608
+            """ # nosec B608
         spark.sql(spark_sql)
         lineage.update_lineage(entity_primary_df, args['source_key'], 'sparksql', transform=[ spark_sql ])
 

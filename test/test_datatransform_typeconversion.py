@@ -14,7 +14,7 @@ except ModuleNotFoundError as e:
         raise e
     from test.glue_job_mocking_helper_stub import *
 
-pytestmark = pytest.mark.skipif('pyspark' not in sys.modules, reason='No pySpark environment found')
+pytestmark = pytest.mark.skipif('pyspark' not in sys.modules, reason='No PySpark environment found')
 
 mock_args = {
     'source_key': mock_database_name + '/' + mock_table_name
@@ -30,32 +30,13 @@ mock_table_columns = [ 'id', 'date' ]
 mock_table_data = [ ( 1, '1/1/2022' ), ( 2, '12/31/2022' ) ]
 mock_table_schema = 'id int, date string'
 
-mock_nested_table_data = [
-        (('James',None,'Smith'),),
-        (('Anna','Rose',''),),
-        (('Julia','','Williams'),),
-]
 
-mock_nested_table_schema = StructType([
-    StructField('name', StructType([
-         StructField('firstname', StringType(), True),
-         StructField('middlename', StringType(), True),
-         StructField('lastname', StringType(), True)
-         ])),
-])
-
-
-def test_transform_date_converts_schema():
+def test_transform_date_converts_data():
     lineage = mock_lineage([])
     df = spark.createDataFrame(mock_table_data, schema=mock_table_schema)
     assert df.schema['date'].dataType == StringType()
     df = transform_date(df, [ { 'field': 'date', 'format': 'M/d/yyyy' } ], mock_args, lineage)
     assert df.schema['date'].dataType == DateType()
-
-def test_transform_date_converts_data():
-    lineage = mock_lineage([])
-    df = spark.createDataFrame(mock_table_data, schema=mock_table_schema)
-    df = transform_date(df, [ { 'field': 'date', 'format': 'M/d/yyyy' } ], mock_args, lineage)
     assert df.filter('`date` is null').count() == 0
 
 def test_transform_date_throws_error_on_bad_convert():
@@ -101,7 +82,6 @@ def test_transform_currency_handles_nonstring():
     lineage = mock_lineage([])
     df = spark.createDataFrame(mock_currency_data, schema=mock_currency_schema)
     df = transform_currency(df, [ { 'field': 'money' } ], mock_args, lineage)
-    df.show(5, False)
     assert df.filter('`money` is null').count() == 0
     assert Decimal('123456789334.50') <= df.agg({ 'money': 'sum' }).first()['sum(money)'] <= Decimal('123456789334.53')
 
@@ -142,6 +122,21 @@ def test_transform_changetype_converts_to_string():
     df = transform_changetype(df, { 'amount': 'string' }, mock_args, lineage)
     assert df.schema['amount'].dataType == StringType()
     assert df.filter('`amount` = "123456"').count() == 1
+
+
+mock_nested_table_data = [
+        (('James',None,'Smith'),),
+        (('Anna','Rose',''),),
+        (('Julia','','Williams'),),
+]
+
+mock_nested_table_schema = StructType([
+    StructField('name', StructType([
+         StructField('firstname', StringType(), True),
+         StructField('middlename', StringType(), True),
+         StructField('lastname', StringType(), True)
+         ])),
+])
 
 def test_transform_changetype_converts_struct_to_jsonstring():
     lineage = mock_lineage([])

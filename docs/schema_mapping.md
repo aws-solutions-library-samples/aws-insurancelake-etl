@@ -1,42 +1,42 @@
+---
+title: Schema Mapping
+parent: User Documentation
+nav_order: 3
+last_modified_date: 2024-09-26
+---
 # InsuranceLake Schema Mapping Documentation
+{: .no_toc }
 
 Schema mapping in InsuranceLake is configured by using a comma-delimited text file to describe the source and destination field names.
 
-The filename of the schema mapping configuration file follows the convention of `<database name>-<table name>.csv` and is stored in the `/etl/transformation-spec` folder in the `etl-scripts` bucket. When using CDK for deployment, the contents of the `/lib/glue_scripts/lib/transformation-spec` directory will be automatically deployed to this location.
+The filename of the schema mapping configuration file follows the convention of `<database name>-<table name>.csv` and is stored in the `/etl/transformation-spec` folder in the `etl-scripts` bucket. When using AWS CDK for deployment, the contents of the `/lib/glue_scripts/lib/transformation-spec` directory will be automatically deployed to this location.
 
-Your schema mapping file should map field names to Parquet and Athena-friendly names. Specifically, this means removing or replacing the invalid characters: `,;{}()\n\r\t=`. We also recommend removing/replacing characters that are valid but require escaping: ` .:[]`.
+Your schema mapping file should map field names to Apache Parquet and Athena-friendly names. Specifically, this means removing or replacing the invalid characters: `,;{}()\n\r\t=`. We also recommend removing or replacing characters that are valid but require escaping: ` .:[]`.
 
 Field names in the schema mapping file are automatically escaped in Spark using surrounding backtick characters `` ` `` so that all field name characters are considered part of the name. See [Mapping Nested Data](#mapping-nested-data) for cases when you want to override the escape characters with your own escaping.
 
-The schema mapping operation is accomplishing using [Spark DataFrame's alias operation](https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.Column.alias.html).
+The schema mapping operation is accomplished using [Apache Spark DataFrame's `alias` operation](https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.Column.alias.html).
 
-When making schema mapping changes to an existing data table, ensure that you understand the ETL's [schema evolution capabilities](./schema_evolution.md).
+When making schema mapping changes to an existing data table, confirm that you understand the ETL's [schema evolution capabilities](./schema_evolution.md).
+
 
 ## Contents
+{: .no_toc }
 
-* [Behavior When There is No Schema Mapping](#behavior-when-there-is-no-schema-mapping)
-* [Basic Mapping File Layout (CSV)](#basic-mapping-file-layout-csv)
-* [Dropping Columns](#dropping-columns)
-* [Files with No Header](#files-with-no-header)
-* [Duplicate Columns](#duplicate-columns)
-* [Fuzzy Matching Column Names](#fuzzy-matching-column-names)
-* [Handling Line Breaks in Column Headers](#handling-line-breaks-in-column-headers)
-    * [Exact Matching](#exact-matching)
-    * [Fuzzy Matching](#fuzzy-matching)
-* [Fixed Width File Format](#fixed-width-file-format)
-* [Mapping Nested Data](#mapping-nested-data)
+* TOC
+{:toc}
 
 
 ## Behavior When There is No Schema Mapping
 
-When there is no schema mapping file or an empty schema mapping file in the etl-scripts bucket for the workflow, **the ETL will clean all column names so that they can be saved successfully in Parquet format**. The ETL will also save a *recommended* mapping file to the Glue Temp bucket,  `<environment>-insurancelake-<account>-<region>-glue-temp` bucket, in the folder `/etl/collect_to_cleanse` following the naming convention `<database>-<table>.csv`.
+When there is no schema mapping file or an empty schema mapping file in the etl-scripts bucket for the workflow, **the ETL will clean all column names so that they can be saved successfully in Parquet format**. The ETL will also save a *recommended* mapping file to the AWS Glue Temp bucket,  `<environment>-insurancelake-<account>-<region>-glue-temp` bucket, in the folder `/etl/collect_to_cleanse` following the naming convention `<database>-<table>.csv`.
 
-When this behavior occurs, you will see the following log message in the Glue Job Output Logs:
+When this behavior occurs, you will see the following log message in the AWS Glue job Output Logs:
 ```log
 No mapping found, generated recommended mapping to: s3://...
 ```
 
-This recommended mapping file can be used as a starting point to build your own mapping file, and will help ensure that you have valid column names.
+This recommended mapping file can be used as a starting point to build your own mapping file and will help ensure that you have valid column names.
 
 
 ## Basic Mapping File Layout (CSV)
@@ -49,7 +49,7 @@ All schema mapping configuration files must contain a header row. The order of c
 |DestName	|required	|The desired Spark/Parquet-conforming name of the column; use `null` to explicitly drop the field
 |Description	|optional	|Example extra field to use for describing the column or mapping; this value will be ignored, as will any other field not specifically identified in this documentation
 
-If commas are included in the field names, you must surround the field name with quotes `"` following the CSV standard. Similarly, if quotes are in the field names, you must use the doublequotes escape technique (in other words `""`). Other special characters such as spaces can be simply included in the `SourceName` field as they appear in the source data.
+If commas are included in the field names, you must surround the field name with quotes `"` following the CSV standard. Similarly, if quotes are in the field names, you must use the double quotes escape sequence (in other words `""`). Other special characters such as spaces can be simply included in the `SourceName` field as they appear in the source data.
 
 Example:
 ```csv
@@ -70,8 +70,8 @@ Original Claim Currency ,original_claim_currency
 ## Dropping Columns
 
 Fields can be dropped using the schema mapping configuration in two ways:
-1. Indicating `Null` (case insensitive) as the DestName (explicitely drop the field)
-1. Omiting the field from the schema mapping (implicitly drop the field)
+1. Indicating `Null` (case insensitive) as the DestName (explicitly drop the field).
+1. Omiting the field from the schema mapping (implicitly drop the field).
 
 How the ETL behaves in each scenario changes based on the [`strict_schema_mapping` setting](./file_formats.md#input-specification) in the transformation-spec. Refer to the following chart to understand how the ETL handles all the combinations of dropping a field and strict schema mapping:
 
@@ -89,7 +89,7 @@ Field missing   |Field mapped to `Null`  |true  |Data pipeline fails with schema
 
 ## Files with No Header
 
-If a file format is configured with `header: false`, the column names will be enumerated by Spark using the prefix `_c` with a number representing the column position in the schema, **starting with 0**.
+If a file format is configured with `header: false`, the column names will be enumerated by Apache Spark using the prefix `_c` with a number representing the column position in the schema, **starting with 0**.
 
 For files with no header, the ETL will not be aware if columns change order in the source file schema. We recommend using [data quality rules](./data_quality.md) to check field types to catch this situation.
 
@@ -104,7 +104,7 @@ _c2,amount
 
 ## Duplicate Columns
 
-If a file contains columns that have the same name, Spark will automatically rename them to unique names by numbering every field name that has a duplicate with a number representing the column position in the schema, **starting with 0**. All occurences, including the first, will be numbered.
+If a file contains columns that have the same name, Apache Spark will automatically rename them to unique names by numbering every field name that has a duplicate with a number representing the column position in the schema, **starting with 0**. All occurrences, including the first, will be numbered.
 
 For files with duplicate columns, the ETL will not be aware if those duplicate columns change location in the source file schema. We recommend using [data quality rules](./data_quality.md) to check field types to catch this situation.
 
@@ -127,13 +127,13 @@ Fuzzy matching of column names for schema mapping is implemented in InsuranceLak
 
 To use fuzzy matching in your schema mapping file, add the columns `Threshold` and `Scorer`. These columns do not need to be defined for every column in the schema mapping, only for the columns where you want to use fuzzy matching to map schema.
 
-Fuzzy matching is always performed after direct schema mapping of fields. Only the fields from the source file that were not directly mapped are used for fuzzy matching. When a field is successfully fuzzy matched, it is removed from the available fields for subsequent fuzzy matching. This strategy increases the chances you will get the matches you are expecting.
+Fuzzy matching is always performed after direct schema mapping of fields. Only the fields from the source file that were not directly mapped are used for fuzzy matching. When a field is successfully fuzzy matched, it is removed from the available fields for subsequent fuzzy matching. This design increases the chance that you will get the matches you are expecting.
 
 Full documentation of the RapidFuzz library is available on [RapidFuzz Github Pages](https://rapidfuzz.github.io/RapidFuzz/Usage/fuzz.html).
 
 |Field	|Type	|Description
 |---    |---    |---
-|SourceName	|required	|Text the will be used to fuzzy match columns in the source file
+|SourceName	|required	|Text that will be used to fuzzy match columns in the source file
 |DestName	|required	|Desired Spark/Parquet-conforming name of the column
 |Threshold  |required   |Fuzzy matching score that must be met in order to constitute a match for schema mapping
 |Scorer |required   |Fuzzy matching scorer algorithm to use for matching, exactly how it is defined in the RapidFuzz library, case sensitive. Options include `ratio`, `partial_ratio`, `token_sort_ratio`, `token_set_ratio`, `WRatio`, `QRatio`. A description of scorers with examples is available in [the RapidFuzz usage documentation](https://github.com/rapidfuzz/RapidFuzz?tab=readme-ov-file#usage).
@@ -160,7 +160,7 @@ Consider a data source with the following column headers:
 
 ### Exact Matching
 
-Using double-quotes around `SourceName` values allows you to specify line breaks in the CSV mapping file. This method performs an exact match. Specifically **this method requires you to match your line break characters exactly in the mapping configuration**. If the data sources columns have varying line breaks, this can be a challenge. Consider using [fuzzy matching](#fuzzy-matching) for complex or changing column headers.
+Using double-quotes around `SourceName` values allows you to specify line breaks in the CSV mapping file. This method performs an exact match. Specifically, **this method requires you to match your line break characters exactly in the mapping configuration**. If the data sources columns have varying line breaks, this can be a challenge. Consider using [fuzzy matching](#fuzzy-matching) for complex or changing column headers.
 
 Example exact matching to handle line breaks:
 
@@ -220,13 +220,15 @@ client_id,client_id,4
 
 The schema mapping configuration can be used to flatten nested data structures.
 
-Fuzzy matching is available for nested data and will match on the fully expressed nested entity names (in other words, `contacts.role.name`)
+Fuzzy matching is available for nested data and will match on the fully expressed nested entity names (for example, `contacts.role.name`).
 
-**The schema mapping file cannot be used to rename/map fields in place within nested data structures. When no mapping file is present, the recommended schema mapping file will only contain the first level of the nested data structure. This behavior reflects the ability of Spark's alias function; it can only rename columns in the first level.**
+{: .note }
+The schema mapping file cannot be used to rename or map fields in place within nested data structures. When no mapping file is present, the recommended schema mapping file will only contain the first level of the nested data structure. This behavior reflects the ability of Spark's alias function; it can only rename columns in the first level.
 
 See [changetype documentation](./transforms.md#changetype) for a different method to rename fields in place within a nested data structure.
 
-**When referencing elements within an array structure, it is not necessary to specify the element index. Simply use dot notation to reference any fields within the array.**
+{: .note }
+When referencing elements within an array structure, it is not necessary to specify the element index. Simply use dot notation to reference any fields within the array.
 
 Example schema mapping that flattens and renames a nested data structure:
 ```csv

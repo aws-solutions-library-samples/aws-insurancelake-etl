@@ -1,8 +1,11 @@
 # Copyright Amazon.com and its affiliates; all rights reserved. This file is Amazon Web Services Content and may not be duplicated or distributed without permission.
 # SPDX-License-Identifier: MIT-0
+from pyspark.context import SparkContext
 from pyspark.sql.dataframe import DataFrame
+from pyspark.sql.column import Column
 from pyspark.sql.types import StructType
-from pyspark.sql.functions import expr
+from pyspark.sql.functions import expr, col, from_json
+from awsglue.context import GlueContext
 
 def transform_jsonexpandarray(df: DataFrame, jsonexpandarray_spec: list, args: dict, lineage, *extra):
     """Function to expand array type columns into multiple rows
@@ -71,3 +74,53 @@ def transform_jsonexpandmap(df: DataFrame, jsonexpand_spec: list, args: dict, li
         lineage.update_lineage(df, args['source_key'], 'jsonexpandmap', transform=spec)
 
     return df
+
+def transform_xmlstructured(df: DataFrame, xml_fields: list, args: dict, lineage, sc: SparkContext, *extra):
+    """Convert string column containing XML data to structured column
+
+    Parameters
+    ----------
+    xml_fields
+        Simple list of fieldnames to convert
+    """
+    glueContext = GlueContext(sc)
+    spark = glueContext.spark_session
+
+    # Use Databricks Spark-XML which currently has no pySpark API
+    # https://github.com/databricks/spark-xml?tab=readme-ov-file#pyspark-notes
+    empty_scala_options = spark._jvm.PythonUtils.toScalaMap({})
+    java_xml_module = getattr(getattr(spark._jvm.com.databricks.spark.xml, 'package$'), 'MODULE$')
+
+    cols_map = {
+        field: Column(sc._jvm.com.databricks.spark.xml.functions.from_xml(
+            col(field)._jc,
+            spark._jsparkSession.parseDataType(
+                java_xml_module.schema_of_xml_df(
+                    df.select(field)._jdf, empty_scala_options
+                ).json()
+            ),
+            empty_scala_options))
+            for field in xml_fields
+    }
+    # No need to unpersist as there is only one reference to the dataframe and it is returned
+    lineage.update_lineage(df, args['source_key'], 'xmlstructured', transform=xml_fields)
+    return df.withColumns(cols_map)
+
+def transform_jsonstructured(df: DataFrame, json_fields: list, args: dict, lineage, sc: SparkContext, *extra):
+    """Convert string column containing JSON data to structured column
+
+    Parameters
+    ----------
+    json_fields
+        Simple list of fieldnames to convert
+    """
+    glueContext = GlueContext(sc)
+    spark = glueContext.spark_session
+
+    cols_map = {
+        field: from_json(field, spark.read.json(df.rdd.map(lambda row: row[field])).schema)
+            for field in json_fields
+    }
+    # No need to unpersist as there is only one reference to the dataframe and it is returned
+    lineage.update_lineage(df, args['source_key'], 'jsonstructured', transform=json_fields)
+    return df.withColumns(cols_map)

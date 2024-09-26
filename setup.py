@@ -7,7 +7,7 @@ with open('README.md', encoding='utf-8') as fp:
 
 setuptools.setup(
     name='aws-insurancelake-etl',
-    version='4.0.4',
+    version='4.0.5',
     description='A CDK Python app for deploying ETL jobs that operate data pipelines for InsuranceLake in AWS',
     long_description=long_description,
     long_description_content_type='text/markdown',

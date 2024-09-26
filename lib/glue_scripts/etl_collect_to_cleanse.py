@@ -181,14 +181,25 @@ def main():
     elif ext.lower() in [ '.json', '.jsonl' ]:
         multiline = False
         if 'json' in input_spec:
-            multiline = input_spec['json'].get('multiline', False)
+            multiline = input_spec['json'].get('multiline', multiline)
 
         initial_df = spark.read.format('json') \
-            .option('prefersDecimal', True) \
-            .option('allowComments', True) \
+            .option('prefersDecimal', 'true') \
+            .option('allowComments', 'true') \
             .option('multiLine', multiline) \
             .option('mode', 'PERMISSIVE') \
             .load(source_path)
+
+    elif ext.lower() == '.xml':
+        row_tag = 'row'
+        if 'xml' in input_spec:
+            row_tag = input_spec['xml'].get('row_tag',row_tag)
+
+        initial_df = spark.read.format('xml') \
+            .option('rowTag', row_tag) \
+            .option('mode', 'PERMISSIVE') \
+            .load(source_path)
+
 
     elif ext.lower() == '.parquet' or 'parquet' in input_spec:
         # TODO: Support multi-file Parquet folder structures through configuration
@@ -217,9 +228,11 @@ def main():
             .option('delimiter', delimiter) \
             .option('quote', quote_character) \
             .option('escape', escape_character) \
-            .option('inferSchema', 'true') \
+            .option('multiLine', True) \
+            .option('inferSchema', True) \
             .option('mode', 'PERMISSIVE') \
             .load(source_path)
+
 
     initial_df.cache()
     lineage = DataLineageGenerator(args)
