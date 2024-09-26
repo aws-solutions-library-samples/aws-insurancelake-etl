@@ -23,7 +23,7 @@ If you'd like to get started quickly transforming some sample raw insurance data
 1. Open the AWS Console in the `us-east-2 (Ohio)` Region.
 
     {: .note }
-    InsuranceLake uses `us-east-2` by default. To change the Region, refer to the [Quickstart with CI/CD](#quickstart-with-cicd).
+    InsuranceLake uses `us-east-2` by default. To change the Region, refer to the [Quickstart with CI/CD](quickstart_cicd.md).
 
 1. Select AWS `CloudShell` at the bottom of the page and wait for a few seconds until it is available for use.
 1. Ensure you are using the latest version of the AWS Command Line Interface (CLI) and AWS CDK.
@@ -119,6 +119,6 @@ If you'd like to get started quickly transforming some sample raw insurance data
 * Take the [InsuranceLake Deep Dive Workshop](https://catalog.us-east-1.prod.workshops.aws/workshops/0a85653e-07e9-41a8-960a-2d1bb592331b).
     * You may skip to the [Modify and test a transform](https://catalog.us-east-1.prod.workshops.aws/workshops/0a85653e-07e9-41a8-960a-2d1bb592331b/en-US/modify-a-transform) step, as the prior steps overlap with the Quickstart instructions.
 * Try out [loading your own data](loading_data.md#landing-source-data).
-* Try the [Quickstart with CI/CD](#quickstart-with-cicd).
-* Dive deeper with the included [user documentation](https://aws-solutions-library-samples.github.io/aws-insurancelake-etl/user-documentation/).
+* Try the [Quickstart with CI/CD](quickstart_cicd.md).
+* Dive deeper with the included [user documentation](user_documentation.md).
 * Contact your AWS account team for a solution deep dive, workshops, or AWS Professional Services support.

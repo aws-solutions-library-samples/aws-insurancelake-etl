@@ -101,7 +101,7 @@ The table below lists the formats that could require no configuration for initia
 |[Parquet](file_formats.md#parquet)	|Parquet files that do not end with a `parquet` extension will need to be renamed or you must provide an `input_spec` configuration indicating the file format. Multi-file Parquet data sources will require pipeline customization detailed in [Handling Multi-file Data Sets](file_formats.md#handling-multi-file-data-sets).
 |[Excel](file_formats.md#microsoft-excel-format-support)	|Excel files are identified by the extensions `xls`, `xlsx`, `xlm`, `xlsm`. Loading Excel files requires the [installation of the Spark Excel libraries](file_formats.md#obtaining-the-driver). In addition, the ETL will default to using the first sheet in an Excel workbook, the data at cell A1, and assume the first row of data is the header. If your Excel file has data on a different sheet, in a different position, has no header, or requires a password, you must provide [an `input_spec` configuration](file_formats.md#configuration).
 |[JSON](file_formats.md#json)	|JSON files are identified by the extensions `json`, `.jsonl`. The ETL will default to loading JSON files as JSON Lines (each line contains one JSON object). If your JSON file uses multiple lines for a single object, you must provide an `input_spec` configuration.
-|[XML](file_formats.html#xml)	|XML files are identified by the extension `xml`. Loading XML files requires the [installation of the Spark XML driver](file_formats.html#xml). XML files must be row-based data. The ETL will default to a row tag of `row`. If your XML data uses a different row tag, you must provide an `input_spec` configuration.
+|[XML](file_formats.md#xml)	|XML files are identified by the extension `xml`. Loading XML files requires the [installation of the Spark XML driver](file_formats.md#xml). XML files must be row-based data. The ETL will default to a row tag of `row`. If your XML data uses a different row tag, you must provide an `input_spec` configuration.
 
 Other formats require some configuration, even for the first load.
 
@@ -132,7 +132,7 @@ The value of _Total_ in the `EffectiveDate` column will cause Spark to infer a f
 
 ### Method 1
 
-This method uses a [`before_transform` data quality rule](data_quality.md#configuration) to quarantine the row of data with the value _Total_ in the `EffectiveDate` column. The data quality rule identifies the row by looking for values that match a standard date pattern, and removing rows that do not match. Because the `before_transform` rule runs before transforms, you can next use a [`date` transform](transforms.md#date) to convert the clean column of `data` to a date field type.
+This method uses a [`before_transform` data quality rule](data_quality.md#when-to-run-data-quality-rules) to quarantine the row of data with the value _Total_ in the `EffectiveDate` column. The data quality rule identifies the row by looking for values that match a standard date pattern, and removing rows that do not match. Because the `before_transform` rule runs before transforms, you can next use a [`date` transform](transforms.md#date) to convert the clean column of `data` to a date field type.
 
 `dq-rules` configuration:
 ```json
@@ -257,6 +257,6 @@ If you've made changes to the Collect to Cleanse AWS Glue job in order to suppor
 
 Other methods to override partition values are covered in other sections of the documentation:
 
-* Using the [Step Functions New Execution capability](#execute-pipeline-without-upload), a pipeline maintainer can repeat a previously completed workflow, skipping the file upload step, and override execution parameters such as partition year, month, day, and source file S3 location. For details, review the [Pipeline Usage Documentation](#execute-pipeline-without-upload).
+* Using the [Step Functions New Execution capability](#execute-pipeline-without-upload), a pipeline maintainer can repeat a previously completed workflow, skipping the file upload step, and override execution parameters such as partition year, month, day, and source file S3 location.
 
-* AWS Glue jobs can be manually executed with override parameters for individual AWS Glue jobs. For details on how to manually initiate AWS Glue jobs and override parameters, review the [InsuranceLake Developer Documentation on AWS Glue Jobs](developer_guide.md#glue-jobspark-code).
+* AWS Glue jobs can be manually executed with override parameters for individual AWS Glue jobs. For details on how to manually initiate AWS Glue jobs and override parameters, review the [InsuranceLake Developer Documentation on AWS Glue Jobs](developer_guide.md#aws-glue-jobapache-spark-code).

@@ -324,7 +324,7 @@ The following are additional code considerations:
 
    * Spark actions cause any unevaluated transformation to immediately execute. For a full list of Spark functions, refer to the [list of transformations](https://spark.apache.org/docs/latest/rdd-programming-guide.html#transformations) and [the list of actions](https://spark.apache.org/docs/latest/rdd-programming-guide.html#actions).
 
-   * Use [cache](#https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.DataFrame.cache.html) when you need to perform multiple operations on the same dataset to avoid reading from storage repeatedly.
+   * Use [cache](https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.DataFrame.cache.html) when you need to perform multiple operations on the same dataset to avoid reading from storage repeatedly.
 
 
 ## Unit Testing

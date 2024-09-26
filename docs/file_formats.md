@@ -260,7 +260,7 @@ Add the following code at [Line 123 of the same AWS Lambda function](https://git
         }
 ```
 
-Lastly, add the following code to the [Collect-to-Cleanse AWS Glue job on Line 194](https://github.com/aws-samples/aws-insurancelake-etl/blob/main/lib/glue_scripts/etl_collect_to_cleanse.py#L194) to handle ETL executions initiated by the trigger file. This change ensures that you load the entire folder in which the trigger file exists, and otherwise load individual files for all other executions.
+Lastly, add the following code to the [Collect-to-Cleanse AWS Glue job on Line 204](https://github.com/aws-samples/aws-insurancelake-etl/blob/main/lib/glue_scripts/etl_collect_to_cleanse.py#L204) to handle ETL executions initiated by the trigger file. This change ensures that you load the entire folder in which the trigger file exists, and otherwise load individual files for all other executions.
 
 ```python
     elif ext.lower() == '.parquet' or ( 'parquet' in input_spec and args['base_file_name'].startswith('_') ):

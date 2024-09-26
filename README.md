@@ -162,9 +162,9 @@ If you'd like to get started quickly transforming some sample raw insurance data
 
 * Take the [InsuranceLake Deep Dive Workshop](https://catalog.us-east-1.prod.workshops.aws/workshops/0a85653e-07e9-41a8-960a-2d1bb592331b).
     * You may skip to the [Modify and test a transform](https://catalog.us-east-1.prod.workshops.aws/workshops/0a85653e-07e9-41a8-960a-2d1bb592331b/en-US/modify-a-transform) step, as the prior steps overlap with the Quickstart instructions.
-* Try out [loading your own data](https://aws-solutions-library-samples.github.io/aws-insurancelake-etl/loading_data.html#landing-source-data).
-* Try the [Quickstart with CI/CD](https://aws-solutions-library-samples.github.io/aws-insurancelake-etl/quickstart-with-cicd/).
-* Dive deeper with the included [user documentation](https://aws-solutions-library-samples.github.io/aws-insurancelake-etl/user-documentation/).
+* Try out [loading your own data](https://aws-solutions-library-samples.github.io/aws-insurancelake-etl/loading_data#landing-source-data).
+* Try the [Quickstart with CI/CD](https://aws-solutions-library-samples.github.io/aws-insurancelake-etl/quickstart_cicd/).
+* Dive deeper with the included [user documentation](https://aws-solutions-library-samples.github.io/aws-insurancelake-etl/user_documentation/).
 * Contact your AWS account team for a solution deep dive, workshops, or AWS Professional Services support.
 
 ## Deployment Validation
@@ -213,7 +213,7 @@ If you'd like to get started quickly transforming some sample raw insurance data
 
 ## Cleanup
 
-Refer to the [AWS CDK Instructions, Cleanup section](https://aws-solutions-library-samples.github.io/aws-insurancelake-etl/cdk_instructions.html#clean-up-workflow-created-resources).
+Refer to the [AWS CDK Instructions, Cleanup section](https://aws-solutions-library-samples.github.io/aws-insurancelake-etl/quickstart_cleanup/).
 
 ## Architecture
 

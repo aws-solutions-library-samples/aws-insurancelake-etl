@@ -12,7 +12,8 @@ This section describes each of the user-configured data transforms provided with
 ## Contents
 {: .no_toc }
 
-{: .toc }
+* TOC
+{:toc}
 
 ## Transformation Reference Table
 
@@ -69,7 +70,7 @@ This section describes each of the user-configured data transforms provided with
 
 - Transform configuration is specified in the `transform-spec` section of the workflow's JSON configuration file. The filename follows the convention of `<database name>-<table name>.json` and is stored in the `/etl/transformation-spec` folder in the `etl-scripts` bucket. When using AWS CDK for deployment, the contents of the `/lib/glue_scripts/lib/transformation-spec` directory will be automatically deployed to this location.
 
-- For an example of all transforms in one place, refer to the [all-transforms-example.json](../lib/glue_scripts/transformation-spec/all-transforms-example.json) in the `transformation-spec` directory of the repository.
+- For an example of all transforms in one place, refer to the [all-transforms-example.json](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/lib/glue_scripts/transformation-spec/all-transforms-example.json) in the `transformation-spec` directory of the repository.
 
 - The order that you enter the transforms into the JSON file is important and should be chosen deliberately. Each transform is executed in the order they are defined on the incoming dataset starting from the beginning of the transform_spec section of the file.
 
@@ -170,7 +171,7 @@ Convert specified fields to decimal (fixed precision), int, bigint, string, and 
 
 - Transform specification is a single JSON object containing a list of string value pairs for each field to convert.
 
-- Transform can be used to rename a nested field in place by redefining the struct data type, with new field names using Spark's simpleString syntax for struct types, for example: `struct<name:type,name2:array<int>>`. See [all-transforms-example.json](../lib/glue_scripts/transformation-spec/all-transforms-example.json#L114) for a more complex example.
+- Transform can be used to rename a nested field in place by redefining the struct data type, with new field names using Spark's simpleString syntax for struct types, for example: `struct<name:type,name2:array<int>>`. See [all-transforms-example.json](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/lib/glue_scripts/transformation-spec/all-transforms-example.json#L139) for a more complex example.
 
 ```json
 "changetype": {
@@ -197,7 +198,7 @@ Convert specified date fields to ISO format based on known input format.
 
 - Use `dd` to indicate exactly two digit dates and `d` to indicate **either one or two** digits dates. This applies to all other symbols in the datetime pattern. Single character symbols are the most flexible.
 
-- An error similar to the following typically means that some or all of your dates are not formatted in the way the date pattern expects. Consider using [data quality rules](./data_quality.md#Configuration) to test your data.
+- An error similar to the following typically means that some or all of your dates are not formatted in the way the date pattern expects. Consider using [data quality rules](data_quality.md#configuration) to test your data.
     ```log
     You may get a different result due to the upgrading of Spark 3.0
     Fail to parse 'YYYY-M-d' in the new parser. You can set spark.sql.legacy.timeParserPolicy to LEGACY to restore the behavior before Spark 3.0, or set to CORRECTED and treat it as an invalid datetime string.
@@ -862,7 +863,7 @@ Filter out rows based on standard SQL WHERE statement.
 |condition    |required    |String filter condition using [Apache Spark WHERE clause syntax](https://spark.apache.org/docs/latest/sql-ref-syntax-qry-select-where.html); **rows that match will remain in the data set**
 |description    |optional    |This parameter will be ignored, but we recommend using it to document the purpose of each filter condition
 
-- Use only when certain rows can be systematically and confidently discarded. Examples of usage include removing blank rows, removing a totals rows, or removing subtotal rows. If review of filtered data is desired, consider using [data quality quarantine rules](data_quality.md). An example of both options can be found in the [Corrupt Data section of the Loading Data with InsurnaceLake Documentation](loading_data.md#corrupt-data).
+- Use only when certain rows can be systematically and confidently discarded. Examples of usage include removing blank rows, removing a totals rows, or removing subtotal rows. If review of filtered data is desired, consider using [data quality quarantine rules](data_quality.md#quarantine). An example of both options can be found in the [Corrupt Data section of the Loading Data with InsurnaceLake Documentation](loading_data.md#corrupt-data).
 
 ```json
 "filterrows": [

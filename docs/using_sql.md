@@ -41,7 +41,7 @@ The following are considerations and requirements for InsuranceLake's integratio
 
 * The most basic form is a `select * from cleanse_table` SQL statement, which will create a copy of the Cleanse bucket table specified and write it to the Consume bucket.
 
-* Queries should be written to pull all data in tables, not just the most recent partition (unless that is the desired view). This is because the entire Consume bucket table is rewritten each time the workflow runs. If this implementation creates performance issues for the workflow, you can modify the behavior on [line 190 of the `etl_cleanse_to_consume.py` script](https://github.com/aws-samples/aws-insurancelake-etl/blob/main/lib/glue_scripts/etl_cleanse_to_consume.py#L198) by commenting out the table deletion as follows:
+* Queries should be written to pull all data in tables, not just the most recent partition (unless that is the desired view). This is because the entire Consume bucket table is rewritten each time the workflow runs. If this implementation creates performance issues for the workflow, you can modify the behavior on [line 198 of the `etl_cleanse_to_consume.py` script](https://github.com/aws-samples/aws-insurancelake-etl/blob/main/lib/glue_scripts/etl_cleanse_to_consume.py#L198) by commenting out the table deletion as follows:
 
     ```python
     # glueContext.purge_s3_path(storage_location, options={ 'retentionPeriod': 0 })
@@ -106,7 +106,7 @@ The following are considerations and requirements for InsuranceLake's integratio
     athena_execute_query() exceeded max_attempts waiting for query
     ```
 
-    If your query usage requires more than 15 seconds to execute, you will need to increase the number of Athena status attempts specified in the `athena_execute_query()` function call on [line 228 of the `etl_cleanse_to_consume.py` script](https://github.com/aws-samples/aws-insurancelake-etl/blob/main/lib/glue_scripts/etl_cleanse_to_consume.py#L236) as follows:
+    If your query usage requires more than 15 seconds to execute, you will need to increase the number of Athena status attempts specified in the `athena_execute_query()` function call on [line 237 of the `etl_cleanse_to_consume.py` script](https://github.com/aws-samples/aws-insurancelake-etl/blob/main/lib/glue_scripts/etl_cleanse_to_consume.py#L237) as follows:
 
     ```python
     status = athena_execute_query(
@@ -508,7 +508,7 @@ FROM mydb_consume.mytable
 
 ### Athena Fixed Width View
 
-Some reporting requirements, such as regulatory, require the use of a fixed width format. Once the data is prepared in the Consume layer, you can use the [lpad](https://prestodb.io/docs/current/functions/string.html#lpad) and [coalesce](https://prestodb.io/docs/current/functions/conditional.html#coalesce) Athena functions to create a view that includes the policy number and report date columns for traceability.
+Some reporting requirements, such as regulatory, require the use of a fixed width format. Once the data is prepared in the Consume layer, you can use the [lpad](https://prestodb.io/docs/current/functions/string.html#lpad-string-size-padstring-varchar) and [coalesce](https://prestodb.io/docs/current/functions/conditional.html#coalesce) Athena functions to create a view that includes the policy number and report date columns for traceability.
 
 ```sql
 CREATE OR REPLACE VIEW stat_report AS

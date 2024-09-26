@@ -52,9 +52,10 @@ If the `allow_schema_change` setting is not specified, the ETL defaults to a val
 
 To change the environment-based default behavior, modify the conditional expression starting on [Line 85 of the Collect-to-Cleanse AWS Glue job](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/lib/glue_scripts/etl_collect_to_cleanse.py#L85).
 
-To extend or change the specific schema change detection and control behavior, modify the `check_schema_change` function starting on [Line 71 of the glue_catalog_helpers module](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/lib/glue_scripts/lib/glue_catalog_helpers.py#L71).
+To extend or change the specific schema change detection and control behavior, modify the `check_schema_change` function starting on [Line 88 of the glue_catalog_helpers module](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/lib/glue_scripts/lib/glue_catalog_helpers.py#L88).
 
 ### Evolve Setting Data Type Change Details
+
 |Current data type   |Allowed new data types
 |---    |---
 |string  |byte, tinyint, smallint, int, bigint
@@ -115,7 +116,7 @@ Athena behaves similarly to Spark when merging partitions with different schemas
 
 * For Athena supported schema changes and an explanation of behavior, refer to the [Updates and data formats in Athena](https://docs.aws.amazon.com/athena/latest/ug/handling-schema-updates-chapter.html#summary-of-updates) documentation and [Updates in tables with partitions](https://docs.aws.amazon.com/athena/latest/ug/updates-and-partitions.html) documentation.
 
-* For compatible data type changes refer to [Changing a column's data type](https://docs.aws.amazon.com/athena/latest/ug/types-of-updates.html#updates-changing-column-type).
+* For compatible data type changes refer to [Change a column data type](https://docs.aws.amazon.com/athena/latest/ug/updates-changing-column-type.html).
 
     {: .note }
     Some supported data type conversions are not listed, for example, changing decimal precision and scale.

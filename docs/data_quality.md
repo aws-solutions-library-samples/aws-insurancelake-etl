@@ -53,7 +53,6 @@ The filename of the workflow's data quality rules configuration file follows the
 The ETL's AWS Glue Data Quality integration uses the [AWS Glue Data Quality Definition Language (DQDL)](https://docs.aws.amazon.com/glue/latest/dg/dqdl.html) to describe rules. The rules in the InsuranceLake ETL data quality configuration should be expressed in the same format (except for the JSON requirements around double quotes).
 
 ### When to run data quality rules
----
 
 InsuranceLake data quality configuration supports three locations in the data pipeline to enforce quality rules:
 
@@ -79,11 +78,11 @@ InsuranceLake data quality configuration supports three locations in the data pi
 Keep in mind that the schema of your data at each of the above stages will likely be different. Ensure you are using the right field names and assumptions around the data at each stage of the pipeline.
 
 ### What action to take on data quality rule failures
----
 
 InsuranceLake data quality configuration supports three types of actions to take when rules fail: Warn, Quarantine, Halt. All three actions are available for all three locations in the pipeline.
 
 #### Warn
+---
 
 To invoke a warning on rule failure, define the data quality rule in the `warn_rules` section.
 
@@ -123,6 +122,7 @@ The ruleset name combined with the AWS Glue job name of the AWS Glue Data Qualit
     ```
 
 #### Quarantine
+---
 
 To quarantine individual rows that fail a rule, define the data quality rule in the `quarantine_rules` section.
 
@@ -137,6 +137,7 @@ As long as a data quality rule is present in the configuration, the ETL will cre
 - Rules that rely on ratios or thresholds are not supported as quarantine rules. See [How Composite rules work](https://docs.aws.amazon.com/glue/latest/dg/dqdl.html#dqdl-syntax-composite-rules) in the AWS Glue Data Quality Documentation for more details.
 
 #### Halt
+---
 
 To halt the AWS Glue job immediately on rule failure, define the data quality rule in the `halt_rules` section.
 
@@ -146,7 +147,6 @@ Rules with a halt action are always evaluated last, so that all defined rules ar
 Quarantine rules run before the halt rules **do not affect** the data used to evaluate the halt rules. In other words, even if a row is quarantined, it can still cause the pipeline to halt if it fails a halt rule.
 
 ### Example Configuration
----
 
 An example data quality configuration file follows:
 
