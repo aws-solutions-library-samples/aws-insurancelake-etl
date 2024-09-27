@@ -49,6 +49,7 @@ Example of other data pipeline configuration parameters:
 }
 ```
 
+
 ## CSV (Comma Separated Value)
 
 Comma separated value file format is **the default file format for the InsuranceLake ETL**. If no input specification configuration is specified, and the file extension is not recognized, the ETL will assume that CSV file format is desired.
@@ -82,6 +83,7 @@ The following is an example of an input specification for a CSV file with no hea
 }
 ```
 
+
 ## TSV (Tab Separated Value)
 
 Tab separated value input files are not identified by any file extension; the ETL will only interpret an input file as tab separated value if the file format is specified in the `input_spec` configuration.
@@ -100,6 +102,7 @@ The following is an example of a configuration for a TSV file with a header row:
 }
 ```
 
+
 ## Pipe-delimited
 
 Pipe-delimited input files are not identified by any file extension; the ETL will only interpret an input file as pipe-delimited if the file format is specified in the `input_spec` configuration.
@@ -117,6 +120,7 @@ The following is an example of a configuration for a pipe-delimited file with a 
     }
 }
 ```
+
 
 ## JSON
 
@@ -271,6 +275,7 @@ Lastly, add the following code to the [Collect-to-Cleanse AWS Glue job on Line 2
 ```
 
 After making these code modifications, you will need to ensure that the `parquet` format is specified in the `input_spec` section of the workflow's JSON configuration file. You will then be able to upload a folder of Parquet files inside the second level of folder structure with the Collect S3 bucket (in other words, you still must have folders representing the database and table name to use), and the ETL will initiate a single execution to process the entire uploaded folder.
+
 
 ## Microsoft Excel Format Support
 

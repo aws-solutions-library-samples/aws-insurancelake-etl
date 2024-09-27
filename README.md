@@ -213,7 +213,7 @@ If you'd like to get started quickly transforming some sample raw insurance data
 
 ## Cleanup
 
-Refer to the [AWS CDK Instructions, Cleanup section](https://aws-solutions-library-samples.github.io/aws-insurancelake-etl/quickstart_cleanup/).
+Refer to the [Quickstart Cleanup](https://aws-solutions-library-samples.github.io/aws-insurancelake-etl/quickstart_cleanup/) instructions.
 
 ## Architecture
 
@@ -260,7 +260,7 @@ The figure below represents the ETL resources we provision for the data lake.
 
 ## Security
 
-For more information on how AWS services come together in InsuranceLake to align with the [Security Pillar of the AWS Well-Architected Framework](https://docs.aws.amazon.com/wellarchitected/latest/financial-services-industry-lens/security.html) refer to the [InsuranceLake Well-Architected Pillar Alignment for Security](https://aws-solutions-library-samples.github.io/aws-insurancelake-etl/well_architected.html#security).
+For more information on how AWS services come together in InsuranceLake to align with the [Security Pillar of the AWS Well-Architected Framework](https://docs.aws.amazon.com/wellarchitected/latest/financial-services-industry-lens/security.html) refer to the [InsuranceLake Well-Architected Pillar Alignment for Security](https://aws-solutions-library-samples.github.io/aws-insurancelake-etl/well_architected/#security).
 
 ### Infrastructure Code
 
@@ -303,7 +303,7 @@ To scan all application code using Bandit, use the following command:
 bandit -r --ini .bandit
 ```
 
-When this operation is complete, you will also have access to the CDK-nag reports in CSV format in the `cdk.out` directory and assembly directories.
+---
 
 ## Additional Resources
 

@@ -12,7 +12,7 @@ last_modified_date: 2024-09-26
 * TOC
 {:toc}
 
-For more information on how AWS services come together in InsuranceLake to align with the [Security Pillar of the AWS Well-Architected Framework](https://docs.aws.amazon.com/wellarchitected/latest/financial-services-industry-lens/security.html), refer to the [InsuranceLake Well-architected Pillar Alignment for Security](well_architected.html#security).
+For more information on how AWS services come together in InsuranceLake to align with the [Security Pillar of the AWS Well-Architected Framework](https://docs.aws.amazon.com/wellarchitected/latest/financial-services-industry-lens/security.html), refer to the [InsuranceLake Well-architected Pillar Alignment for Security](well_architected.md#security).
 
 ## Infrastructure Code
 

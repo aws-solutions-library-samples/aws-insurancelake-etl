@@ -135,6 +135,7 @@ This recommended transformation specification file can be used as a starting poi
 ## Formatting
 
 ### currency
+{: .no_toc }
 Convert specified numeric field with currency formatting to decimal (fixed precision).
 
 |Parameter    |Type    |Description
@@ -162,6 +163,7 @@ Convert specified numeric field with currency formatting to decimal (fixed preci
 ```
 
 ### changetype
+{: .no_toc }
 Convert specified fields to decimal (fixed precision), int, bigint, string, and more.
 
 |Parameter    |Type    |Description
@@ -186,6 +188,7 @@ Convert specified fields to decimal (fixed precision), int, bigint, string, and 
 ```
 
 ### date
+{: .no_toc }
 Convert specified date fields to ISO format based on known input format.
 
 |Parameter    |Type    |Description
@@ -223,6 +226,7 @@ Convert specified date fields to ISO format based on known input format.
 ```
 
 ### implieddecimal
+{: .no_toc }
 Convert specified numeric fields to decimal (fixed precision) type with implied decimal point support (in other words, last two digits are to the right of decimal).
 
 |Parameter    |Type    |Description
@@ -250,6 +254,7 @@ Convert specified numeric fields to decimal (fixed precision) type with implied 
 ```
 
 ### timestamp
+{: .no_toc }
 Convert specified datetime fields to ISO format based on known input format.
 
 |Parameter    |Type    |Description
@@ -273,6 +278,7 @@ Convert specified datetime fields to ISO format based on known input format.
 ```
 
 ### titlecase
+{: .no_toc }
 Convert specified string field to title or proper case (for example, "my name" will become "My Name").
 
 |Parameter    |Type    |Description
@@ -293,6 +299,7 @@ Convert specified string field to title or proper case (for example, "my name" w
 ## String Manipulation
 
 ### columnfromcolumn
+{: .no_toc }
 Add or replace column based on a regular expression group match pattern.
 
 |Parameter    |Type    |Description
@@ -321,6 +328,7 @@ Add or replace column based on a regular expression group match pattern.
 ```
 
 ### columnreplace
+{: .no_toc }
 Add or replace a column with regular expression substitution on an existing column.
 
 |Parameter    |Type    |Description
@@ -350,6 +358,7 @@ Add or replace a column with regular expression substitution on an existing colu
 ```
 
 ### combinecolumns
+{: .no_toc }
 Add a column using a format string and list of source columns.
 
 |Parameter    |Type    |Description
@@ -369,6 +378,7 @@ Add a column using a format string and list of source columns.
 ```
 
 ### literal
+{: .no_toc }
 Add or replace a column with the supplied static or literal value.
 
 |Parameter    |Type    |Description
@@ -386,6 +396,7 @@ Add or replace a column with the supplied static or literal value.
 ```
 
 ### filename
+{: .no_toc }
 Add or replace a column using a regular expression group match pattern applied to the incoming source data filename.
 
 |Parameter    |Type    |Description
@@ -417,6 +428,7 @@ Add or replace a column using a regular expression group match pattern applied t
 ## Data Security
 
 ### hash
+{: .no_toc }
 Apply a SHA256 hash function to specified column values.
 
 |Parameter    |Type    |Description
@@ -434,6 +446,7 @@ Apply a SHA256 hash function to specified column values.
 ```
 
 ### redact
+{: .no_toc }
 Redact or replace specified column values using supplied redaction string.
 
 |Parameter    |Type    |Description
@@ -451,6 +464,7 @@ Redact or replace specified column values using supplied redaction string.
 ```
 
 ### tokenize
+{: .no_toc }
 Replace the specified column values with a SHA256 hash and store original values in a DynamoDB table.
 
 |Parameter    |Type    |Description
@@ -472,6 +486,7 @@ Replace the specified column values with a SHA256 hash and store original values
 ## Policy Data Operations
 
 ### flipsign
+{: .no_toc }
 Flips the sign of a numeric column, optionally, in a new column.
 
 |Parameter    |Type    |Description
@@ -492,6 +507,7 @@ Flips the sign of a numeric column, optionally, in a new column.
 ```
 
 ### addcolumns
+{: .no_toc }
 Mathematically add two or more columns together in a new column.
 
 |Parameter    |Type    |Description
@@ -511,6 +527,7 @@ Mathematically add two or more columns together in a new column.
 ```
 
 ### multiplycolumns
+{: .no_toc }
 Multiply two or more columns together in a new or existing column.
 
 |Parameter    |Type    |Description
@@ -532,6 +549,7 @@ Multiply two or more columns together in a new or existing column.
 ```
 
 ### earnedpremium
+{: .no_toc }
 Calculate monthly earned premium.
 
 |Parameter    |Type    |Description
@@ -565,6 +583,7 @@ Calculate monthly earned premium.
 ```
 
 ### enddate
+{: .no_toc }
 Add a number of months to a specified date to calculate an ending or expiration date.
 
 |Parameter    |Type    |Description
@@ -584,6 +603,7 @@ Add a number of months to a specified date to calculate an ending or expiration 
 ```
 
 ### expandpolicymonths
+{: .no_toc }
 Expand the dataset to one row for each month the policy is active with a calculated earned premium.
 
 |Parameter    |Type    |Description
@@ -613,6 +633,7 @@ Expand the dataset to one row for each month the policy is active with a calcula
 ```
 
 ### policymonths
+{: .no_toc }
 Calculate the number of months between policy start and end dates.
 
 |Parameter    |Type    |Description
@@ -638,6 +659,7 @@ Calculate the number of months between policy start and end dates.
 ## Structured Data
 
 ### jsonexpandarray
+{: .no_toc }
 Convert an ArrayType column (typically created from loading JSON nested data) to one row per array element with index.
 
 |Parameter    |Type    |Description    |
@@ -661,6 +683,7 @@ Convert an ArrayType column (typically created from loading JSON nested data) to
 ```
 
 ### jsonexpandmap
+{: .no_toc }
 Convert a MapType or StructType column (typically created from loading JSON nested data) to one row per map key, value pair with index column.
 
 |Parameter    |Type    |Description    |
@@ -686,6 +709,7 @@ Convert a MapType or StructType column (typically created from loading JSON nest
 ```
 
 ### jsonstructured
+{: .no_toc }
 Convert string column containing JSON data to a structured or nested data type column.
 
 - This function uses [Apache Spark's `from_json` function](https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.functions.from_json.html). At this time, it is not possible to specify options, but the transform can be extended to support this.
@@ -701,6 +725,7 @@ Convert string column containing JSON data to a structured or nested data type c
 ```
 
 ### xmlstructured
+{: .no_toc }
 Convert string column containing XML data to a structured or nested data type column.
 
 |Parameter    |Type    |Description
@@ -728,6 +753,7 @@ Convert string column containing XML data to a structured or nested data type co
 ## Miscellaneous Data Operations
 
 ### lookup
+{: .no_toc }
 Replace or add specified column values with values looked up from a DynamoDB table using a single value lookup key.
 
 |Parameter    |Type    |Description    |
@@ -779,6 +805,7 @@ Replace or add specified column values with values looked up from a DynamoDB tab
         ```
 
 ### multilookup
+{: .no_toc }
 Add columns looked up from an external table using multiple conditions, returning any number of attributes.
 
 |Parameter    |Type    |Description    |
@@ -830,6 +857,7 @@ If a column specified in `return_attributes` already exists, a duplicate column 
     - All columns that are not specified as lookup columns in the CSV file will be imported as separate attributes in the DynamoDB table and be available as return attributes.
 
 ### filldown
+{: .no_toc }
 Fill starting column value down the columns for all null values until the next non-null.
 
 |Parameter    |Type    |Description
@@ -856,6 +884,7 @@ Fill starting column value down the columns for all null values until the next n
 ```
 
 ### filterrows
+{: .no_toc }
 Filter out rows based on standard SQL WHERE statement.
 
 |Parameter    |Type    |Description
@@ -878,6 +907,7 @@ Filter out rows based on standard SQL WHERE statement.
 ```
 
 ### merge
+{: .no_toc }
 Merge column values using coalesce.
 
 |Parameter    |Type    |Description
@@ -901,6 +931,7 @@ Merge column values using coalesce.
 ```
 
 ### rownumber
+{: .no_toc }
 Adds row number column to rows based on an optional partition column list, and optional sort column list. Use this transform to add row numbers, to index rows within categories, or to enumerate possible duplicate rows based on primary keys.
 
 |Parameter    |Type    |Description
