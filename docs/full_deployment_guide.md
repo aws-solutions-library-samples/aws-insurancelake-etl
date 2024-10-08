@@ -43,10 +43,10 @@ Let us see how we deploy data lake ETL workloads from a central deployment accou
 
 To deploy this solution, we need four AWS accounts as follows:
 
-1. Central deployment account to create AWS CDK Pipelines
-1. Dev account for one or more development data lakes
-1. Test account for testing or staging the data lake
-1. Prod account for the production data lake
+* Central deployment account to create AWS CDK Pipelines
+* Dev account for one or more development data lakes
+* Test account for testing or staging the data lake
+* Prod account for the production data lake
 
 The figure below represents the centralized deployment model.
 
@@ -54,11 +54,11 @@ The figure below represents the centralized deployment model.
 
 Note the following considerations:
 
-1. Each source code repository should be organized into three branches, one for each environment (main branch is often used for production).
-1. Each branch is mapped to an AWS CDK Pipeline and a target environment. This way, code changes made to the branches are deployed iteratively to their respective target environment.
-1. Using AWS CDK, we apply the the following bootstrapping design:
-    1. The central deployment account will utilize a standard bootstrap.
-    1. Each target account will require a cross account trust policy to allow access from the centralized deployment account.
+* Each source code repository should be organized into three branches, one for each environment (main branch is often used for production).
+* Each branch is mapped to an AWS CDK Pipeline and a target environment. This way, code changes made to the branches are deployed iteratively to their respective target environment.
+* Using AWS CDK, we apply the the following bootstrapping design:
+    * The central deployment account will utilize a standard bootstrap.
+    * Each target account will require a cross account trust policy to allow access from the centralized deployment account.
 
 ---
 
@@ -67,8 +67,6 @@ Note the following considerations:
 The figure below illustrates the continuous delivery of ETL resources for the data lake.
 
 ![Data Lake CDK Pipeline Continuous Delivery](Aws-cdk-pipelines-blog-datalake-continuous_delivery_data_lake_etl.png)
-
-Note the following considerations:
 
 1. The DevOps administrator checks in the code to the repository.
 1. The DevOps administrator (with elevated access) facilitates a one-time manual deployment on a target environment. Elevated access includes administrative privileges on the central deployment account and target AWS environments.
@@ -85,9 +83,6 @@ This section provides the details for full deployment.
 
 ### Software Installation
 
-{: .note }
-If using AWS Cloud9, you only need to fork the repository, and proceed to [AWS Environment Bootstrapping](#aws-environment-bootstrapping), as the other software is pre-installed.
-
 1. **AWS CLI**: Confirm you have AWS CLI configured on your system. If not, refer to [Configuring the AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html) for more details.
 
 1. **Python**: Confirm you have [Python](https://www.python.org/downloads/) installed on your system. Python 3.9 and above is required.
@@ -100,6 +95,7 @@ If using AWS Cloud9, you only need to fork the repository, and proceed to [AWS E
 
 Environment bootstrap is a standard AWS CDK process to prepare an AWS environment ready for deployment. Follow these steps:
 
+{:style="counter-reset:none"}
 1. Open a command line interface (CLI) or terminal.
 
 1. Go to project root directory where the [app.py](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/app.py) file exists.
@@ -298,6 +294,7 @@ This deployment will depend on both the [Infrastructure](https://github.com/aws-
 
 Before we deploy our resources, we must provide the manual variables and upon deployment the AWS CDK Pipelines will programmatically export outputs for managed resources. Follow the below steps to set up your custom configuration:
 
+{:style="counter-reset:none"}
 1. Open the application file [lib/configuration.py](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/lib/configuration.py) and fill in values under the `local_mapping` dictionary within the function `get_local_configuration` as desired.
 
     {: .note }
@@ -426,6 +423,7 @@ Before we deploy our resources, we must provide the manual variables and upon de
 
 Integration between AWS CodePipeline and GitHub requires a personal access token. This access token is stored in Secrets Manager. This is a one-time setup and is applicable for all target AWS environments and all repositories created under the organization in GitHub.com. Follow the below steps:
 
+{:style="counter-reset:none"}
 1. Create a personal access token in your GitHub. Refer to [Creating a personal access token](https://docs.github.com/en/github/authenticating-to-github/keeping-your-account-and-data-secure/creating-a-personal-access-token) for details.
 
    The token should have these permissions:
@@ -452,6 +450,7 @@ Integration between AWS CodePipeline and GitHub requires a personal access token
 
 Integration between AWS CodePipeline and Atlassian Bitbucket requires creating an AWS CodeStar Connection. This same configuration can be used for any provider supported by AWS CodeStar (for example, GitLab).
 
+{:style="counter-reset:none"}
 1. In the AWS Console, browse to the CodePipeline service.
 
 1. Select `Settings` to expand the menu options, and click `Connections`.
@@ -485,6 +484,7 @@ Integration between AWS CodePipeline and Atlassian Bitbucket requires creating a
 
 ### Deploying CDK Stacks
 
+{:style="counter-reset:none"}
 1. Configure your AWS profile to target the **central deployment account** as an Administrator; set the `AWS_PROFILE` environment variable:
 
     ```bash

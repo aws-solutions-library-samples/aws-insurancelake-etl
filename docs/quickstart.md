@@ -26,7 +26,7 @@ If you'd like to get started quickly transforming some sample raw insurance data
     InsuranceLake uses `us-east-2` by default. To change the Region, refer to the [Quickstart with CI/CD](quickstart_cicd.md).
 
 1. Select AWS `CloudShell` at the bottom of the page and wait for a few seconds until it is available for use.
-1. Ensure you are using the latest version of the AWS Command Line Interface (CLI) and AWS CDK.
+1. Ensure you are using the latest version of the AWS Software Development Kit (SDK) for Node.js and AWS CDK.
     ```
     sudo npm install -g aws-lib aws-cdk
     ```
@@ -66,6 +66,7 @@ If you'd like to get started quickly transforming some sample raw insurance data
 
 ## Deploy the Application
 
+{:style="counter-reset:none"}
 1. Confirm you are still in the `aws-insurancelake-infrastructure` directory.
 1. Deploy infrastructure resources in the development environment (one stack).
     ```bash
@@ -91,6 +92,7 @@ If you'd like to get started quickly transforming some sample raw insurance data
 
 ## Try out the ETL Process
 
+{:style="counter-reset:none"}
 1. Populate the DynamoDB lookup table with sample lookup data.
     ```bash
     resources/load_dynamodb_lookup_table.py SyntheticGeneralData dev-insurancelake-etl-value-lookup resources/syntheticgeneral_lookup_data.json

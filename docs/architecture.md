@@ -20,13 +20,13 @@ This section explains the overall InsuranceLake architecture and the components 
 ## Collect, Cleanse, Consume
 
 As shown in the figure below, we use S3 for storage, specifically three different S3 buckets:
-1. Collect bucket to store raw data in its original format.
-1. Cleanse/Curate bucket to store the data that meets the quality and consistency requirements for the data source.
-1. Consume bucket for data that is used by analysts and data consumers (for example, Amazon Quicksight, Amazon Sagemaker).
+* Collect bucket to store raw data in its original format.
+* Cleanse/Curate bucket to store the data that meets the quality and consistency requirements for the data source.
+* Consume bucket for data that is used by analysts and data consumers (for example, Amazon Quicksight, Amazon Sagemaker).
 
 ![Conceptual Data Lake](Aws-cdk-insurancelake-data_lake.png)
 
-InsuranceLake is designed to support a number of source systems with different file formats and data partitions. To demonstrate, we have provided a CSV parser and sample data files for a source system with two data tables, which are uploaded to the Collect bucket.
+InsuranceLake is designed to support a number of source systems with different file formats and data partitions. To demonstrate its use, we have provided several tabular and nested data parsers and sample source system data files, which you can upload to the Collect bucket.
 
 We use Lambda and Step Functions for orchestration and scheduling of ETL workloads. We then use AWS Glue with PySpark for ETL and data cataloging, DynamoDB for transformation metadata, and Athena for interactive queries and analysis. We use various AWS services for logging, monitoring, security, authentication, authorization, notification, build, and deployment.
 
@@ -40,16 +40,17 @@ The figure below represents the infrastructure resources we provision for the da
 
 ![InsuranceLake Infrastructure Architecture](Aws-cdk-insurancelake-infra.png)
 
-1. S3 buckets for:
-    1. Collected (raw) data
-    1. Cleansed and Curated data
-    1. Consume-ready (prepared) data
-1. Optional Amazon Virtual Private Cloud (Amazon VPC)
-    1. Subnets
-    1. Security groups
-    1. Route table(s)
-    1. Amazon VPC endpoints
-1. Supporting services, such as AWS Key Management Service (KMS)
+* S3 buckets for:
+    * Collected (raw) data
+    * Cleansed and Curated data
+    * Consume-ready (prepared) data
+    * Server access logging
+* Optional Amazon Virtual Private Cloud (Amazon VPC)
+    * Subnets
+    * Security groups
+    * Route table(s)
+    * Amazon VPC endpoints
+* Supporting services, such as AWS Key Management Service (KMS)
 
 The [InsuranceLake infrastructure codebase](https://github.com/aws-solutions-library-samples/aws-insurancelake-infrastructure) is available on GitHub.
 

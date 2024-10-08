@@ -24,16 +24,16 @@ The InsuranceLake ETL provides capabilities to detect, control, and configure sc
 * [Schema detection and control using Data Catalog integration and configuration settings](#schema-change-setting)
 * [Strict and non-strict schema mapping functionality](./schema_mapping.md#dropping-columns)
 * [Data quality checks for column existence](./data_quality.md#configuration)
-    * [ColumnExists](https://docs.aws.amazon.com/glue/latest/dg/dqdl.html#dqdl-rule-types-ColumnExists)
-    * [isComplete](https://docs.aws.amazon.com/glue/latest/dg/dqdl.html#dqdl-rule-types-IsComplete)
-    * [Completeness](https://docs.aws.amazon.com/glue/latest/dg/dqdl.html#dqdl-rule-types-Completeness)
+    * [ColumnExists](https://docs.aws.amazon.com/glue/latest/dg/dqdl-rule-types-ColumnExists.html)
+    * [IsComplete](https://docs.aws.amazon.com/glue/latest/dg/dqdl-rule-types-IsComplete.html)
+    * [Completeness](https://docs.aws.amazon.com/glue/latest/dg/dqdl-rule-types-Completeness.html)
 
 Behavior and capabilities for allowing schema evolution vary depending on the data lake layer (Cleanse and Consume) and the table storage format.
 
 
 ## Schema Change Setting
 
-The `allow_schema_change` setting for your workflow is defined in the `input-spec` section of the workflow's JSON configuration file. Details on this configuration file can be found in the [File Formats and Input Specification Documentation](./file_formats.md#input-specification).
+The `allow_schema_change` setting for your workflow is defined in the `input-spec` section of the workflow's JSON configuration file. Details on this configuration file can be found in the [File Formats and Input Specification Documentation](file_formats.md#input-specification).
 
 |Setting	|Behavior
 |---	|---

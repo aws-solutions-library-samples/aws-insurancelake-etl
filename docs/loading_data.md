@@ -26,14 +26,13 @@ We recommend starting your data preparation process by loading your data right a
 You can land your data in the Collect S3 bucket through:
 
 - The [S3 Console](http://console.aws.amazon.com/s3), which can be used to create folders and drag and drop files.
-- AWS Software Development Kits (SDKs) or REpresentational State Transfer (REST) Application Programming Interfaces (APIs), which can be used to embed file copying into workflows and applications.
-- AWS CLI, which can copy objects from local machines or through scripts with a full path.
-- AWS Transfer Family, which can receive data through an SFTP endpoint.
-- AWS Database Migration Service (DMS), which can [use S3 as a target](https://docs.aws.amazon.com/dms/latest/userguide/CHAP_Target.S3.html).
+- AWS SDKs or REpresentational State Transfer (REST) Application Programming Interfaces (APIs), which can be used to embed file copying into workflows and applications.
+- [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-welcome.html), which can copy objects from local machines or through scripts with a full path.
+- [AWS Transfer Family](https://docs.aws.amazon.com/transfer/latest/userguide/what-is-aws-transfer-family.html), which can receive data through an SFTP endpoint.
+- [AWS Database Migration Service (DMS)](https://docs.aws.amazon.com/dms/latest/userguide/Welcome.html), which can [use S3 as a target](https://docs.aws.amazon.com/dms/latest/userguide/CHAP_Target.S3.html).
+- [Amazon AppFlow](https://docs.aws.amazon.com/appflow/latest/userguide/what-is-appflow.html), which can be used to [transfer data from a SaaS source (for example, SalesForce) to Amazon S3](https://docs.aws.amazon.com/appflow/latest/userguide/flow-tutorial-salesforce-s3.html).
 
 For walkthroughs, examples, and details refer to the AWS Documentation [Uploading objects to S3](https://docs.aws.amazon.com/AmazonS3/latest/userguide/upload-objects.html).
-
-For information on AWS Transfer Family, refer to the AWS Documentation [What is AWS Transfer Family?](https://docs.aws.amazon.com/transfer/latest/userguide/what-is-aws-transfer-family.html)
 
 {: .important }
 When you load data with no configuration, the ETL will automatically clean all column names so that they can be saved successfully in Parquet format.
@@ -72,7 +71,7 @@ This matching is **case sensitive** (Data Catalog database and table names will 
 
 ## Configuration Recommendations
 
-When the ETL loads source data with no schema mapping or transformation configuration files, it will create *recommended* configurations. These recommendations are saved to the AWS Glue job Temp S3 Bucket, which follows the naming convention `<environment>-insurancelake-<account>-<region>-glue-temp`, in the folder `/etl/collect_to_cleanse` which follows the naming convention `<database>-<table>` (extension `csv` for schema mapping and `json` for transformations). Simply copy the files to your development environment, edit them as needed, and upload them to the ETL Scripts S3 bucket in the [appropriate location](#naming-convention-and-location-of-configuration-files).
+When the ETL loads source data with no schema mapping or transformation configuration files, it will create *recommended* configurations. These recommendations are saved to the AWS Glue job Temp S3 bucket, which follows the naming convention `<environment>-insurancelake-<account>-<region>-glue-temp`, in the folder `/etl/collect_to_cleanse`, in a file which follows the naming convention `<database>-<table>` (extension `csv` for schema mapping and `json` for transformations). Simply copy the files to your development environment, edit them as needed, and upload them to the ETL Scripts S3 bucket in the [appropriate location](#naming-convention-and-location-of-configuration-files).
 
 Using these recommendations helps accelerate your creation of configuration files with a syntactically correct template and a complete list of fields in the schema.
 

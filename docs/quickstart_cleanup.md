@@ -7,7 +7,7 @@ last_modified_date: 2024-09-26
 # Clean-up Instructions
 {: .no_toc }
 
-This page explains how to clean up resources and data from an InsuranceLake deployment.
+This page explains how to clean up resources and data from an InsuranceLake deployment. These instructions apply to all deployment methods (Quickstart, Quickstart with CI/CD, and Full Deployment).
 
 ## Contents
 {: .no_toc }
@@ -29,6 +29,7 @@ This page explains how to clean up resources and data from an InsuranceLake depl
 
 ## Clean-up ETL Stacks
 
+{:style="counter-reset:none"}
 1. Delete stacks using the command `cdk destroy --all`. When you see the following text, enter **y**, and press enter/return.
 
    ```bash
@@ -64,6 +65,7 @@ This page explains how to clean up resources and data from an InsuranceLake depl
 
 ## Clean-up Infrastructure Stacks
 
+{:style="counter-reset:none"}
 1. Delete stacks using the command `cdk destroy --all`.
 
 1. When you see the following text, enter **y**, and press enter:

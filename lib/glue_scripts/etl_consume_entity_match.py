@@ -44,6 +44,7 @@ for arg in sys.argv:
         expected_arguments.append('data_lineage_table')
 
 
+
 def fill_global_id(df: DataFrame, global_id: str, args, lineage) -> DataFrame:
     """ Assign all entities a unique ID that do not have one and ensure Global ID field is the
     first field

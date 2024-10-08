@@ -13,12 +13,14 @@ from pyspark.sql.types import DecimalType, DateType, ArrayType, IntegerType
 def add_columns(*source_columns):
     """Add values from an arbitrary number of Spark columns together and return the result (as a column)
     Uses only Spark native functions for performance (contributed by Gonzalo Herreros <gonher@amazon.com>)
+    This is not a Spark UDF
     """
     return reduce(add, [ coalesce(col(c), lit(0)) for c in source_columns ])
 
 
 def policy_month_list(policy_effective_date: datetime.date, policy_expiration_date: datetime.date):
     """Return list of months from the first month of the policy to the last
+    This is not a Spark UDF, but can be called by a Spark UDF
     """
     first_day_of_month = datetime.date(policy_effective_date.year, policy_effective_date.month, 1)
     return list(rrule.rrule(freq=rrule.MONTHLY, dtstart=first_day_of_month, until=policy_expiration_date))

@@ -58,14 +58,14 @@ _We recommend creating a [Budget](https://docs.aws.amazon.com/cost-management/l
 
 ### Sample Cost Table
 
-The following table provides a sample cost breakdown for deploying this Guidance with the default parameters in the US East (Ohio) Region for one month with pricing as of _9 July 2024_.
+The following table provides a sample cost breakdown for deploying this Guidance with the default parameters in the US East (Ohio) Region for one month with pricing as of _2 October 2024_.
 
 |AWS service    |Dimensions |Cost [USD]
 |---    |---    |---
 |AWS Glue   |per DPU-Hour for each Apache Spark or Spark Streaming job, billed per second with a 1-minute minimum   |$0.44
 |Amazon S3  |per GB of storage used, Frequent Access Tier, first 50 TB per month<br>PUT, COPY, POST, LIST requests (per 1,000 requests)<br>GET, SELECT, and all other requests (per 1,000 requests)   |$0.023<br>$0.005<br>$0.0004
 |Amazon Athena  |per TB of data scanned   |$5.00
-|Amazon DynamoDB    |per million Write Request Units (WRU)<br>per million Read Request Units (RRU)  |$1.25<br>$0.25
+|Amazon DynamoDB    |per GB-month of storage, over 25 GB<br>per million Write Request Units (WRU)<br>per million Read Request Units (RRU)  |$0.25<br>$1.25<br>$0.25
 
 ## Quickstart
 
@@ -76,7 +76,7 @@ If you'd like to get started quickly transforming some sample raw insurance data
 1. Open the AWS Console in the `us-east-2 (Ohio)` Region.
     - NOTE: InsuranceLake uses `us-east-2` by default. To change the Region, refer to the [Quickstart with CI/CD](https://aws-solutions-library-samples.github.io/aws-insurancelake-etl/quickstart_cicd/).
 1. Select `CloudShell` at the bottom of the page and wait for a few seconds until it is available for use.
-1. Ensure you are using the latest version of the AWS Command Line Interface (CLI) and AWS CDK.
+1. Ensure you are using the latest version of the AWS Software Development Kit (SDK) for Node.js and AWS CDK.
     ```
     sudo npm install -g aws-lib aws-cdk
     ```
@@ -215,6 +215,8 @@ If you'd like to get started quickly transforming some sample raw insurance data
 
 Refer to the [Quickstart Cleanup](https://aws-solutions-library-samples.github.io/aws-insurancelake-etl/quickstart_cleanup/) instructions.
 
+---
+
 ## Architecture
 
 This section focuses on the overall InsuranceLake architecture and the components of the ETL.
@@ -238,23 +240,23 @@ We use Lambda and Step Functions for orchestration and scheduling of ETL workloa
 
 The figure below represents the ETL resources we provision for the data lake.
 
-1. A file server uploads files to the Collect bucket of InsuranceLake; file server is a data producer or source for the data lake.
-2. S3 triggers an ObjectCreated event notification to Lambda function.
-3. The Lambda function inserts job information in a DynamoDB table.
-4. The Lambda function starts an execution of Step Functions State machine.
-5. This step runs the first AWS Glue job: initiates data processing from Collect to Cleanse.
-6. An AWS Glue job will process the data from Collect to Cleanse; source data is assumed to be in CSV format and will be converted to Parquet format.
-7. DynamoDB stores original values from PII tokenization, and provides lookup data to the AWS Glue job.
-8. After creating Apache Parquet data, the job updates the AWS Glue Data Catalog table.
-9. In this step the second AWS Glue job initiates data processing from Cleanse to Consume.
-10. The AWS Glue Cleanse to Consume job fetches data transformation rules from AWS Glue etl-scripts bucket, and runs transformations.
-11. The AWS Glue job stores prepared data in Apache Parquet format in the Consume bucket.
-12. The AWS Glue job updates the AWS Glue Data Catalog table.
-13. The AWS Glue job updates the DynamoDB table with job status.
-14. Step Functions sends an SNS notification.
-15. Data engineers or analysts analyze data using Athena.
-
 ![InsuranceLake ETL Architecture](https://raw.githubusercontent.com/aws-solutions-library-samples/aws-insurancelake-etl/main/docs/Aws-cdk-insurancelake-etl.png)
+
+1. A file server uploads files to the Collect bucket of InsuranceLake; file server is a data producer or source for the data lake.
+1. S3 triggers an ObjectCreated event notification to Lambda function.
+1. The Lambda function inserts job information in an DynamoDB table.
+1. The Lambda function starts an execution of Step Functions State machine.
+1. This step runs the first AWS Glue job: initiates data processing from Collect to Cleanse.
+1. An AWS Glue job will process the data from Collect to Cleanse; source data is assumed to be in CSV format and will be converted to Parquet format.
+1. DynamoDB stores original values from PII tokenization, and provides lookup data to the AWS Glue job.
+1. After creating Apache Parquet data, the job updates the AWS Glue Data Catalog table.
+1. In this step the second AWS Glue job initiates data processing from Cleanse to Consume.
+1. The AWS Glue Cleanse to Consume job fetches data transformation rules from AWS Glue etl-scripts bucket, and runs transformations.
+1. The AWS Glue job stores prepared data in Apache Parquet format in the Consume bucket.
+1. The AWS Glue job updates the AWS Glue Data Catalog table.
+1. The AWS Glue job updates the DynamoDB table with job status.
+1. Step Functions sends an SNS notification.
+1. Data engineers or analysts analyze data using Athena.
 
 ---
 
@@ -319,15 +321,15 @@ bandit -r --ini .bandit
 
 The following people are involved in the design, architecture, development, testing, and review of this solution:
 
-1. **Cory Visi**, Senior Solutions Architect, Amazon Web Services
-1. **Ratnadeep Bardhan Roy**, Senior Solutions Architect, Amazon Web Services
-1. **Jose Guay**, Enterprise Support, Amazon Web Services
-1. **Isaiah Grant**, Cloud Consultant, 2nd Watch, Inc.
-1. **Muhammad Zahid Ali**, Data Architect, Amazon Web Services
-1. **Ravi Itha**, Senior Data Architect, Amazon Web Services
-1. **Justiono Putro**, Cloud Infrastructure Architect, Amazon Web Services
-1. **Mike Apted**, Principal Solutions Architect, Amazon Web Services
-1. **Nikunj Vaidya**, Senior DevOps Specialist, Amazon Web Services
+* **Cory Visi**, Senior Solutions Architect, Amazon Web Services
+* **Ratnadeep Bardhan Roy**, Senior Solutions Architect, Amazon Web Services
+* **Jose Guay**, Enterprise Support, Amazon Web Services
+* **Isaiah Grant**, Cloud Consultant, 2nd Watch, Inc.
+* **Muhammad Zahid Ali**, Data Architect, Amazon Web Services
+* **Ravi Itha**, Senior Data Architect, Amazon Web Services
+* **Justiono Putro**, Cloud Infrastructure Architect, Amazon Web Services
+* **Mike Apted**, Principal Solutions Architect, Amazon Web Services
+* **Nikunj Vaidya**, Senior DevOps Specialist, Amazon Web Services
 
 ## License Summary
 
