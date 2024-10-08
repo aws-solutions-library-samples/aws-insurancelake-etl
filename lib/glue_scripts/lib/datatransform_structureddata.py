@@ -86,7 +86,7 @@ def transform_xmlstructured(df: DataFrame, xml_fields: list, args: dict, lineage
     glueContext = GlueContext(sc)
     spark = glueContext.spark_session
 
-    # Use Databricks Spark-XML which currently has no pySpark API
+    # Use Databricks Spark-XML which currently has no PySpark API
     # https://github.com/databricks/spark-xml?tab=readme-ov-file#pyspark-notes
     empty_scala_options = spark._jvm.PythonUtils.toScalaMap({})
     java_xml_module = getattr(getattr(spark._jvm.com.databricks.spark.xml, 'package$'), 'MODULE$')
