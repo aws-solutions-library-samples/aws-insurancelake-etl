@@ -114,7 +114,7 @@ def main():
         mapping_data = [ field_map for field_map in reader ]
     except Exception as e:
         message = e.java_exception.getMessage() if hasattr(e, 'java_exception') else str(e)
-        print(f'No transformation mapping file exists or error reading: {message}, skipping')
+        print(f'No schema mapping file exists or error reading: {message}, skipping')
         mapping_data = {}
 
     # Read Data Quality rules

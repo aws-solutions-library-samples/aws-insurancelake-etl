@@ -76,7 +76,7 @@ If you'd like to get started quickly transforming some sample raw insurance data
 1. Open the AWS Console in the `us-east-2 (Ohio)` Region.
     - NOTE: InsuranceLake uses `us-east-2` by default. To change the Region, refer to the [Quickstart with CI/CD](https://aws-solutions-library-samples.github.io/aws-insurancelake-etl/quickstart_cicd/).
 1. Select `CloudShell` at the bottom of the page and wait for a few seconds until it is available for use.
-1. Ensure you are using the latest version of the AWS Software Development Kit (SDK) for Node.js and AWS CDK.
+1. Ensure you are using the latest version of the AWS SDK for Node.js and AWS CDK.
     ```
     sudo npm install -g aws-lib aws-cdk
     ```

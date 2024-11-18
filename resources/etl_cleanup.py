@@ -69,7 +69,6 @@ cf = boto3.client('cloudformation')
 response = cf.list_exports()
 while True:
 	for export in response['Exports']:
-		print(f"{export['Name']}: {export['Value']}")
 		if export['Name'] in bucket_exports:
 			buckets.append(export['Value'])
 		if re.search(r'ExportsOutputRef\w+Table', export['Name']):

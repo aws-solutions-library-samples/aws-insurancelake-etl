@@ -144,3 +144,12 @@ def test_transform_jsonstructured_from_string():
     df = transform_jsonstructured(df, [ 'jsondata' ], mock_args, lineage, spark.sparkContext)
     assert df.filter('`jsondata` is null').count() == 0
     assert df.filter('`jsondata`.`myjson`.`key1` is not null').count() == 1
+
+def test_transform_flatten_flattens_struct():
+    lineage = mock_lineage([])
+    df = spark.createDataFrame(mock_nested_table_data, schema=mock_nested_table_schema)
+    df = transform_flatten(df, [ { 'field': 'name' } ], mock_args, lineage)
+    assert 'name' in df.columns
+    assert 'firstname' in df.columns
+    assert 'middlename' in df.columns
+    assert 'lastname' in df.columns

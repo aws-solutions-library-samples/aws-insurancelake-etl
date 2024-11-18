@@ -5,7 +5,7 @@ from pyspark.sql.types import StringType
 from pyspark.sql.functions import lit, regexp_extract, regexp_replace, udf
 import re
 
-def transform_filename(df: DataFrame, filename_patterns: list, args: dict, lineage, *extra):
+def transform_filename(df: DataFrame, filename_patterns: list, args: dict, lineage, *extra) -> DataFrame:
     """Add column in DataFrame based on regexp group match on the filename argument to the Glue job
 
     Parameters
@@ -46,7 +46,7 @@ def transform_filename(df: DataFrame, filename_patterns: list, args: dict, linea
     return df.withColumns(cols_map)
 
 
-def transform_columnfromcolumn(df: DataFrame, cfc_spec: list, args: dict, lineage, *extra):
+def transform_columnfromcolumn(df: DataFrame, cfc_spec: list, args: dict, lineage, *extra) -> DataFrame:
     """Add or replace column in DataFrame based on regexp group match pattern
 
     Parameters
@@ -69,7 +69,7 @@ def transform_columnfromcolumn(df: DataFrame, cfc_spec: list, args: dict, lineag
     return df.withColumns(cols_map)
 
 
-def transform_columnreplace(df: DataFrame, replace_spec: list, args: dict, lineage, *extra):
+def transform_columnreplace(df: DataFrame, replace_spec: list, args: dict, lineage, *extra) -> DataFrame:
     """Add or replace column in DataFrame with regex substitution on an existing column
 
     Parameters
@@ -93,7 +93,7 @@ def transform_columnreplace(df: DataFrame, replace_spec: list, args: dict, linea
     return df.withColumns(cols_map)
 
 
-def transform_literal(df: DataFrame, spec: dict, args: dict, lineage, *extra):
+def transform_literal(df: DataFrame, spec: dict, args: dict, lineage, *extra) -> DataFrame:
     """Add column to DataFrame with static/literal value supplied in specification
 
     Parameters
@@ -118,7 +118,7 @@ def format_column(formatstring, *args):
         checked_args = [ '' if value is None else value for value in args ]
         return formatstring.format(*checked_args).strip()
 
-def transform_combinecolumns(df: DataFrame, combine_spec: list, args: dict, lineage, *extra):
+def transform_combinecolumns(df: DataFrame, combine_spec: list, args: dict, lineage, *extra) -> DataFrame:
     """Add column to DataFrame using format string and source columns
 
     Parameters

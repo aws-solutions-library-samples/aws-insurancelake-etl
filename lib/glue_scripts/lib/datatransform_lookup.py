@@ -112,7 +112,7 @@ def transform_lookup(df_for_lookup: DataFrame, lookup_spec: list, args: dict, li
             # Fill default literal value for unmatched
             df_for_lookup = df_for_lookup.fillna(spec['nomatch'], spec['field'])
 
-        lineage.update_lineage(df_for_lookup, args['source_key'], 'lookup', transform=spec)
+        lineage.update_lineage(df_for_lookup, args['source_key'], 'lookup', transform=[ spec ])
 
     return df_for_lookup
 
@@ -216,6 +216,6 @@ def transform_multilookup(df_for_lookup: DataFrame, lookup_spec: list, args: dic
             fill_map = { column_name: spec['nomatch'] for column_name in spec['return_attributes'] }
             df_for_lookup = df_for_lookup.fillna(fill_map)
 
-        lineage.update_lineage(df_for_lookup, args['source_key'], 'multilookup', transform=spec)
+        lineage.update_lineage(df_for_lookup, args['source_key'], 'multilookup', transform=[ spec ])
 
     return df_for_lookup

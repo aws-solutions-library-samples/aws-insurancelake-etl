@@ -354,6 +354,16 @@
 
 		"json": [
 			"jsonfield"
+		],
+
+		"flatten": [
+			{
+				"field": "policy"
+			},
+			{
+				"field": "general_policy_details",
+				"keep_field": false
+			}
 		]
 
 	}

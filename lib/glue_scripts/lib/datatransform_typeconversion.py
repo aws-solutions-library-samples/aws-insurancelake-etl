@@ -23,7 +23,7 @@ DataFrame
     pySpark DataFrame with transform applied
 """
 
-def transform_date(df: DataFrame, date_formats: list, args: dict, lineage, *extra):
+def transform_date(df: DataFrame, date_formats: list, args: dict, lineage, *extra) -> DataFrame:
     """Convert specified date fields to ISO format based on known input format
 
     Parameters
@@ -45,7 +45,7 @@ def transform_date(df: DataFrame, date_formats: list, args: dict, lineage, *extr
     return df.withColumns(cols_map)
 
 
-def transform_timestamp(df: DataFrame, timestamp_formats: list, args: dict, lineage, *extra):
+def transform_timestamp(df: DataFrame, timestamp_formats: list, args: dict, lineage, *extra) -> DataFrame:
     """Convert specified date/time fields to ISO format based on known input format
 
     Parameters
@@ -68,7 +68,7 @@ def transform_timestamp(df: DataFrame, timestamp_formats: list, args: dict, line
     return df.withColumns(cols_map)
 
 
-def transform_decimal(df: DataFrame, decimal_formats: list, args: dict, lineage, *extra):
+def transform_decimal(df: DataFrame, decimal_formats: list, args: dict, lineage, *extra) -> DataFrame:
     print('WARNING: decimal transform is deprecated and will be removed in the future; '
           'replace with changetype transform')
     return transform_changetype(
@@ -79,7 +79,7 @@ def transform_decimal(df: DataFrame, decimal_formats: list, args: dict, lineage,
     )
 
 
-def transform_changetype(df: DataFrame, field_types: dict, args: dict, lineage, *extra):
+def transform_changetype(df: DataFrame, field_types: dict, args: dict, lineage, *extra) -> DataFrame:
     """Cast columns to specified data type
 
     Parameters
@@ -99,7 +99,7 @@ def transform_changetype(df: DataFrame, field_types: dict, args: dict, lineage, 
     return df.withColumns(cols_map)
 
 
-def transform_implieddecimal(df: DataFrame, decimal_formats: list, args: dict, lineage, *extra):
+def transform_implieddecimal(df: DataFrame, decimal_formats: list, args: dict, lineage, *extra) -> DataFrame:
     """Convert specified numeric field (usually Float or Double) fields to Decimal (fixed
     precision) type with implied decimal point support (i.e. last 2 digits are to the right of
     decimal, unless specified otherwise)
@@ -134,7 +134,7 @@ def transform_implieddecimal(df: DataFrame, decimal_formats: list, args: dict, l
     return df.withColumns(cols_map)
 
 
-def transform_currency(df: DataFrame, currency_formats: list, args: dict, lineage, *extra):
+def transform_currency(df: DataFrame, currency_formats: list, args: dict, lineage, *extra) -> DataFrame:
     """Convert specified numeric field with currnecy formatting to Decimal (fixed precision)
 
     Parameters
@@ -171,7 +171,7 @@ def transform_currency(df: DataFrame, currency_formats: list, args: dict, lineag
     return df.withColumns(cols_map)
 
 
-def transform_titlecase(df: DataFrame, titlecase_fields: list, args: dict, lineage, *extra):
+def transform_titlecase(df: DataFrame, titlecase_fields: list, args: dict, lineage, *extra) -> DataFrame:
     """Convert specified string field to title case
 
     Parameters

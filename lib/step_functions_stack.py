@@ -473,7 +473,7 @@ class StepFunctionsStack(cdk.Stack):
             f'{self.target_environment}{self.logical_id_prefix}{logical_id_suffix}',
             function_name=lambda_function_name,
             description=function_description,
-            runtime=_lambda.Runtime.PYTHON_3_12,
+            runtime=_lambda.Runtime.PYTHON_3_13,
             handler='lambda_handler.lambda_handler',
             code=_lambda.Code.from_asset(f'{os.path.dirname(__file__)}/{lambda_code_relative_path}'),
             architecture=_lambda.Architecture.ARM_64,

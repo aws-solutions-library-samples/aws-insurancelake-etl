@@ -2,7 +2,7 @@
 title: Developer Guide
 parent: Developer Documentation
 nav_order: 1
-last_modified_date: 2024-09-26
+last_modified_date: 2024-10-15
 ---
 # InsuranceLake Developer Guide
 {: .no_toc }
@@ -302,12 +302,14 @@ The following are additional code considerations:
 
 * When there is functionality needed from Pandas that is not available in Spark, there are three methods to consider:
    - [Pandas-on-Spark DataFrame](https://spark.apache.org/docs/latest/api/python/user_guide/pandas_on_spark/pandas_pyspark.html#pyspark)
+
       Using the `DataFrame.pandas_api()` is performant because the data and operations are distributed. Avoid operations like `DataFrame.to_numpy()` that require the data to be collected on the driver (non-distributed). The Pandas API on Spark does not target 100% compatibility, so you may experience errors running your workflow.
 
-   - [Pandas UDFs](https://spark.apache.org/docs/3.1.1/api/python/reference/api/pyspark.sql.functions.pandas_udf.html)
+   - [Pandas UDFs](https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.functions.pandas_udf.html)
       Pandas user-defined functions (UDFs) are executed by Spark using Apache Arrow to transfer data and Pandas to work with the data. When used in combination with `withColumn` or `select`, a Pandas UDF can perform Pandas library vectorized operations in a distributed manner on individual columns supplied as arguments.
 
    - [PyArrow for Conversions](https://spark.apache.org/docs/latest/api/python/user_guide/sql/arrow_pandas.html)
+
       If full conversion to a Pandas DataFrame is needed, ensure your AWS Glue job enables Apache Arrow support for data conversion as follows:
 
       ```python

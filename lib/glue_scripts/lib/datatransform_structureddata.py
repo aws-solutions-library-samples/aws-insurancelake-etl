@@ -7,7 +7,7 @@ from pyspark.sql.types import StructType
 from pyspark.sql.functions import expr, col, from_json
 from awsglue.context import GlueContext
 
-def transform_jsonexpandarray(df: DataFrame, jsonexpandarray_spec: list, args: dict, lineage, *extra):
+def transform_jsonexpandarray(df: DataFrame, jsonexpandarray_spec: list, args: dict, lineage, *extra) -> DataFrame:
     """Function to expand array type columns into multiple rows
 
     Parameters
@@ -31,11 +31,11 @@ def transform_jsonexpandarray(df: DataFrame, jsonexpandarray_spec: list, args: d
         # Index is 0-based by default, so add 1 to normalize it
         df = df.withColumn(spec['index_field'], expr(f"{spec['index_field']} + 1"))
 
-        lineage.update_lineage(df, args['source_key'], 'jsonexpandarray', transform=spec)
+        lineage.update_lineage(df, args['source_key'], 'jsonexpandarray', transform=[ spec ])
 
     return df
 
-def transform_jsonexpandmap(df: DataFrame, jsonexpand_spec: list, args: dict, lineage, *extra):
+def transform_jsonexpandmap(df: DataFrame, jsonexpand_spec: list, args: dict, lineage, *extra) -> DataFrame:
     """Function to expand struct or map type columns into multiple rows
 
     Parameters
@@ -71,11 +71,36 @@ def transform_jsonexpandmap(df: DataFrame, jsonexpand_spec: list, args: dict, li
         # Index is 0-based by default, so add 1 to normalize it
         df = df.withColumn(spec['index_field'], expr(f"{spec['index_field']} + 1"))
 
-        lineage.update_lineage(df, args['source_key'], 'jsonexpandmap', transform=spec)
+        lineage.update_lineage(df, args['source_key'], 'jsonexpandmap', transform=[ spec ])
 
     return df
 
-def transform_xmlstructured(df: DataFrame, xml_fields: list, args: dict, lineage, sc: SparkContext, *extra):
+def transform_flatten(df: DataFrame, flatten_spec: list, args: dict, lineage, *extra) -> DataFrame:
+    """Function to flatten a struct field by one level
+    No conversion to a map or exploding of rows is done
+
+    Parameters
+    ----------
+    flatten_spec
+        List of fields to flatten:
+            field: "FieldName" of type Struct to flatten
+            keep_field: (optional) true/false whether to keep the specified field, default true
+    """
+    for spec in flatten_spec:
+        keep_source = spec.get('keep_field', True)
+
+        # List of fields in schema, dropping source field if we don't want to keep it
+        select_list = [ field_name for field_name in df.columns
+            if keep_source or field_name != spec['field'] ]
+
+        df = df.selectExpr(*select_list, f"{spec['field']}.*")
+
+        # TODO: Create lineage similar to custommapping (one row per field)
+        lineage.update_lineage(df, args['source_key'], 'flatten', transform=[ spec ])
+
+    return df
+
+def transform_xmlstructured(df: DataFrame, xml_fields: list, args: dict, lineage, sc: SparkContext, *extra) -> DataFrame:
     """Convert string column containing XML data to structured column
 
     Parameters
@@ -106,7 +131,7 @@ def transform_xmlstructured(df: DataFrame, xml_fields: list, args: dict, lineage
     lineage.update_lineage(df, args['source_key'], 'xmlstructured', transform=xml_fields)
     return df.withColumns(cols_map)
 
-def transform_jsonstructured(df: DataFrame, json_fields: list, args: dict, lineage, sc: SparkContext, *extra):
+def transform_jsonstructured(df: DataFrame, json_fields: list, args: dict, lineage, sc: SparkContext, *extra) -> DataFrame:
     """Convert string column containing JSON data to structured column
 
     Parameters

@@ -2,7 +2,7 @@
 title: Transform Reference
 parent: User Documentation
 nav_order: 2
-last_modified_date: 2024-09-26
+last_modified_date: 2024-11-18
 ---
 # InsuranceLake Collect-to-Cleanse Transform Reference
 {: .no_toc }
@@ -54,6 +54,7 @@ This section describes each of the user-configured data transforms provided with
 |---	|---
 |[jsonexpandarray](#jsonexpandarray)    |Expand array type columns from JSON files into multiple rows
 |[jsonexpandmap](#jsonexpandmap)    |Expand struct or map type columns from JSON files into multiple rows
+|[flatten](#flatten)    |Flattens one level of a column containing nested data
 |[jsonstructured](#jsonstructured)    |Convert string column with JSON data to structured column
 |[xmlstructured](#xmlstructured)    |Convert string column with XML data to structured column
 
@@ -662,9 +663,9 @@ Calculate the number of months between policy start and end dates.
 {: .no_toc }
 Convert an ArrayType column (typically created from loading JSON nested data) to one row per array element with index.
 
-|Parameter    |Type    |Description    |
-|---	|---	|---	|
-|field  |required   |Name of destination field to hold expanded array elements, and source ArrayType field if source is not specified separately    |
+|Parameter    |Type    |Description
+|---	|---	|---
+|field  |required   |Name of destination field to hold expanded array elements, and source ArrayType field if source is not specified separately
 |source |optional   |Source ArrayType field; defaults to destination field
 |index_field    |required   |Name of field to hold the expanded array element index
 
@@ -686,9 +687,9 @@ Convert an ArrayType column (typically created from loading JSON nested data) to
 {: .no_toc }
 Convert a MapType or StructType column (typically created from loading JSON nested data) to one row per map key, value pair with index column.
 
-|Parameter    |Type    |Description    |
-|---	|---	|---	|
-|field  |required   |Name of destination field to hold expanded map values, and source MapType or StructType field if source is not specified separately    |
+|Parameter    |Type    |Description
+|---	|---	|---
+|field  |required   |Name of destination field to hold expanded map values, and source MapType or StructType field if source is not specified separately
 |source |optional   |Source MapType or StructType field; defaults to destination field
 |index_field    |required   |Name of field to hold the expanded map key, value pair index
 |key_field  |required   |Name of field to hold the expanded map key name
@@ -704,6 +705,24 @@ Convert a MapType or StructType column (typically created from loading JSON nest
         "index_field": "activity_index",
         "key_field": "activity_id"
 
+    }
+]
+```
+
+### flatten
+{: .no_toc }
+Shifts left all fields in a column containing structured data. Effectively flattens one level of nested data. No conversion to a map or exploding of rows is done.
+
+|Parameter    |Type    |Description
+|---	|---	|---
+|field  |required   |Name of field of type Struct to flatten
+|keep_field |optional   |Controls whether to keep the specified field or drop it; defaults to true
+
+```json
+"flatten": [
+    {
+        "field": "general_policy_details",
+        "keep_field": false
     }
 ]
 ```

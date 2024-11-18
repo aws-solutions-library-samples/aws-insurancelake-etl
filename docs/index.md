@@ -2,7 +2,7 @@
 title: Overview
 nav_order: 1
 has_toc: false
-last_modified_date: 2024-09-26
+last_modified_date: 2024-10-21
 ---
 # InsuranceLake
 {:.no_toc}
@@ -23,9 +23,10 @@ The InsuranceLake solution is comprised of two codebases: [Infrastructure](https
 
 Specifically, this solution helps you to:
 
-* Deploy a "3 Cs" (Collect, Cleanse, Consume) architecture InsuranceLake.
+* Deploy a "4 Cs" (Collect, Cleanse, Consume, Comply) architecture data lake.
 * Deploy ETL jobs needed to make common insurance industry data souces available in a data lake.
 * Use PySpark Glue jobs and supporting resoures to perform data transforms in a modular approach.
+* Ingest new data quickly with automatically supported file formats and low code ETL configuration.
 * Build and replicate the application in multiple environments quickly.
 * Deploy ETL jobs from a central deployment account to multiple AWS environments such as Dev, Test, and Prod.
 * Leverage the benefit of self-mutating feature of CDK Pipelines; specifically, the pipeline itself is infrastructure as code and can be changed as part of the deployment.

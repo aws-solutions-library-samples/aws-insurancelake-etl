@@ -30,7 +30,7 @@ def transform_merge(df: DataFrame, merge_spec: list, args: dict, lineage, *extra
             column_list.append(lit(spec['default']))
 
         cols_map.update({ spec['field']: coalesce(*column_list) })
-        lineage.update_lineage(df, args['source_key'], 'merge', transform=spec)
+        lineage.update_lineage(df, args['source_key'], 'merge', transform=[ spec ])
 
     return df.withColumns(cols_map)
 
@@ -69,7 +69,7 @@ def transform_filldown(df: DataFrame, fill_spec: list, args: dict, lineage, *ext
                 columns.append(col(field))
 
         df = df.select(columns)
-        lineage.update_lineage(df, args['source_key'], 'filldown', transform=spec)
+        lineage.update_lineage(df, args['source_key'], 'filldown', transform=[ spec ])
 
     return df
 
@@ -93,11 +93,11 @@ def transform_rownumber(df: DataFrame, rank_spec: list, args: dict, lineage, *ex
         df = df.withColumn(spec['field'], row_number(). \
             over(Window.partitionBy(*partition_columns).orderBy(*sort_columns)))
 
-        lineage.update_lineage(df, args['source_key'], 'rownumber', transform=spec)
+        lineage.update_lineage(df, args['source_key'], 'rownumber', transform=[ spec ])
 
     return df
 
-def transform_filterrows(df: DataFrame, filter_spec: list, args: dict, lineage, *extra):
+def transform_filterrows(df: DataFrame, filter_spec: list, args: dict, lineage, *extra) -> DataFrame:
     """Filter out (remove) rows of data that fail the provided filter operation
     NOTE: Use only when certain rows can be systematically discarded; otherwise use data quality quarantine rules
 

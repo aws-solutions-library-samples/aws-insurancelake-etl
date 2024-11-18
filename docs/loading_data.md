@@ -2,7 +2,7 @@
 title: Loading Data
 nav_order: 1
 parent: User Documentation
-last_modified_date: 2024-09-26
+last_modified_date: 2024-10-21
 ---
 # Loading Data with InsuranceLake
 {: .no_toc }
@@ -26,7 +26,7 @@ We recommend starting your data preparation process by loading your data right a
 You can land your data in the Collect S3 bucket through:
 
 - The [S3 Console](http://console.aws.amazon.com/s3), which can be used to create folders and drag and drop files.
-- AWS SDKs or REpresentational State Transfer (REST) Application Programming Interfaces (APIs), which can be used to embed file copying into workflows and applications.
+- AWS SDKs or REST APIs, which can be used to embed file copying into workflows and applications.
 - [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-welcome.html), which can copy objects from local machines or through scripts with a full path.
 - [AWS Transfer Family](https://docs.aws.amazon.com/transfer/latest/userguide/what-is-aws-transfer-family.html), which can receive data through an SFTP endpoint.
 - [AWS Database Migration Service (DMS)](https://docs.aws.amazon.com/dms/latest/userguide/Welcome.html), which can [use S3 as a target](https://docs.aws.amazon.com/dms/latest/userguide/CHAP_Target.S3.html).
@@ -80,6 +80,54 @@ More details are available on how the ETL generates these recommendations:
 * [Behavior When There is No Transformation Specification](transforms.md#behavior-when-there-is-no-transformation-specification)
 
 To get started quickly building a set of data quality rules with recommendations, use [Glue Data Quality Recommendations](data_quality.md#getting-started).
+
+
+## Data Profile
+
+[AWS Glue DataBrew](https://docs.aws.amazon.com/databrew/latest/dg/what-is.html) is a visual data preparation tool that allows business analysts, data scientists, and data engineers to more easily collaborate to get insights from data. Profile jobs in DataBrew run a series of evaluations on a dataset and output the results to Amazon S3. The information that data profiling gathers helps you understand your dataset and decide what kind of data preparation steps you might want to run in your recipe jobs. For more details, refer to the AWS documentation on [creating and working with AWS Glue Databrew profile jobs](https://docs.aws.amazon.com/databrew/latest/dg/jobs.profile.html).
+
+Follow these instructions for quickly creating a data profile for the Data Catalog tables you've created with InsuranceLake:
+
+1. Open the [AWS Glue DataBrew](https://console.aws.amazon.com/databrew) service in the AWS Console.
+1. Select `Datasets` from the navigation menu on the left.
+1. Select `Connect new dataset`.
+1. Under Connect to new dataset, select `Data Catalog S3 tables`.
+1. Under AWS Glue databases, select **the name of the database** for the Cleanse or Consume bucket.
+
+    {: .note }
+	Data Catalog databases in the Cleanse layer will follow the naming convention of the Collect [bucket layout](#bucket-layout). Databases in the Consume layer will follow the same convention but have the [`_consume` suffix appended](using_sql.md#spark-sql).
+
+1. Select **the radio button to the left of the table** you want to profile.
+1. Check the dataset name to make sure it complies with the allowed characters.
+1. Scroll to the bottom of the page and choose `Create dataset`.
+1. You will now return to the Datasets screen; select the checkbox to the left of the dataset you just created.
+1. Select `Run data profile`.
+1. Select `Create a profile job`.
+1. Customize the Data Sample selection (choose full dataset or adjust the sample size).
+1. In the Job output settings section, use the Browse button to select the Glue Temp bucket following the naming convention `s3://dev-insurancelake-<AWS account ID>-<region>-glue-temp`.
+1. Append a suffix: profile-output/
+	- This will create a folder inside the bucket and save results in the folder.
+1. Expand Data profile configurations and select `Enable PII statistics` to identify personally identifiable information (PII) columns when running the data profile job.
+1. Under PII categories, select any categories you wish to check.
+
+    {: .note }
+	This option is disabled by default due to its impact on time and cost; you must enable it manually before running the data profile job.
+
+    {: .warning }
+	Take note of PII categories with a red dot to the right of the name; the dot indicates a significant impact on time and cost.
+
+1. Keep the remaining settings at their default.
+1. In the Permissions section, choose `Create new IAM role` from the Role name dropdown.
+1. Enter `Profiler` as the role suffix.
+
+    {: .note }
+	This creates a new IAM Role called AWSGlueDataBrewServiceRole-Profiler.
+
+1. Select `Create and run job`.
+
+This will take you to Data profile overview tab for the selected dataset. It will display a job in progress while running. Once the job finishes, you may observe the profile output, including statistics and identified PII rows and columns.
+
+![Databrew data profile overview example](glue_databrew_profile_results.png)
 
 
 ## File Format Identification

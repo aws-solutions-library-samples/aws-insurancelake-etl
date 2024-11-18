@@ -6,11 +6,12 @@ from dateutil import relativedelta, rrule
 import calendar
 from functools import reduce
 from operator import add, mul
+from pyspark.sql.column import Column
 from pyspark.sql.dataframe import DataFrame
 from pyspark.sql.functions import udf, expr, months_between, coalesce, lit, col
 from pyspark.sql.types import DecimalType, DateType, ArrayType, IntegerType
 
-def add_columns(*source_columns):
+def add_columns(*source_columns) -> Column:
     """Add values from an arbitrary number of Spark columns together and return the result (as a column)
     Uses only Spark native functions for performance (contributed by Gonzalo Herreros <gonher@amazon.com>)
     This is not a Spark UDF
@@ -18,7 +19,7 @@ def add_columns(*source_columns):
     return reduce(add, [ coalesce(col(c), lit(0)) for c in source_columns ])
 
 
-def policy_month_list(policy_effective_date: datetime.date, policy_expiration_date: datetime.date):
+def policy_month_list(policy_effective_date: datetime.date, policy_expiration_date: datetime.date) -> list:
     """Return list of months from the first month of the policy to the last
     This is not a Spark UDF, but can be called by a Spark UDF
     """
@@ -154,7 +155,7 @@ def transform_expandpolicymonths(df: DataFrame, expandpremium_spec: dict, args: 
     }
     df = df.withColumns(cols_map)
 
-    lineage.update_lineage(df, args['source_key'], 'expandpolicymonths', transform=expandpremium_spec)
+    lineage.update_lineage(df, args['source_key'], 'expandpolicymonths', transform=[ expandpremium_spec ])
     return df
 
 
