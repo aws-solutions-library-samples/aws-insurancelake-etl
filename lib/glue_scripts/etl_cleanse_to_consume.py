@@ -106,6 +106,8 @@ def main():
     job.init(args['JOB_NAME'], args)
 
     # Hive database and table names are case insensitive
+    file_name, ext = os.path.splitext(args['base_file_name'])
+    uuid = file_name.split("_")[0]
     target_table = args['table_name']
     substitution_data = args.copy()
     sql_prefix = args['txn_sql_prefix_path']
@@ -117,6 +119,7 @@ def main():
         'year': f"{int(args['p_year'])}",
         'month': f"{int(args['p_month']):02}",
         'day': f"{int(args['p_day']):02}",
+        'uuid':f"{uuid}"
     }
 
     # Read Data Quality rules
@@ -139,7 +142,8 @@ def main():
         message = e.java_exception.getMessage() if hasattr(e, 'java_exception') else str(e)
         print(f'No Spark SQL transformation exists or error reading: {message}, skipping')
         spark_sql = None
-
+    
+    spark_sql = f"SELECT * FROM {args['source_database_name']}.{args['table_name']}"
     # Spark SQL is used to populate the target database, stored in S3
     if spark_sql is not None:
         re_create_table = re.compile(r'\s*CREATE TABLE\s+["`\']?([\w]+)["`\']?\s+AS(.*)', re.IGNORECASE | re.DOTALL)

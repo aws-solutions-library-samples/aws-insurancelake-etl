@@ -83,7 +83,7 @@ class DataQualityCheck:
             Name of rule set in dq_rules that is being used
         """
         return 'Rules = [ ' \
-            + ','.join(self.dq_rules[ruleset_name][rule_action]).replace("'", '"') \
+            + ','.join(self.dq_rules[ruleset_name][rule_action]).replace("'", '"').replace("`","'") \
             + ' ]'
 
 

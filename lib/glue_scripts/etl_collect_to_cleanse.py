@@ -69,7 +69,8 @@ def main():
     job = Job(glueContext)
     job.init(args['JOB_NAME'], args)
 
-    _, ext = os.path.splitext(args['base_file_name'])
+    file_name, ext = os.path.splitext(args['base_file_name'])
+    uuid = file_name.split("_")[0]
     source_path = args['source_bucket'] + '/' + args['source_path'] + '/' + args['base_file_name']
     source_key_dashes = args['target_database_name'] + '-' + args['table_name']
     print(f'Source path: {source_path}')
@@ -80,6 +81,7 @@ def main():
         'year': f"{int(args['p_year'])}",
         'month': f"{int(args['p_month']):02}",
         'day': f"{int(args['p_day']):02}",
+        'uuid':f"{uuid}"
     }
 
     # Set default schema change detection based on InsuranceLake environment
@@ -217,7 +219,7 @@ def main():
             .option('delimiter', delimiter) \
             .option('quote', quote_character) \
             .option('escape', escape_character) \
-            .option('inferSchema', 'true') \
+            .option('inferSchema', 'false') \
             .option('mode', 'PERMISSIVE') \
             .load(source_path)
 
