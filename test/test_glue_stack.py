@@ -61,6 +61,8 @@ def test_resource_types_and_counts(monkeypatch):
 		template.resource_count_is('AWS::Lambda::Function', 2)
 		# Glue Job role, S3 Deployment CustomResource handler role, CustomResource Log Retention handler role
 		template.resource_count_is('AWS::IAM::Role', 3)
+		# Data Lake Consumer Managed Policy
+		template.resource_count_is('AWS::IAM::ManagedPolicy', 1)
 
 
 def test_glue_connections_with_vpc(monkeypatch):

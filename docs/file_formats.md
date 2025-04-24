@@ -2,7 +2,7 @@
 title: File Formats and Input Specification
 parent: User Documentation
 nav_order: 4
-last_modified_date: 2024-09-26
+last_modified_date: 2025-03-18
 ---
 # InsuranceLake File Formats and Input Specification
 {: .no_toc }
@@ -152,7 +152,7 @@ This library is not provided by AWS Glue or AWS; you must download the library a
 
 You can download the pre-compiled Spark XML library at [MVN Repository](https://mvnrepository.com/artifact/com.databricks/spark-xml).
 
-The last version known to work with AWS Glue 4.0 is: [2.12 / 0.18.0](https://mvnrepository.com/artifact/com.databricks/spark-xml_2.12/0.18.0). AWS Glue 4.0 provides all the required dependencies for this version.
+The last version known to work with AWS Glue 5.0 is: [2.12 / 0.18.0](https://mvnrepository.com/artifact/com.databricks/spark-xml_2.12/0.18.0). AWS Glue 5.0 provides all the required dependencies for this version.
 
 ### XML Driver Installation
 
@@ -288,11 +288,11 @@ This library and the mentioned dependencies are not provided by AWS Glue or AWS;
 
 You can download the pre-compiled Spark Excel library at [MVN Repository](https://mvnrepository.com/artifact/com.crealytics/spark-excel).
 
-The last version known to work with AWS Glue 4.0 is: [2.12 / 3.3.1_0.18.7](https://mvnrepository.com/artifact/com.crealytics/spark-excel_2.12/3.3.1_0.18.7)
+The last version known to work with AWS Glue 5.0 is: [2.12 / 3.5.1_0.20.4](https://mvnrepository.com/artifact/com.crealytics/spark-excel_2.12/3.5.1_0.20.4)
 
 The Spark Excel library also has dependencies that are not included with AWS Glue by default. Specifically, you must also download the [Apache POI API Based On OPC and OOXML Schemas](https://mvnrepository.com/artifact/org.apache.poi/poi-ooxml) library and a newer version of [XML Beans](https://mvnrepository.com/artifact/org.apache.xmlbeans/xmlbeans).
 
-The versions that are required for the Spark Excel version 3.3.1_0.18.7 are [poi-ooxml-5.2.3](https://mvnrepository.com/artifact/org.apache.poi/poi-ooxml/5.2.3) and [xmlbeans-5.1.1](https://mvnrepository.com/artifact/org.apache.xmlbeans/xmlbeans/5.1.1).
+The versions that are required for the Spark Excel version 3.5.1_0.20.4 are [poi-ooxml-5.3.0](https://mvnrepository.com/artifact/org.apache.poi/poi-ooxml/5.3.0) and [xmlbeans-5.3.0](https://mvnrepository.com/artifact/org.apache.xmlbeans/xmlbeans/5.3.0).
 
 If you want to work with another version of Spark Excel, follow these steps to ensure AWS Glue compatibility:
 
@@ -300,9 +300,9 @@ If you want to work with another version of Spark Excel, follow these steps to e
 
 1. Verify the version of Scala included with the Apache Spark version either from [the Spark package dependencies](https://mvnrepository.com/artifact/org.apache.spark/spark-core) or [the Spark compatibility matrix](https://sparkbyexamples.com/spark/spark-versions-supportability-matrix/).
 
-1. Download the version of Spark Excel corresponding to the desired Apache Spark and Scala version. If the Apache Spark version doesn't exist, find the closest match. For example, AWS Glue 4.0 uses Apache Spark 3.3.0 and Scala 2.12. The closest match from the pre-built Spark Excel packages is Spark 3.3.1 and Scala 2.12.
+1. Download the version of Spark Excel corresponding to the desired Apache Spark and Scala version. If the Apache Spark version doesn't exist, find the closest match. For example, AWS Glue 5.0 uses Apache Spark 3.5.2 and Scala 2.12.18. The closest match from the pre-built Spark Excel packages is Spark 3.5.1 and Scala 2.12.
 
-1. Check the Compile Dependencies of [the Spark Excel library](https://mvnrepository.com/artifact/com.crealytics/spark-excel_2.13/3.3.1_0.18.7), specifically looking for the Apache POI version, XML Beans and Apache Commons. Library version details included with AWS Glue can be found [here](https://docs.aws.amazon.com/glue/latest/dg/migrating-version-40.html#migrating-version-40-appendix-dependencies). Take note of libraries missing from AWS Glue or where a significantly newer version is needed than the version included with AWS Glue. Typically, this is limited to Apache POI and XML Beans.
+1. Check the Compile Dependencies of [the Spark Excel library](https://mvnrepository.com/artifact/com.crealytics/spark-excel_2.12/3.5.1_0.20.4), specifically looking for the Apache POI version, XML Beans and Apache Commons. Library version details included with AWS Glue can be found [here](https://docs.aws.amazon.com/glue/latest/dg/migrating-version-50.html#migrating-version-50-appendix-dependencies). Take note of libraries missing from AWS Glue or where a significantly newer version is needed than the version included with AWS Glue. Typically, this is limited to Apache POI and XML Beans.
 
 1. Download the required versions of the dependency libraries.
 

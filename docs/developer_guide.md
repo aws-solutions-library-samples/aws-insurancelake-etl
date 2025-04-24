@@ -2,7 +2,7 @@
 title: Developer Guide
 parent: Developer Documentation
 nav_order: 1
-last_modified_date: 2024-10-15
+last_modified_date: 2025-04-23
 ---
 # InsuranceLake Developer Guide
 {: .no_toc }
@@ -25,28 +25,30 @@ Prerequisites include:
 * [Python](https://www.python.org/downloads/) (Python 3.9 or later, Python 3.12 recommended)
 * [Node.js](https://nodejs.org/en/download/package-manager/) (CDK uses Node.js)
 
-
 ## Local AWS Glue and Apache Spark Development
 
-To setup a local AWS Glue and Apache Spark environment for testing, use the AWS-provided Glue Docker container image which can be retrieved from the [AWS Glue Dockerhub repository](https://hub.docker.com/r/amazon/aws-glue-libs/tags). Ensure you use the right tag for the version of AWS Glue used in the stack (currently v4).
+To setup a local AWS Glue and Apache Spark environment for testing, use the AWS-provided Glue Docker container image which can be retrieved from the [AWS Glue Dockerhub repository](https://hub.docker.com/r/amazon/aws-glue-libs/tags). Ensure you use the right tag for the version of AWS Glue used in the stack (currently v5).
 
 For detailed instructions on setting up a local AWS Glue and Apache Spark environment, refer to the following guides:
 
 * [AWS Developer Guide: Developing and testing AWS Glue job scripts locally](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-libraries.html)
-* [AWS Blog: Develop and test AWS Glue version 3.0 and 4.0 jobs locally using a Docker container](https://aws.amazon.com/blogs/big-data/develop-and-test-aws-glue-version-3-0-jobs-locally-using-a-docker-container/)
+* [Develop and test AWS Glue 5.0 jobs locally using a Docker container](https://aws.amazon.com/blogs/big-data/develop-and-test-aws-glue-5-0-jobs-locally-using-a-docker-container/)
 * [Developing AWS Glue ETL jobs locally using a container](https://aws.amazon.com/blogs/big-data/developing-aws-glue-etl-jobs-locally-using-a-container)
 
 {: .note }
 AWS Glue Data Quality is not available in the AWS Glue Docker images.
 
-### Local Apache Iceberg Development
+### Local Apache Iceberg Development in Glue v4
+
+{: .note }
+AWS Glue v5 *already includes* the libraries to enable local development and testing of Apache Iceberg tables.
 
 Local development and testing of Apache Iceberg tables is possible using the AWS-provided Glue Docker container. To enable this capability, the Docker container needs one or two additional libraries.
 
 1. Spark with Scala runtime Jar
-   * Required to run [unit tests](#unit-testing)
+    * Required to run [unit tests](#unit-testing)
 1. aws-bundle Jar
-   * Required for integration testing or local running and debugging with an AWS session
+    * Required for integration testing or local running and debugging with an AWS session
 
 Both JAR files can be downloaded from the [Apache Iceberg Releases page](https://iceberg.apache.org/releases/#downloads). The last versions known to work with AWS Glue 4.0 are [iceberg-spark-runtime-3.3_2.12-1.5.2.jar](https://search.maven.org/remotecontent?filepath=org/apache/iceberg/iceberg-spark-runtime-3.3_2.12/1.5.2/iceberg-spark-runtime-3.3_2.12-1.5.2.jar) and [iceberg-aws-bundle-1.5.2.jar](https://search.maven.org/remotecontent?filepath=org/apache/iceberg/iceberg-aws-bundle/1.5.2/iceberg-aws-bundle-1.5.2.jar).
 
@@ -65,14 +67,14 @@ py4j.protocol.Py4JJavaError: An error occurred while calling o119.create.
 To run and debug the ETL AWS Glue jobs in Visual Studio Code, you'll need a launch configuration defined in `launch.json`. The following configuration provides the required parameters for all three of the InsuranceLake ETL AWS Glue jobs. You can also find this sample configuration in [the `launch.json.default` Visual Studio Code configuration file included in the repository](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/.vscode/launch.json.default). Be sure to replace the AWS Account ID placeholders with the AWS Account ID where InsuranceLake is deployed.
 
 ```json
-      {
-         "name": "Python: Glue pySpark jobs",
-         "type": "debugpy",
-         "request": "launch",
-         "program": "${file}",
-         "console": "integratedTerminal",
-         "justMyCode": true,
-         "args": [
+    {
+        "name": "Python: Glue pySpark jobs",
+        "type": "debugpy",
+        "request": "launch",
+        "program": "${file}",
+        "console": "integratedTerminal",
+        "justMyCode": true,
+        "args": [
             "--JOB_NAME=VisualStudioCode",
             "--enable-glue-datacatalog=true",
             "--TempDir=s3://dev-insurancelake-ACCOUNT_ID-us-east-2-glue-temp/etl/collect-to-cleanse",
@@ -104,12 +106,12 @@ To run and debug the ETL AWS Glue jobs in Visual Studio Code, you'll need a laun
             "--data_lineage_table=dev-insurancelake-etl-data-lineage",
             "--additional-python-modules=rapidfuzz",
             "--iceberg_catalog=glue_catalog"
-         ],
-         "env": {
+        ],
+        "env": {
             "AWS_DEFAULT_REGION": "us-east-2",
             "PYDEVD_WARN_EVALUATION_TIMEOUT": "15"
-         }
-      }
+        }
+    }
 ```
 
 
@@ -134,6 +136,7 @@ The table below explains how this source code is structured.
 | [Entity Match AWS Glue Script](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/lib/glue_scripts/etl_consume_entity_match.py) | AWS Glue PySpark job data processing logic for entity matching, which stores results in the Consume bucket
 | [ETL Job Auditor](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/lib/etl_job_auditor/lambda_handler.py) | Lambda function to update DynamoDB in case of AWS Glue job success or failure
 | [ETL Trigger](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/lib/state_machine_trigger/lambda_handler.py) | Lambda function to trigger step function and initiate DynamoDB
+| [ETL Dependency Trigger](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/lib/dependency_trigger/lambda_handler.py)   | Lambda function to trigger queued Step Functions executions based on SNS topic notifications
 | [ETL Transformation Mapping and Specification](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/lib/glue_scripts/transformation-spec/) | Field mapping and transformation specification logic to be used for data processing from Collect to Cleanse
 | [ETL Transformation SQL](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/lib/glue_scripts/transformation-sql/) | Transformation SQL logic to be used for data processing from Cleanse to Consume
 | [ETL Data Quality Rules](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/lib/glue_scripts/dq-rules/) | AWS Glue Data Quality rules for quality checks from Cleanse to Consume
@@ -183,52 +186,54 @@ Due to their complexity, InsuranceLake AWS Glue jobs are not editable in the AWS
 
 To more quickly diagnose issues with features not available in the AWS Glue Docker container, or when working with large datasets that may be too slow to process locally, bypassing the Step Functions workflow to execute specific AWS Glue jobs can be helpful. The following are example executions for each of the three InsuranceLake ETL AWS Glue jobs with the minimum required parameters:
 
-   ```bash
-   aws glue start-job-run --job-name dev-insurancelake-cleanse-to-consume-job --arguments '
-   {
-      "--execution_id": "manual_execution_identifier",
-      "--source_bucketname": "dev-insurancelake-<Account ID>-us-east-2-glue-temp",
-      "--source_key": "MyDB/MyTable",
-      "--base_file_name": "input_file.csv",
-      "--database_name_prefix": "MyDB",
-      "--table_name": "MyTable",
-      "--p_year": "2024",
-      "--p_month": "01",
-      "--p_day": "01",
-      "--data_lineage_table": "dev-insurancelake-etl-data-lineage",
-      "--state_machine_name": "dev-insurancelake-etl-state-machine"
-   }'
-   ```
-   ```bash
-   aws glue start-job-run --job-name dev-insurancelake-cleanse-to-consume-job --arguments '
-   {
-      "--execution_id": "manual_execution_identifier",
-      "--source_bucketname": "dev-insurancelake-<Account ID>-us-east-2-glue-temp",
-      "--source_key": "MyDB/MyTable",
-      "--base_file_name": "input_file.csv",
-      "--database_name_prefix": "MyDB",
-      "--table_name": "MyTable",
-      "--p_year": "2024",
-      "--p_month": "01",
-      "--p_day": "01",
-      "--data_lineage_table": "dev-insurancelake-etl-data-lineage",
-      "--state_machine_name": "dev-insurancelake-etl-state-machine"
-   }'
-   ```
-   ```bash
-   aws glue start-job-run --job-name dev-insurancelake-consume-entity-match-job --arguments '
-   {
-      "--execution_id": "manual_execution_identifier",
-      "--source_key": "MyDB/MyTable",
-      "--database_name_prefix": "MyDB",
-      "--table_name": "MyTable",
-      "--data_lineage_table": "dev-insurancelake-etl-data-lineage",
-      "--state_machine_name": "dev-insurancelake-etl-state-machine",
-      "--p_year": "2024",
-      "--p_month": "01",
-      "--p_day": "01"
-   }'
-   ```
+```bash
+aws glue start-job-run --job-name dev-insurancelake-cleanse-to-consume-job --arguments '
+{
+    "--execution_id": "manual_execution_identifier",
+    "--source_bucketname": "dev-insurancelake-<Account ID>-us-east-2-glue-temp",
+    "--source_key": "MyDB/MyTable",
+    "--base_file_name": "input_file.csv",
+    "--database_name_prefix": "MyDB",
+    "--table_name": "MyTable",
+    "--p_year": "2024",
+    "--p_month": "01",
+    "--p_day": "01",
+    "--data_lineage_table": "dev-insurancelake-etl-data-lineage",
+    "--state_machine_name": "dev-insurancelake-etl-state-machine"
+}'
+```
+
+```bash
+aws glue start-job-run --job-name dev-insurancelake-cleanse-to-consume-job --arguments '
+{
+    "--execution_id": "manual_execution_identifier",
+    "--source_bucketname": "dev-insurancelake-<Account ID>-us-east-2-glue-temp",
+    "--source_key": "MyDB/MyTable",
+    "--base_file_name": "input_file.csv",
+    "--database_name_prefix": "MyDB",
+    "--table_name": "MyTable",
+    "--p_year": "2024",
+    "--p_month": "01",
+    "--p_day": "01",
+    "--data_lineage_table": "dev-insurancelake-etl-data-lineage",
+    "--state_machine_name": "dev-insurancelake-etl-state-machine"
+}'
+```
+
+```bash
+aws glue start-job-run --job-name dev-insurancelake-consume-entity-match-job --arguments '
+{
+    "--execution_id": "manual_execution_identifier",
+    "--source_key": "MyDB/MyTable",
+    "--database_name_prefix": "MyDB",
+    "--table_name": "MyTable",
+    "--data_lineage_table": "dev-insurancelake-etl-data-lineage",
+    "--state_machine_name": "dev-insurancelake-etl-state-machine",
+    "--p_year": "2024",
+    "--p_month": "01",
+    "--p_day": "01"
+}'
+```
 
 The following are additional code considerations:
 
@@ -240,93 +245,96 @@ The following are additional code considerations:
 
 * InsuranceLake AWS Glue jobs follow the AWS best practice of getting the Spark session from the AWS Glue context and calling `job.init()`. `job_commit()` is always called at the end of the script. These functions are used to update the state change to the service.
 
-   InsuranceLake AWS Glue jobs do not make use of [AWS Glue job bookmarks](https://docs.aws.amazon.com/glue/latest/dg/programming-etl-connect-bookmarks.html) because almost all transformation of data is done in Spark DataFrames. AWS Glue job bookmarks are **disabled by default for all InsuranceLake AWS Glue jobs**. For future use, the AWS Glue jobs set the `transformation_ctx` for all DynamicFrame operations.
+    InsuranceLake AWS Glue jobs do not make use of [AWS Glue job bookmarks](https://docs.aws.amazon.com/glue/latest/dg/programming-etl-connect-bookmarks.html) because almost all transformation of data is done in Spark DataFrames. AWS Glue job bookmarks are **disabled by default for all InsuranceLake AWS Glue jobs**. For future use, the AWS Glue jobs set the `transformation_ctx` for all DynamicFrame operations.
 
-   A difference between the standard AWS Glue job source code and the InsuranceLake code is that the **job initialization** is contained within `main` and **not in the global Python context**. This is done to facilitate unit testing of the AWS Glue jobs in a local environment using the AWS Glue Docker container.
+    A difference between the standard AWS Glue job source code and the InsuranceLake code is that the **job initialization** is contained within `main` and **not in the global Python context**. This is done to facilitate unit testing of the AWS Glue jobs in a local environment using the AWS Glue Docker container.
 
 * The suggested skeleton code to construct a new AWS Glue job in the InsuranceLake pipeline follows:
 
-   ```python
-   import sys
-   import os
-   # Other Python imports
+    ```python
+    import sys
+    import os
+    # Other Python imports
 
-   from pyspark.context import SparkContext
-   from awsglue.utils import getResolvedOptions
-   from awsglue.context import GlueContext
-   from awsglue.job import Job
-   # Other pyspark and awsglue imports
+    from pyspark.context import SparkContext
+    from awsglue.utils import getResolvedOptions
+    from awsglue.context import GlueContext
+    from awsglue.job import Job
+    # Other pyspark and awsglue imports
 
-   # For running in local Glue container
-   sys.path.append(os.path.dirname(__file__) + '/lib')
+    # For running in local Glue container
+    sys.path.append(os.path.dirname(__file__) + '/lib')
 
-   from glue_catalog_helpers import upsert_catalog_table, clean_column_names, generate_spec, put_s3_object
-   from datalineage import DataLineageGenerator
-   # Other local libraries needed from lib/glue_scripts/lib
+    from glue_catalog_helpers import upsert_catalog_table, clean_column_names, generate_spec, put_s3_object
+    from datalineage import DataLineageGenerator
+    # Other local libraries needed from lib/glue_scripts/lib
 
-   # Minimum job arguments (add others here if required)
-   expected_arguments = [
-      'JOB_NAME',
-      'environment',
-      'TempDir',
-      'state_machine_name',
-      'execution_id',
-      'source_key',
-   ]
+    # Minimum job arguments (add others here if required)
+    expected_arguments = [
+        'JOB_NAME',
+        'environment',
+        'TempDir',
+        'state_machine_name',
+        'execution_id',
+        'source_key',
+    ]
 
-   # Handle optional arguments
-   for arg in sys.argv:
-      if '--data_lineage_table' in arg:
-         expected_arguments.append('data_lineage_table')
+    def main():
+        # Make a local copy to help unit testing (the global is shared across tests)
+        local_expected_arguments = expected_arguments.copy()
 
-   def main():
-      args = getResolvedOptions(sys.argv, expected_arguments)
+        # Handle optional arguments
+        for arg in sys.argv:
+            if '--data_lineage_table' in arg:
+                local_expected_arguments.append('data_lineage_table')
 
-      sc = SparkContext()
-      glueContext = GlueContext(sc)
-      spark = glueContext.spark_session
-      job = Job(glueContext)
-      job.init(args['JOB_NAME'], args)
+        args = getResolvedOptions(sys.argv, expected_arguments)
 
-      lineage = DataLineageGenerator(args)
+        sc = SparkContext()
+        glueContext = GlueContext(sc)
+        spark = glueContext.spark_session
+        job = Job(glueContext)
+        job.init(args['JOB_NAME'], args)
 
-      # Job specific code here
+        lineage = DataLineageGenerator(args)
 
-      job.commit()
+        # Job specific code here
 
-   if __name__ == '__main__':
-      main()
-   ```
+        job.commit()
+
+    if __name__ == '__main__':
+        main()
+    ```
 
 * The majority of InsuranceLake operations are done using Spark-native DataFrames because conversions to AWS Glue DynamicFrames and Pandas DataFrames come with a cost. InsuranceLake was also designed to be as portable as possible to other Spark environments (with the exception of AWS Glue Data Quality). **We recommend you follow the practice of avoiding DataFrame conversions in your AWS Glue jobs**.
 
 * When there is functionality needed from Pandas that is not available in Spark, there are three methods to consider:
-   - [Pandas-on-Spark DataFrame](https://spark.apache.org/docs/latest/api/python/user_guide/pandas_on_spark/pandas_pyspark.html#pyspark)
+    - [Pandas-on-Spark DataFrame](https://spark.apache.org/docs/latest/api/python/user_guide/pandas_on_spark/pandas_pyspark.html#pyspark)
 
-      Using the `DataFrame.pandas_api()` is performant because the data and operations are distributed. Avoid operations like `DataFrame.to_numpy()` that require the data to be collected on the driver (non-distributed). The Pandas API on Spark does not target 100% compatibility, so you may experience errors running your workflow.
+        Using the `DataFrame.pandas_api()` is performant because the data and operations are distributed. Avoid operations like `DataFrame.to_numpy()` that require the data to be collected on the driver (non-distributed). The Pandas API on Spark does not target 100% compatibility, so you may experience errors running your workflow.
 
-   - [Pandas UDFs](https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.functions.pandas_udf.html)
-      Pandas user-defined functions (UDFs) are executed by Spark using Apache Arrow to transfer data and Pandas to work with the data. When used in combination with `withColumn` or `select`, a Pandas UDF can perform Pandas library vectorized operations in a distributed manner on individual columns supplied as arguments.
+    - [Pandas UDFs](https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.functions.pandas_udf.html)
+        Pandas user-defined functions (UDFs) are executed by Spark using Apache Arrow to transfer data and Pandas to work with the data. When used in combination with `withColumn` or `select`, a Pandas UDF can perform Pandas library vectorized operations in a distributed manner on individual columns supplied as arguments.
 
-   - [PyArrow for Conversions](https://spark.apache.org/docs/latest/api/python/user_guide/sql/arrow_pandas.html)
+    - [PyArrow for Conversions](https://spark.apache.org/docs/latest/api/python/user_guide/sql/arrow_pandas.html)
 
-      If full conversion to a Pandas DataFrame is needed, ensure your AWS Glue job enables Apache Arrow support for data conversion as follows:
+        If full conversion to a Pandas DataFrame is needed, ensure your AWS Glue job enables Apache Arrow support for data conversion as follows:
 
-      ```python
-      spark.conf.set('spark.sql.execution.arrow.pyspark.enabled', True)
+        ```python
+        spark.conf.set('spark.sql.execution.arrow.pyspark.enabled', True)
 
-      pandas_df = spark_df.toPandas()
-      # Pandas operations here
-      spark_df = spark.createDataFrame(pandas_df)
-      ```
+        pandas_df = spark_df.toPandas()
+        # Pandas operations here
+        spark_df = spark.createDataFrame(pandas_df)
+        ```
 
 * When implementing custom transforms or custom AWS Glue jobs, developers should carefully consider the use of Spark actions and operations that cause data shuffling or that force immediate evaluation of transforms. Use of these operations can significantly impact the performance of your AWS Glue job.
 
-   * For a list of operations that cause data shuffling, refer to the [Spark Programming Guide list of shuffle operations](https://spark.apache.org/docs/latest/rdd-programming-guide.html#shuffle-operations).
+    * For a list of operations that cause data shuffling, refer to the [Spark Programming Guide list of shuffle operations](https://spark.apache.org/docs/latest/rdd-programming-guide.html#shuffle-operations).
 
-   * Spark actions cause any unevaluated transformation to immediately execute. For a full list of Spark functions, refer to the [list of transformations](https://spark.apache.org/docs/latest/rdd-programming-guide.html#transformations) and [the list of actions](https://spark.apache.org/docs/latest/rdd-programming-guide.html#actions).
+    * Spark actions cause any unevaluated transformation to immediately execute. For a full list of Spark functions, refer to the [list of transformations](https://spark.apache.org/docs/latest/rdd-programming-guide.html#transformations) and [the list of actions](https://spark.apache.org/docs/latest/rdd-programming-guide.html#actions).
 
-   * Use [cache](https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.DataFrame.cache.html) when you need to perform multiple operations on the same dataset to avoid reading from storage repeatedly.
+    * Use [cache](https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.DataFrame.cache.html) when you need to perform multiple operations on the same dataset to avoid reading from storage repeatedly.
 
 
 ## Unit Testing
@@ -353,47 +361,108 @@ python -m pytest --cov
 To set up a local AWS Glue and Spark environment for testing, refer to the [Local AWS Glue and Apache Spark Development](#local-aws-glue-and-apache-spark-development) section.
 
 
-## AWS CodePipeline and GitHub Integration
+## Copy OpenSource Git Repositories
 
-Integration between CodePipeline and GitHub requires a personal access token. This access token is stored in AWS Secrets Manager. This is a one-time setup and is applicable for all target AWS environments and all repositories created under the organization in GitHub. Follow the below steps:
+Follow these instructions if you want to copy the InsuranceLake OpenSource repositories to your own repositories as a starting point. This is an alternative to forking the repository in Github.
 
-1. Create a personal access token in your GitHub. Refer to [Creating a personal access token](https://docs.github.com/en/github/authenticating-to-github/keeping-your-account-and-data-secure/creating-a-personal-access-token) for details.
-
-1. Run the below command:
+1. Clone the OpenSource repositories locally.
     ```bash
-    python3 ./lib/prerequisites/configure_account_secrets.py
+    git clone https://github.com/aws-solutions-library-samples/aws-insurancelake-infrastructure.git
+    git clone https://github.com/aws-solutions-library-samples/aws-insurancelake-etl.git
     ```
 
-1. Enter or paste in the GitHub personal access token when prompted.
-   {: .note }
-   The access token value will not appear on the screen.
+1. Change the working directory to the location of the infrastruture code.
+    ```bash
+    cd aws-insurancelake-infrastructure
+    ```
 
-1. Confirm the information for the Secrets Manager Secret is correct, and type 'y'.
+1. Use the following git commands copy the infrastructure repository to your own repository using the `develop` branch.
 
-1. Expected output:
-    ```log
-    Pushing secret: /InsuranceLake/GitHubToken
-    A secret is added to AWS Secrets Manager with name **/InsuranceLake/GitHubToken**
+    {: .note}
+    We are using the `develop` branch because the Dev environment deployment is triggered by commits to the develop branch.
+
+    {: .important}
+    Edit the `origin` URL to correspond to your repository.
+
+    ```bash
+    git remote rename origin opensource
+    git remote add origin https://path/to/aws-insurancelake-infrastructure
+    git checkout -b develop
+    git push -u origin develop
+    ```
+
+1. Repeat these steps for the ETL repository.
+
+
+## CodeCommit Instructions
+
+{: .warning }
+AWS CodeCommit is no longer available to new AWS customers. Existing customers of AWS CodeCommit can continue to use the service as normal. 
+
+### CodeCommit as a mirror repository
+
+InsuranceLake comes with a CodeCommit mirror repository stack in both the infrastructure and ETL repositories. This mirror repository is meant to act as a source for CodePipeline so that you can configure external repositories to sync with CodeCommit and trigger CodePipeline builds.
+
+* [Instructions for configuring mirroring from Gitlab to CodeCommit](https://klika-tech.com/blog/2022/07/12/repository-mirroring-gitlab-to-codecommit/).
+
+To deploy the CodeCommit mirror repository stacks, follow these steps:
+
+1. Set the repository name parameters in `lib/configuration.py` for each codebase. An example of each follows.
+
+    ```python
+                # Name your CodeCommit mirror repo here (recommend matching your external repo)
+                # Leave empty if you use CodeConnections or your repository is in CodeCommit already
+                CODECOMMIT_MIRROR_REPOSITORY_NAME: 'aws-insurancelake-infrastructure',
+                # or
+                CODECOMMIT_MIRROR_REPOSITORY_NAME: 'aws-insurancelake-etl',
+    ```
+
+1. Deploy the CodeCommit mirror repository stacks for the infrastructure and ETL repositories.
+
+    ```bash
+    cdk deploy Deploy-InsuranceLakeEtlMirrorRepository
+    cdk deploy Deploy-InsuranceLakeInfrastructureMirrorRepository
+    ```
+
+1. Follow the instructions in the [Quickstart with CI/CD](quickstart_cicd.md) or the [Full Deployment Guide](full_deployment_guide.md#deploying-cdk-stacks) for deploying the CodePipeline stacks.
+
+### CodeCommit as a main repository
+
+- This configuration requires you to setup the CodeCommit repository separately and before deploying InsuranceLake.
+
+- Set the repository name parameters in `lib/configuration.py` for each codebase. An example of each follows.
+
+    ```python
+            # Use only if your repository is already in CodecCommit, otherwise leave empty!
+            CODECOMMIT_REPOSITORY_NAME: 'aws-insurancelake-infrastructure',
+            # or
+            CODECOMMIT_REPOSITORY_NAME: 'aws-insurancelake-etl',
+    ```
+
+- Install the [Git CodeCommit Helper](https://docs.aws.amazon.com/codecommit/latest/userguide/setting-up-git-remote-codecommit.html):
+
+    ```bash
+    sudo pip install git-remote-codecommit
     ```
 
 
 ## Known Issues
 
-   * **CodeBuild Quotas**
+* **CodeBuild Quotas**
 
-      Ensure you are aware of the [service quotas for AWS CodeBuild](https://docs.aws.amazon.com/codebuild/latest/userguide/limits.html). Exceeding a quota will result in an error similar to the following:
+    Ensure you are aware of the [service quotas for AWS CodeBuild](https://docs.aws.amazon.com/codebuild/latest/userguide/limits.html). Exceeding a quota will result in an error similar to the following:
 
-      ```log
-      Action execution failed
-      Error calling startBuild: Cannot have more than 1 builds in queue for the account (Service: AWSCodeBuild; Status Code: 400; Error Code: AccountLimitExceededException; Request ID: e123456-d617-40d5-abcd-9b92307d238c; Proxy: null)
-      ```
+    ```log
+    Action execution failed
+    Error calling startBuild: Cannot have more than 1 builds in queue for the account (Service: AWSCodeBuild; Status Code: 400; Error Code: AccountLimitExceededException; Request ID: e123456-d617-40d5-abcd-9b92307d238c; Proxy: null)
+    ```
 
-   * **S3 Object Lock**
+* **S3 Object Lock**
 
-      Enabling [S3 Object Lock](https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lock.html) on the Cleanse or Consume S3 buckets breaks ETL data writes to the buckets. This is caused by known limitations to Hadoop's S3A driver used by Spark. These open issues are being tracked as [HADOOP-19080](https://issues.apache.org/jira/browse/HADOOP-19080) and [HADOOP-15224](https://issues.apache.org/jira/browse/HADOOP-15224). Enabling S3 Object Lock on these S3 buckets will result in an error similar to the following:
+    Enabling [S3 Object Lock](https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lock.html) on the Cleanse or Consume S3 buckets breaks ETL data writes to the buckets. This is caused by known limitations to Hadoop's S3A driver used by Spark. These open issues are being tracked as [HADOOP-19080](https://issues.apache.org/jira/browse/HADOOP-19080) and [HADOOP-15224](https://issues.apache.org/jira/browse/HADOOP-15224). Enabling S3 Object Lock on these S3 buckets will result in an error similar to the following:
 
-      ```log
-      An error occurred while calling o237.saveAsTable. Content-MD5 OR x-amz-checksum- HTTP header is required for Put Object requests with Object Lock parameters (Service: Amazon S3; Status Code: 400; Error Code: InvalidRequest; Request ID: <request_id>; S3 Extended Request ID: <extended_request_id>; Proxy: null)
-      ```
+    ```log
+    An error occurred while calling o237.saveAsTable. Content-MD5 OR x-amz-checksum- HTTP header is required for Put Object requests with Object Lock parameters (Service: Amazon S3; Status Code: 400; Error Code: InvalidRequest; Request ID: <request_id>; S3 Extended Request ID: <extended_request_id>; Proxy: null)
+    ```
 
-      It is possible to convert the ETL data write operations to use the [GlueContext getSink method](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-api-crawler-pyspark-extensions-glue-context.html#aws-glue-api-crawler-pyspark-extensions-glue-context-get-sink) which supports writing to S3 buckets with Object Lock. However, this introduces a side effect of creating a new version of the Data Catalog table schema for every write operation.
+    It is possible to convert the ETL data write operations to use the [GlueContext getSink method](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-api-crawler-pyspark-extensions-glue-context.html#aws-glue-api-crawler-pyspark-extensions-glue-context-get-sink) which supports writing to S3 buckets with Object Lock. However, this introduces a side effect of creating a new version of the Data Catalog table schema for every write operation.

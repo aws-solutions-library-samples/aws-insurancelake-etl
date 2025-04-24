@@ -2,7 +2,7 @@
 title: Full Deployment Guide
 parent: Developer Documentation
 nav_order: 2
-last_modified_date: 2024-09-26
+last_modified_date: 2025-04-23
 ---
 # InsuranceLake Full Deployment Guide
 {: .no_toc }
@@ -23,7 +23,7 @@ This section provides complete instructions for three deployment environments, a
 
 * **Four AWS accounts for full deployment**: One account acts like a central deployment account. The other three accounts are for development, test, and production accounts. To test this solution with a single account refer to the [Quickstart guide](quickstart.md) for detailed instructions.
 
-* **Branches in your GitHub repository**: You need to start with at least one branch (for example, a `develop` branch) to start using this solution. Test and production branches can be added at the beginning or after the deployment of the data lake infrastructure on the development environment.
+* **Branches in your git repository**: You need the source code in your own repository and to have at least one branch (for example, a `develop` branch) to start using this solution. Test and production branches can be added at the beginning or after the deployment of the data lake infrastructure on the development environment.
 
 * **Administrator privileges**: You need administrator privileges to bootstrap your AWS environments and complete the initial deployment. Usually, these steps can be performed by a DevOps administrator of your team. After these steps, you can revoke administrative privileges. Subsequent deployments are based on AWS CDK roles and pipeline self-mutation.
 
@@ -39,9 +39,9 @@ The pipeline you have created using the CDK Pipelines module is self-mutating. T
 
 ### Centralized Deployment
 
-Let us see how we deploy data lake ETL workloads from a central deployment account to multiple AWS environments such as development, testing, and production. As shown in the figure below, we organize InsuranceLake ETL source code into three branches: `develop`, `test`, and `main`. We use a dedicated AWS account to create AWS CDK Pipelines. Each branch is mapped to an AWS CDK pipeline which is mapped to a target environment. This way, code changes made to the branches are deployed iteratively to their respective target environment.
+Using AWS CDK Pipelines, you can deploy data lake ETL workloads from a central deployment account to multiple AWS environments such as development, testing, and production. As shown in the figure below, you can organize InsuranceLake ETL source code into three branches: `develop`, `test`, and `main`. The architecture uses a dedicated AWS account to create AWS CDK Pipelines. Each branch is mapped to a pipeline which is mapped to a target environment. This way, code changes made to the branches are deployed iteratively to their respective target environment.
 
-To deploy this solution, we need four AWS accounts as follows:
+To deploy this solution, you need four AWS accounts as follows:
 
 * Central deployment account to create AWS CDK Pipelines
 * Dev account for one or more development data lakes
@@ -54,9 +54,9 @@ The figure below represents the centralized deployment model.
 
 Note the following considerations:
 
-* Each source code repository should be organized into three branches, one for each environment (main branch is often used for production).
-* Each branch is mapped to an AWS CDK Pipeline and a target environment. This way, code changes made to the branches are deployed iteratively to their respective target environment.
-* Using AWS CDK, we apply the the following bootstrapping design:
+* Both source code repositories should be organized into three branches, one for each environment (main branch is often used for production).
+* Both branches are mapped to an AWS CDK Pipeline and a target environment. This way, code changes made to the branches are deployed iteratively to their respective target environment.
+* Using AWS CDK, you can apply the the following bootstrapping design:
     * The central deployment account will utilize a standard bootstrap.
     * Each target account will require a cross account trust policy to allow access from the centralized deployment account.
 
@@ -71,9 +71,9 @@ The figure below illustrates the continuous delivery of ETL resources for the da
 1. The DevOps administrator checks in the code to the repository.
 1. The DevOps administrator (with elevated access) facilitates a one-time manual deployment on a target environment. Elevated access includes administrative privileges on the central deployment account and target AWS environments.
 1. CodePipeline periodically listens to commit events on the source code repositories. This is the self-mutating nature of CodePipeline. It’s configured to work with and is able to update itself according to the provided definition.
-1. Code changes made to the main branch of the repo are automatically deployed to the dev environment of the data lake.
-1. Code changes to the test branch of the repo are automatically deployed to the test environment.
-1. Code changes to the prod branch of the repo are automatically deployed to the prod environment.
+1. Code changes made to the `develop` branch of the repo are automatically deployed to the dev environment of the data lake.
+1. Code changes to the `test` branch of the repo are automatically deployed to the test environment.
+1. Code changes to the `main` branch of the repo are automatically deployed to the prod environment.
 
 ---
 
@@ -89,7 +89,7 @@ This section provides the details for full deployment.
 
 1. **Node.js and AWS CDK**: AWS CDK for Python requires [Node.js](https://nodejs.org/en/download/package-manager/) and the [Node.js AWS CDK CLI](https://docs.aws.amazon.com/cdk/v2/guide/getting_started.html) to be installed on your system
 
-1. **GitHub Fork**: We recommend you [fork the repository](https://docs.github.com/en/get-started/quickstart/fork-a-repo) so you are in control of deployed resources.
+1. **Github Fork**: We recommend you [fork the repository](https://docs.github.com/en/get-started/quickstart/fork-a-repo) or make your own copy of the repository so you can make commits to the repository, such as configuration changes.
 
 ### AWS Environment Bootstrapping
 
@@ -292,13 +292,13 @@ Environment bootstrap is a standard AWS CDK process to prepare an AWS environmen
 
 This deployment will depend on both the [Infrastructure](https://github.com/aws-solutions-library-samples/aws-insurancelake-infrastructure) and [ETL](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl) repositories associated with the project.
 
-Before we deploy our resources, we must provide the manual variables and upon deployment the AWS CDK Pipelines will programmatically export outputs for managed resources. Follow the below steps to set up your custom configuration:
+Before you deploy your resources, you must provide the manual variables and upon deployment the AWS CDK Pipelines will programmatically export outputs for managed resources. Follow the below steps to set up your custom configuration:
 
 {:style="counter-reset:none"}
 1. Open the application file [lib/configuration.py](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/lib/configuration.py) and fill in values under the `local_mapping` dictionary within the function `get_local_configuration` as desired.
 
     {: .note }
-    You can safely commit these values to your repository.
+    You should commit these values to your repository.
 
     Example:
 
@@ -308,31 +308,22 @@ Before we deploy our resources, we must provide the manual variables and upon de
             ACCOUNT_ID: 'add_your_deployment_account_id_here',
             REGION: 'us-east-2',
 
-            # If you use GitHub / GitHub Enterprise, this will be the organization name
-            GITHUB_REPOSITORY_OWNER_NAME: 'aws-samples',
+            # If you use Github, Gitlab, Bitbucket Cloud or any other supported CodeConnections
+            # provider, specify the CodeConnections ARN
+            CODECONNECTIONS_ARN: '',
 
-            # Use your forked Github repo here!
-            # Leave empty if you do not use Github
-            GITHUB_REPOSITORY_NAME: 'aws-insurancelake-infrastructure',
+            # CodeConections repository owner or workspace name if using CodeConnections
+            CODECONNECTIONS_REPOSITORY_OWNER_NAME: '',
 
-            # If you use Bitbucket Cloud or any other supported Codestar provider, specify the
-            # Codestar connection ARN
-            CODESTAR_CONNECTION_ARN: '',
-
-            # Codestar repository owner or workspace name if using Bitbucket Cloud
-            CODESTAR_REPOSITORY_OWNER_NAME: '',
-
-            # Leave empty if you do not use Codestar
-            CODESTAR_REPOSITORY_NAME: '',
+            # Leave empty if you do not use CodeConnections
+            CODECONNECTIONS_REPOSITORY_NAME: '',
 
             # Use only if your repository is already in CodecCommit, otherwise leave empty!
-            # Use your CodeCommit repo name here
             CODECOMMIT_REPOSITORY_NAME: '',
 
-            # Use only if you do NOT use Github or CodeCommit and need to mirror your repository
             # Name your CodeCommit mirror repo here (recommend matching your external repo)
-            # Leave empty if you use Github or your repository is in CodeCommit already
-            CODECOMMIT_MIRROR_REPOSITORY_NAME: '',
+            # Leave empty if you use CodeConnections or your repository is in CodeCommit already
+            CODECOMMIT_MIRROR_REPOSITORY_NAME: 'aws-insurancelake-infrastructure',
 
             # This is used in the Logical Id of CloudFormation resources.
             # We recommend Capital case for consistency, e.g. DataLakeCdkBlog
@@ -348,7 +339,7 @@ Before we deploy our resources, we must provide the manual variables and upon de
             REGION: 'us-east-2',
             LINEAGE: True,
             # Comment out if you do not need VPC connectivity
-            VPC_CIDR: '10.20.0.0/24',
+            VPC_CIDR: '10.20.0.0/22',
             CODE_BRANCH: 'develop',
         },
         TEST: {
@@ -356,7 +347,7 @@ Before we deploy our resources, we must provide the manual variables and upon de
             REGION: 'us-east-2',
             LINEAGE: True,
             # Comment out if you do not need VPC connectivity
-            VPC_CIDR: '10.10.0.0/24',
+            VPC_CIDR: '10.10.0.0/22',
             CODE_BRANCH: 'test',
         },
         PROD: {
@@ -364,13 +355,13 @@ Before we deploy our resources, we must provide the manual variables and upon de
             REGION: 'us-east-2',
             LINEAGE: True,
             # Comment out if you do not need VPC connectivity
-            VPC_CIDR: '10.0.0.0/24',
+            VPC_CIDR: '10.0.0.0/22',
             CODE_BRANCH: 'main',
         }
     }
     ```
 
-1. Copy the `configuration.py` file to the ETL repository:
+1. Copy the `configuration.py` file to the ETL repository.
 
     ```bash
     cp lib/configuration.py ../aws-insurancelake-etl/lib/
@@ -419,36 +410,9 @@ Before we deploy our resources, we must provide the manual variables and upon de
     cp lib/tagging.py ../aws-insurancelake-etl/lib/
     ```
 
-### AWS CodePipeline and GitHub Integration
+### AWS CodePipeline and Git Integration
 
-Integration between AWS CodePipeline and GitHub requires a personal access token. This access token is stored in Secrets Manager. This is a one-time setup and is applicable for all target AWS environments and all repositories created under the organization in GitHub.com. Follow the below steps:
-
-{:style="counter-reset:none"}
-1. Create a personal access token in your GitHub. Refer to [Creating a personal access token](https://docs.github.com/en/github/authenticating-to-github/keeping-your-account-and-data-secure/creating-a-personal-access-token) for details.
-
-   The token should have these permissions:
-      * `repo` - to read the repository
-      * `admin:repo_hook` - to use webhooks as the trigger (recommended)
-
-1. Run the below command:
-
-    ```bash
-    ./lib/prerequisites/configure_account_secrets.py
-    ```
-
-1. Paste the GitHub personal access token when prompted.
-
-1. Confirm the profile, account, and Region; respond `y` if correct.
-
-1. Expected output:
-
-    ```bash
-    Pushing secret: /DataLake/GitHubToken
-    ```
-
-### AWS CodePipeline and Bitbucket Integration
-
-Integration between AWS CodePipeline and Atlassian Bitbucket requires creating an AWS CodeStar Connection. This same configuration can be used for any provider supported by AWS CodeStar (for example, GitLab).
+Integration between AWS CodePipeline and Github, Gitlab, or Atlassian Bitbucket requires creating an AWS CodeConnections connection. This same configuration can be used for any provider supported by AWS CodeConnections.
 
 {:style="counter-reset:none"}
 1. In the AWS Console, browse to the CodePipeline service.
@@ -458,27 +422,27 @@ Integration between AWS CodePipeline and Atlassian Bitbucket requires creating a
 1. Enter a connection name.
 
     {: .note }
-    The Bitbucket provider is selected by default. If a different provider is selected, the following steps will vary slightly. Follow the instructions to establish a trust between AWS CodeStar and your Git provider.
+    The Bitbucket provider is selected by default. If a different provider is selected, the following steps will vary slightly. Follow the instructions to establish a trust between AWS CodeConnections and your git provider.
 
 1. Select the orange `Connect to Bitbucket` button.
 
 1. If you are not already logged into Bitbucket, you will be prompted to log in now.
 
-1. Select the `Grant` access button to confirm you want to allow AWS CodeStar to connect.
+1. Select the `Grant` access button to confirm you want to allow AWS CodeConnections to connect.
 
 1. Select `Install a new app`.
 
-1. You will be prompted to install the AWS CodeStar app for Bitbucket. Ensure the workspace selected contains the InsuranceLake repositories. Select `Grant access`.
+1. You will be prompted to install the AWS CodeConnections app for Bitbucket. Ensure the workspace selected contains the InsuranceLake repositories. Select `Grant access`.
 
 1. Select the orange `Connect` button.
 
 1. Copy the ARN displayed under Connection settings to your clipboard.
 
-1. Paste the ARN in `lib/configuration.py` for the `CODESTAR_CONNECTION_ARN` parameter.
+1. Paste the ARN in `lib/configuration.py` for the `CODECONNECTIONS_ARN` parameter.
 
-1. Enter the workspace name for the `CODESTAR_REPOSITORY_OWNER_NAME` parameter, and the repository name for the `CODESTAR_REPOSITORY_NAME`.
+1. Enter the workspace name for the `CODECONNECTIONS_REPOSITORY_OWNER_NAME` parameter, and the repository name for the `CODECONNECTIONS_REPOSITORY_NAME`.
 
-1. Ensure that other configurations variables for Github and CodeCommit are empty strings.
+1. Ensure that other configurations variables for CodeCommit are empty strings.
 
 ---
 

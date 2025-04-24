@@ -54,14 +54,17 @@ expected_arguments = [
     'p_day',
 ]
 
-# Handle optional arguments
-for arg in sys.argv:
-    if '--data_lineage_table' in arg:
-        expected_arguments.append('data_lineage_table')
-
 
 def main():
-    args = getResolvedOptions(sys.argv, expected_arguments)
+    # Make a local copy to help unit testing (the global is shared across tests)
+    local_expected_arguments = expected_arguments.copy()
+
+    # Handle optional arguments
+    for arg in sys.argv:
+        if '--data_lineage_table' in arg:
+            local_expected_arguments.append('data_lineage_table')
+
+    args = getResolvedOptions(sys.argv, local_expected_arguments)
 
     sc = SparkContext()
     glueContext = GlueContext(sc)

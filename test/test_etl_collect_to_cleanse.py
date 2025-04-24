@@ -67,7 +67,7 @@ mock_spec_file_tsv = {
 
 
 @mock_glue_job(etl_collect_to_cleanse)
-def test_cleanse_bucket_write(monkeypatch):
+def test_cleanse_bucket_write(monkeypatch, capsys):
     monkeypatch.setattr(sys, 'argv', mock_args)
     write_local_file(f'{mock_collect_bucket}/{mock_database_name}/{mock_table_name}', 'testfile.csv', mock_input_file_csv)
 
@@ -81,7 +81,7 @@ def test_cleanse_bucket_write(monkeypatch):
 
 
 @mock_glue_job(etl_collect_to_cleanse)
-def test_job_execution_and_commit_csv(monkeypatch):
+def test_job_execution_and_commit_csv(monkeypatch, capsys):
     monkeypatch.setattr(sys, 'argv', mock_args)
     write_local_file(f'{mock_collect_bucket}/{mock_database_name}/{mock_table_name}', 'testfile.csv', mock_input_file_csv)
     write_local_file(f'{mock_scripts_bucket}/etl/transformation-spec', f'{mock_database_name}-{mock_table_name}.csv', mock_mapping_file)
@@ -90,7 +90,7 @@ def test_job_execution_and_commit_csv(monkeypatch):
 
 
 @mock_glue_job(etl_collect_to_cleanse)
-def test_job_execution_and_commit_tsv(monkeypatch):
+def test_job_execution_and_commit_tsv(monkeypatch, capsys):
     monkeypatch.setattr(sys, 'argv', mock_args)
     write_local_file(f'{mock_collect_bucket}/{mock_database_name}/{mock_table_name}', 'testfile.csv', mock_input_file_tsv)
     write_local_file(f'{mock_scripts_bucket}/etl/transformation-spec', f'{mock_database_name}-{mock_table_name}.csv', mock_mapping_file)
@@ -99,7 +99,7 @@ def test_job_execution_and_commit_tsv(monkeypatch):
 
 
 @mock_glue_job(etl_collect_to_cleanse)
-def test_missing_argument_exception(monkeypatch):
+def test_missing_argument_exception(monkeypatch, capsys):
     """
     Check error is raised if base_file_name argument is missing
     """

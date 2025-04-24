@@ -31,7 +31,7 @@ class GlueStack(cdk.Stack):
         **kwargs
     ):
         """CloudFormation stack to create Glue Jobs, Connections,
-        Script Bucket, Temporary Bucket, and an IAM Role for permissions.
+        Script Bucket, Temporary Bucket, and an IAM role for permissions.
 
         Parameters
         ----------
@@ -62,30 +62,27 @@ class GlueStack(cdk.Stack):
         self.mappings = get_environment_configuration(target_environment)
         self.logical_id_prefix = get_logical_id_prefix()
         self.resource_name_prefix = get_resource_name_prefix()
-        if (target_environment == PROD or target_environment == TEST):
+        if target_environment in [ TEST, PROD ]:
             self.removal_policy = cdk.RemovalPolicy.RETAIN
             self.log_retention = logs.RetentionDays.SIX_MONTHS
+            self.temp_object_expiration_days = cdk.Duration.days(365)
+            self.noncurrent_version_expiration_days = cdk.Duration.days(365)
         else:
             self.removal_policy = cdk.RemovalPolicy.DESTROY
             self.log_retention = logs.RetentionDays.ONE_MONTH
+            self.temp_object_expiration_days = cdk.Duration.days(30)
+            self.noncurrent_version_expiration_days = cdk.Duration.days(30)
 
-        buckets = ImportedBuckets(self, logical_id_suffix='GlueStack')
+        self.buckets = ImportedBuckets(self, logical_id_suffix='GlueStack')
         vpc = ImportedVpc(self, logical_id_suffix='GlueStack')
 
-        self.glue_scripts_bucket = self.get_glue_scripts_bucket(
-            buckets.s3_kms_key,
-            buckets.access_logs
-        )
-        self.glue_scripts_temp_bucket = self.get_glue_scripts_temporary_bucket(
-            buckets.s3_kms_key,
-            buckets.access_logs
-        )
-        glue_role = self.get_glue_role(
-            buckets.s3_kms_key,
+        self.glue_scripts_bucket = self.get_glue_scripts_bucket()
+        self.glue_scripts_temp_bucket = self.get_glue_scripts_temporary_bucket()
+        self.glue_role = self.get_glue_role(
             buckets=[
-                buckets.raw,
-                buckets.conformed,
-                buckets.purposebuilt,
+                self.buckets.raw,
+                self.buckets.conformed,
+                self.buckets.purposebuilt,
                 self.glue_scripts_bucket,
                 self.glue_scripts_temp_bucket,
             ],
@@ -118,6 +115,7 @@ class GlueStack(cdk.Stack):
                 connection_input=glue.CfnConnection.ConnectionInputProperty(
                     connection_type="NETWORK",
                     name=f'{target_environment.lower()}-{self.resource_name_prefix}-glue-etl-connection-{subnet_number + 1}',
+                    description=f'Data Catalog Connection for InsuranceLake VPC Subnet {subnet_number + 1}',
                     physical_connection_requirements=glue.CfnConnection.PhysicalConnectionRequirementsProperty(
                         availability_zone=vpc.subnets[subnet_number].availability_zone,
                         subnet_id=vpc.subnets[subnet_number].subnet_id,
@@ -128,6 +126,7 @@ class GlueStack(cdk.Stack):
             for subnet_number in range(len(vpc.subnets))
         ]
 
+        # Consume-Entity-Match AWS Glue job cannot use extra-jars until it is upgraded to Gluev5
         common_default_arguments = {
                 '--enable-auto-scaling': 'true',
                 '--enable-continuous-cloudwatch-log': 'true',
@@ -136,7 +135,6 @@ class GlueStack(cdk.Stack):
                 '--enable-spark-ui': 'true',
                 '--enable-glue-datacatalog': 'true',
                 '--user-jars-first': 'true',
-                '--extra-jars': ','.join(spark_libraries) if spark_libraries else None,
                 '--extra-py-files': ','.join(glue_libraries),
                 '--environment': self.target_environment,
                 '--txn_bucket': f's3://{self.glue_scripts_bucket.bucket_name}',
@@ -161,11 +159,12 @@ class GlueStack(cdk.Stack):
             # definition in the calling Step Functions GlueStartJobRun
             default_arguments=common_default_arguments | {
                 '--additional-python-modules': 'rapidfuzz',
+                '--extra-jars': ','.join(spark_libraries) if spark_libraries else None,
                 '--TempDir': f's3://{self.glue_scripts_temp_bucket.bucket_name}/etl/collect_to_cleanse/',
                 '--spark-event-logs-path': f's3://{self.glue_scripts_temp_bucket.bucket_name}/spark-ui/collect_to_cleanse/',
                 '--txn_spec_prefix_path': '/etl/transformation-spec/',
-                '--source_bucket': f's3://{buckets.raw.bucket_name}',
-                '--target_bucket': f's3://{buckets.conformed.bucket_name}',
+                '--source_bucket': f's3://{self.buckets.raw.bucket_name}',
+                '--target_bucket': f's3://{self.buckets.conformed.bucket_name}',
                 '--hash_value_table': hash_values_table.table_name,
                 '--value_lookup_table': value_lookup_table.table_name,
                 '--multi_lookup_table': multi_lookup_table.table_name,
@@ -174,12 +173,12 @@ class GlueStack(cdk.Stack):
             execution_property=glue.CfnJob.ExecutionPropertyProperty(
                 max_concurrent_runs=10,
             ),
-            glue_version='4.0',
+            glue_version='5.0',
             max_retries=0,
             # With auto-scaling, this represents the maximum number of workers
             # If using a Connection, there must be enough IP addresses for each worker
-            number_of_workers=50,
-            role=glue_role.role_arn,
+            number_of_workers=25,
+            role=self.glue_role.role_arn,
             worker_type='G.1X',
             # TODO: Allow the user to specify a user-managed, out-of-stack security group name
             # Glue security configurations cannot be updated by Cloudformation and break all stack updates
@@ -203,22 +202,23 @@ class GlueStack(cdk.Stack):
             # These arguments are common to all Glue job runs and are overlayed by the arguments
             # definition in the calling Step Functions GlueStartJobRun
             default_arguments=common_default_arguments | {
+                '--extra-jars': ','.join(spark_libraries) if spark_libraries else None,
                 '--TempDir': f's3://{self.glue_scripts_temp_bucket.bucket_name}/etl/cleanse_to_consume/',
                 '--spark-event-logs-path': f's3://{self.glue_scripts_temp_bucket.bucket_name}/spark-ui/cleanse_to_consume/',
                 '--txn_sql_prefix_path': '/etl/transformation-sql/',
-                '--source_bucket': f's3://{buckets.conformed.bucket_name}',
-                '--target_bucket': f's3://{buckets.purposebuilt.bucket_name}',
+                '--source_bucket': f's3://{self.buckets.conformed.bucket_name}',
+                '--target_bucket': f's3://{self.buckets.purposebuilt.bucket_name}',
                 '--dq_results_table': dq_results_table.table_name,
             },
             execution_property=glue.CfnJob.ExecutionPropertyProperty(
                 max_concurrent_runs=10,
             ),
-            glue_version='4.0',
+            glue_version='5.0',
             max_retries=0,
             # With auto-scaling, this represents the maximum number of workers
             # If using a Connection, there must be enough IP addresses for each worker
-            number_of_workers=50,
-            role=glue_role.role_arn,
+            number_of_workers=25,
+            role=self.glue_role.role_arn,
             worker_type='G.1X',
             # TODO: Allow the user to specify a user-managed, out-of-stack security group name
             # Glue security configurations cannot be updated by Cloudformation and break all stack updates
@@ -245,8 +245,8 @@ class GlueStack(cdk.Stack):
                 '--additional-python-modules': 'recordlinkage',
                 '--TempDir': f's3://{self.glue_scripts_temp_bucket.bucket_name}/etl/consume_entity_match/',
                 '--spark-event-logs-path': f's3://{self.glue_scripts_temp_bucket.bucket_name}/spark-ui/consume_entity_match/',
-                '--source_bucket': f's3://{buckets.conformed.bucket_name}',
-                '--target_bucket': f's3://{buckets.purposebuilt.bucket_name}',
+                '--source_bucket': f's3://{self.buckets.conformed.bucket_name}',
+                '--target_bucket': f's3://{self.buckets.purposebuilt.bucket_name}',
                 '--txn_spec_prefix_path': '/etl/transformation-spec/',
                 '--iceberg_catalog': 'glue_catalog',
                 '--datalake-formats': 'iceberg',
@@ -254,12 +254,12 @@ class GlueStack(cdk.Stack):
             execution_property=glue.CfnJob.ExecutionPropertyProperty(
                 max_concurrent_runs=10,
             ),
-            glue_version='4.0',
+            glue_version='4.0', # Glue v5 does not yet have this fix: https://issues.apache.org/jira/browse/SPARK-48871
             max_retries=0,
             # With auto-scaling, this represents the maximum number of workers
             # If using a Connection, there must be enough IP addresses for each worker
-            number_of_workers=50,
-            role=glue_role.role_arn,
+            number_of_workers=25,
+            role=self.glue_role.role_arn,
             worker_type='G.1X',
         )
         # Recommended encryption settings for account Glue Data Catalog
@@ -291,20 +291,33 @@ class GlueStack(cdk.Stack):
             }
         ], apply_to_children=True)
 
+        # Customer Managed Policy to attach to roles needing data lake read access
+        self.data_lake_consumer_policy = self.get_datalake_consumer_policy()
 
-    def get_glue_scripts_bucket(
-        self,
-        s3_kms_key: kms.Key,
-        access_logs_bucket: s3.Bucket
-    ) -> s3.Bucket:
+        cdk.CfnOutput(
+            self,
+            f'Export{target_environment}{self.logical_id_prefix}GlueRole',
+            value=self.glue_role.role_name,
+            export_name=f'{target_environment}{self.logical_id_prefix}GlueRole'
+        )
+
+        cdk.CfnOutput(
+            self,
+            f'Export{target_environment}{self.logical_id_prefix}ConsumerPolicyArn',
+            value=self.data_lake_consumer_policy.managed_policy_arn,
+            export_name=f'{target_environment}{self.logical_id_prefix}ConsumerPolicyArn'
+        )
+
+        cdk.CfnOutput(
+            self,
+            f'Export{target_environment}{self.logical_id_prefix}ConsumerPolicy',
+            value=self.data_lake_consumer_policy.managed_policy_name,
+            export_name=f'{target_environment}{self.logical_id_prefix}ConsumerPolicy'
+        )
+
+
+    def get_glue_scripts_bucket(self) -> s3.Bucket:
         """Creates S3 Bucket that contains glue scripts used in Job execution
-
-        Parameters
-        ----------
-        s3_kms_key
-            The KMS Key to use for encryption of data at rest
-        access_logs_bucket
-            The access logs target for this bucket
 
         Returns
         -------
@@ -312,6 +325,12 @@ class GlueStack(cdk.Stack):
             Glue scripts bucket construct
         """
         bucket_name = f'{self.target_environment.lower()}-{self.resource_name_prefix}-{self.account}-{self.region}-etl-scripts'
+        lifecycle_rules = [
+            s3.LifecycleRule(
+                enabled=True,
+                noncurrent_version_expiration=self.noncurrent_version_expiration_days,
+            )
+        ]
         bucket = s3.Bucket(
             self,
             f'{self.target_environment}{self.logical_id_prefix}GlueScriptsBucket',
@@ -319,14 +338,15 @@ class GlueStack(cdk.Stack):
             access_control=s3.BucketAccessControl.PRIVATE,
             block_public_access=s3.BlockPublicAccess.BLOCK_ALL,
             enforce_ssl=True,
-            bucket_key_enabled=s3_kms_key is not None,
+            bucket_key_enabled=self.buckets.s3_kms_key is not None,
             encryption=s3.BucketEncryption.KMS,
-            encryption_key=s3_kms_key,
+            encryption_key=self.buckets.s3_kms_key,
             public_read_access=False,
             removal_policy=self.removal_policy,
             versioned=True,
+            lifecycle_rules=lifecycle_rules,
             object_ownership=s3.ObjectOwnership.OBJECT_WRITER,
-            server_access_logs_bucket=access_logs_bucket,
+            server_access_logs_bucket=self.buckets.access_logs,
             server_access_logs_prefix=f'{bucket_name}-',
         )
 
@@ -336,12 +356,13 @@ class GlueStack(cdk.Stack):
             self,
             'DeployGlueJobScript',
             # This path is relative to the root of the project
-            sources=[s3_deployment.Source.asset('./lib/glue_scripts')],
+            sources=[ s3_deployment.Source.asset('./lib/glue_scripts') ],
             destination_bucket=bucket,
             destination_key_prefix='etl',
             prune=self.removal_policy == cdk.RemovalPolicy.DESTROY,
             retain_on_delete=self.removal_policy == cdk.RemovalPolicy.RETAIN,
             log_retention=self.log_retention,
+            memory_limit=256,
         )
 
         NagSuppressions.add_resource_suppressions(self, [
@@ -362,19 +383,8 @@ class GlueStack(cdk.Stack):
         return bucket
 
 
-    def get_glue_scripts_temporary_bucket(
-        self,
-        s3_kms_key: kms.Key,
-        access_logs_bucket: s3.Bucket
-    ) -> s3.Bucket:
+    def get_glue_scripts_temporary_bucket(self) -> s3.Bucket:
         """Creates S3 Bucket used as a temporary file store in Job execution
-
-        Parameters
-        ----------
-        s3_kms_key
-            The KMS Key to use for encryption of data at rest
-        access_logs_bucket
-            The access logs target for this bucket
 
         Returns
         -------
@@ -382,30 +392,35 @@ class GlueStack(cdk.Stack):
             Glue scripts bucket construct
         """
         bucket_name = f'{self.target_environment.lower()}-{self.resource_name_prefix}-{self.account}-{self.region}-glue-temp'
-        bucket = s3.Bucket(
+        lifecycle_rules = [
+            s3.LifecycleRule(
+                enabled=True,
+                expiration=self.temp_object_expiration_days,
+                noncurrent_version_expiration=self.noncurrent_version_expiration_days,
+            )
+        ]
+        return s3.Bucket(
             self,
             f'{self.target_environment}{self.logical_id_prefix}GlueScriptsTemporaryBucket',
             bucket_name=bucket_name,
             access_control=s3.BucketAccessControl.PRIVATE,
             block_public_access=s3.BlockPublicAccess.BLOCK_ALL,
             enforce_ssl=True,
-            bucket_key_enabled=s3_kms_key is not None,
-            encryption=s3.BucketEncryption.KMS if s3_kms_key else s3.BucketEncryption.S3_MANAGED,
-            encryption_key=s3_kms_key if s3_kms_key else None,
+            bucket_key_enabled=self.buckets.s3_kms_key is not None,
+            encryption=s3.BucketEncryption.KMS if self.buckets.s3_kms_key else s3.BucketEncryption.S3_MANAGED,
+            encryption_key=self.buckets.s3_kms_key if self.buckets.s3_kms_key else None,
             public_read_access=False,
             removal_policy=cdk.RemovalPolicy.DESTROY,
             versioned=True,
+            lifecycle_rules=lifecycle_rules,
             object_ownership=s3.ObjectOwnership.OBJECT_WRITER,
-            server_access_logs_bucket=access_logs_bucket,
+            server_access_logs_bucket=self.buckets.access_logs,
             server_access_logs_prefix=f'{bucket_name}-',
         )
-
-        return bucket
 
 
     def get_glue_role(
         self,
-        s3_kms_key: kms.Key,
         buckets: list,
         dynamodb_tables: list,
     ) -> iam.Role:
@@ -413,8 +428,6 @@ class GlueStack(cdk.Stack):
 
         Parameters
         ----------
-        s3_kms_key
-            The KMS Key to use for encryption of data at rest
         buckets
             List of S3 Bucket constructs to use for S3 policy resources
         dynamodb_tables
@@ -450,12 +463,13 @@ class GlueStack(cdk.Stack):
                     )
                 ]),
                 # TODO: Remove glue scripts bucket from the resource list
-                'S3BucketWriteAccess':
+                'S3BucketObjectReadWriteAccess':
                 iam.PolicyDocument(statements=[
                     iam.PolicyStatement(
                         effect=iam.Effect.ALLOW,
                         actions=[
                             's3:ReplicateObject',
+                            's3:GetObjectVersion',
                             's3:PutObject',
                             's3:GetObject',
                             's3:DeleteObject',
@@ -473,7 +487,7 @@ class GlueStack(cdk.Stack):
                             'kms:GenerateDataKey',
                         ],
                         resources=[
-                            s3_kms_key.key_arn,
+                            self.buckets.s3_kms_key.key_arn,
                         ]
                     )
                 ]),
@@ -494,8 +508,6 @@ class GlueStack(cdk.Stack):
                         resources=dynamodb_resources,
                     )
                 ]),
-                # Glue job uses client-side settings for Athena query execution, which cannot be
-                # restricted to a specific resource
                 'AthenaAccess':
                 iam.PolicyDocument(statements=[
                     iam.PolicyStatement(
@@ -505,9 +517,7 @@ class GlueStack(cdk.Stack):
                             'athena:GetQueryResults',
                             'athena:StartQueryExecution',
                         ],
-                        resources=[
-                            '*',
-                        ]
+                        resources=[ '*' ]
                     )
                 ]),
             },
@@ -529,3 +539,116 @@ class GlueStack(cdk.Stack):
         ])
 
         return glue_role
+
+
+    def get_datalake_consumer_policy(self) -> iam.ManagedPolicy:
+        """Creates a customer managed policy to be attached to data lake consumer roles
+
+        Returns
+        -------
+        iam.ManagedPolicy
+            The IAM Managed Policy that was created
+        """
+        datalake_consumer_policy = iam.ManagedPolicy(
+            self,
+            f'{self.target_environment}{self.logical_id_prefix}ConsumerPolicy',
+            description='InsuranceLake Consumer IAM Managed Policy',
+            managed_policy_name=f'{self.target_environment.lower()}-{self.resource_name_prefix}-{self.region}-consumer-policy',
+            document=iam.PolicyDocument(statements=[
+                iam.PolicyStatement(
+                    sid='S3BucketReadAccess',
+                    effect=iam.Effect.ALLOW,
+                    actions=[
+                        's3:GetObject',
+                        's3:GetObjectVersion',
+                        's3:ListBucket',
+                    ],
+                    resources=[
+                        self.buckets.conformed.bucket_arn,
+                        self.buckets.conformed.arn_for_objects('*'),
+                        self.buckets.purposebuilt.bucket_arn,
+                        self.buckets.purposebuilt.arn_for_objects('*'),
+                    ]
+                ),
+                # This is required due to bucket level encryption on S3 Buckets
+                iam.PolicyStatement(
+                    sid='KmsAccess',
+                    effect=iam.Effect.ALLOW,
+                    actions=[
+                        'kms:Decrypt',
+                        'kms:GenerateDataKey',
+                    ],
+                    resources=[
+                        self.buckets.s3_kms_key.key_arn,
+                    ]
+                ),
+                iam.PolicyStatement(
+                    sid='AthenaAccess',
+                    effect=iam.Effect.ALLOW,
+                    actions=[
+                        'athena:ListDataCatalogs',
+                        'athena:ListDatabases',
+                        'athena:BatchGetQueryExecution',
+                        'athena:GetQueryExecution',
+                        'athena:GetQueryResults',
+                        'athena:GetQueryResultsStream',
+                        'athena:ListQueryExecutions',
+                        'athena:StartQueryExecution',
+                        'athena:StopQueryExecution',
+                        'athena:ListWorkGroups',
+                        'athena:GetWorkGroup',
+                        'athena:GetDataCatalog',
+                        'athena:GetDatabase',
+                        'athena:GetTableMetadata',
+                        'athena:ListTableMetadata',
+                    ],
+                    resources=[
+                        '*',
+                    ]
+                ),
+                iam.PolicyStatement(
+                    sid='GlueCatalogReadAccess',
+                    effect=iam.Effect.ALLOW,
+                    actions=[
+                        'lakeformation:GetDataAccess',
+                        'glue:GetDatabase',
+                        'glue:GetDatabases',
+                        'glue:GetTable',
+                        'glue:GetTables',
+                        'glue:GetPartition',
+                        'glue:GetPartitions',
+                        'glue:BatchGetPartition',
+                    ],
+                    resources=[
+                        '*',
+                    ]
+                ),
+                iam.PolicyStatement(
+                    sid='GlueTempBucketAccess',
+                    effect=iam.Effect.ALLOW,
+                    actions=[
+                        's3:GetBucketLocation',
+                        's3:GetObject',
+                        's3:ListBucket',
+                        's3:ListBucketMultipartUploads',
+                        's3:ListMultipartUploadParts',
+                        's3:AbortMultipartUpload',
+                        's3:CreateBucket',
+                        's3:PutObject',
+                        's3:PutBucketPublicAccessBlock',
+                    ],
+                    resources=[
+                        self.glue_scripts_temp_bucket.bucket_arn,
+                    ]
+                ),
+            ]),
+        )
+
+        NagSuppressions.add_resource_suppressions(datalake_consumer_policy, [
+            {
+                'id': 'AwsSolutions-IAM5',
+                'reason': 'Specified Athena and Glue Catalog actions must operate on wildcard resources'
+            },
+        ])
+
+        return datalake_consumer_policy

@@ -19,12 +19,16 @@ mock_collect_bucket = f'file:///tmp/{mock_resource_prefix}-collect-bucket'
 mock_cleanse_bucket = f'file:///tmp/{mock_resource_prefix}-cleanse-bucket'
 mock_consume_bucket = f'file:///tmp/{mock_resource_prefix}-consume-bucket'
 
+mock_database_uri = f'{mock_cleanse_bucket}/{mock_database_name}'
+
 
 def write_local_file(path: str, filename: str, data: str):
     path = path.replace('file://', '')
     os.makedirs(path, exist_ok=True)
     with open(path + '/' + filename, 'w') as input_file:
         input_file.writelines(data)
+
+    return path + '/' + filename
 
 def mock_spark_context(conf: SparkConf = None):
     return spark.sparkContext
@@ -38,7 +42,7 @@ class mock_lineage:
         # Not implemented/needed for mocks
         pass
 
-def mock_create_database(database_name: str):
+def mock_create_database(database_name: str, database_uri: str):
     # Not implemented/needed for mocks
     pass
 
@@ -67,6 +71,10 @@ def mock_purge_s3_path(self, path: str, options: dict = {}):
 def mock_athena_execute_query(database: str, query: str, max_attempts: int = 15) -> str:
     return 'SUCCEEDED'
 
+def mock_redshift_execute_query(database: str, query: str,
+        cluster_id: str = '', workgroup_name: str = '', max_attempts: int = 30) -> str:
+    return 'FINISHED'
+
 def mock_dataframe_saveastable(self, target_table: str, **kwargs):
     # Collapse saveAsTable calls to save(), skipping the catalog update
     storage_location = kwargs.pop('path', '')
@@ -78,7 +86,7 @@ class mock_glue_job:
         self.glue_job_module = glue_job_module
 
     def __call__(self, func):
-        def inner(monkeypatch, *args, **kwargs):
+        def inner(monkeypatch, capsys, *args, **kwargs):
             monkeypatch.setattr(SparkSession, 'sql', mock_spark_sql)
             monkeypatch.setattr(DataFrameWriter, 'saveAsTable', mock_dataframe_saveastable)
             # All scripts use these classes/functions
@@ -93,7 +101,9 @@ class mock_glue_job:
             if 'cleanse_to_consume' in self.glue_job_module.__name__:
                 monkeypatch.setattr(GlueContext, 'purge_s3_path', mock_purge_s3_path)
                 monkeypatch.setattr(self.glue_job_module, 'upsert_catalog_table', mock_upsert_catalog_table)
-            func(monkeypatch, *args, **kwargs)
+                monkeypatch.setattr(self.glue_job_module, 'athena_execute_query', mock_athena_execute_query)
+                monkeypatch.setattr(self.glue_job_module, 'redshift_execute_query', mock_redshift_execute_query)
+            func(monkeypatch, capsys, *args, **kwargs)
         return inner
 
 

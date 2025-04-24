@@ -38,12 +38,6 @@ expected_arguments = [
     'p_day',
 ]
 
-# Handle optional arguments
-for arg in sys.argv:
-    if '--data_lineage_table' in arg:
-        expected_arguments.append('data_lineage_table')
-
-
 
 def fill_global_id(df: DataFrame, global_id: str, args, lineage) -> DataFrame:
     """ Assign all entities a unique ID that do not have one and ensure Global ID field is the
@@ -290,7 +284,15 @@ def entitymatch_recordlinkage(
 
 
 def main():
-    args = getResolvedOptions(sys.argv, expected_arguments)
+    # Make a local copy to help unit testing (the global is shared across tests)
+    local_expected_arguments = expected_arguments.copy()
+
+    # Handle optional arguments
+    for arg in sys.argv:
+        if '--data_lineage_table' in arg:
+            local_expected_arguments.append('data_lineage_table')
+
+    args = getResolvedOptions(sys.argv, local_expected_arguments)
 
     # Storage location is used for all tables in the Iceberg warehouse
     storage_location = args['target_bucket'] + '/iceberg'
@@ -351,7 +353,7 @@ def main():
     # Bandit check suppressed due to parameters being from trusted, known source
     partition_predicate = ' AND '. \
         join([ f"{name} == '{value}'" for name, value in partition.items() ])
-    entity_incoming_df = spark.sql(f'SELECT * FROM {consume_database}.{source_table}'   # nosec B608
+    entity_incoming_df = spark.sql(f'SELECT * FROM `{consume_database}`.`{source_table}`'   # nosec B608
         f' WHERE {partition_predicate}')
 
     print(f'Retrieved {entity_incoming_df.count()} records as incoming data from'
@@ -440,19 +442,18 @@ def main():
         # Creates a temporary view using the DataFrame
         entity_incoming_df.createOrReplaceTempView('entity_incoming')
 
-        update_list = ', '.join([ f"{entity_primary_table_name}.{field.name} = entity_incoming.{field.name}"
+        update_list = ', '.join([ f"`{entity_primary_table_name}`.{field.name} = entity_incoming.{field.name}"
             for field in entity_incoming_df.schema ])
 
         # Bandit check suppressed due to parameters being from trusted, known source
-        spark_sql = f"""MERGE INTO
-            {args['iceberg_catalog']}.`{consume_database}`.`{entity_primary_table_name}`
+        spark.sql(f"""MERGE INTO
+            `{args['iceberg_catalog']}`.`{consume_database}`.`{entity_primary_table_name}`
             USING entity_incoming
-            ON {entity_primary_table_name}.{global_id_field} = entity_incoming.{global_id_field}
+            ON `{entity_primary_table_name}`.`{global_id_field}` = entity_incoming.`{global_id_field}`
             WHEN MATCHED THEN UPDATE SET {update_list}
             WHEN NOT MATCHED THEN INSERT *
-            """ # nosec B608
-        spark.sql(spark_sql)
-        lineage.update_lineage(entity_primary_df, args['source_key'], 'sparksql', transform=[ spark_sql ])
+            """)    # nosec B608
+        # No additional lineage tracking here, because execution_id will be updated by MERGE INTO
 
     job.commit()
     print('Data successfully written to Consume Primary Entity table; job complete')

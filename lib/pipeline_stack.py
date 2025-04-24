@@ -7,15 +7,13 @@ import aws_cdk.aws_s3 as s3
 import aws_cdk.aws_iam as iam
 import aws_cdk.aws_logs as logs
 import aws_cdk.aws_codepipeline as CodePipeline
-import aws_cdk.aws_codepipeline_actions as CodePipelineActions
 import aws_cdk.aws_codebuild as CodeBuild
 import aws_cdk.aws_codecommit as CodeCommit
 from cdk_nag import AwsSolutionsChecks, NagSuppressions
 
 from .configuration import (
     ACCOUNT_ID, CODECOMMIT_MIRROR_REPOSITORY_NAME, DEPLOYMENT, PROD, TEST,
-	GITHUB_REPOSITORY_NAME, GITHUB_REPOSITORY_OWNER_NAME, GITHUB_TOKEN,
-    CODESTAR_CONNECTION_ARN, CODESTAR_REPOSITORY_OWNER_NAME, CODESTAR_REPOSITORY_NAME,
+    CODECONNECTIONS_ARN, CODECONNECTIONS_REPOSITORY_OWNER_NAME, CODECONNECTIONS_REPOSITORY_NAME,
 	CODECOMMIT_REPOSITORY_NAME, CODECOMMIT_MIRROR_REPOSITORY_NAME,
     get_logical_id_prefix, get_resource_name_prefix, get_all_configurations
 )
@@ -93,16 +91,6 @@ class PipelineStack(cdk.Stack):
             build_environment=code_build_env,
             role_policy=[
                 iam.PolicyStatement(
-                    sid='EtlPipelineSecretsManagerPolicy',
-                    effect=iam.Effect.ALLOW,
-                    actions=[
-                        'secretsmanager:GetSecretValue',
-                    ],
-                    resources=[
-                        f'arn:aws:secretsmanager:{self.region}:{self.account}:secret:/InsuranceLake/*',
-                    ],
-                ),
-                iam.PolicyStatement(
                     actions=[ 'sts:AssumeRole' ],
                     resources=[ '*' ],
                     conditions={
@@ -125,7 +113,8 @@ class PipelineStack(cdk.Stack):
                 input=self.get_codepipeline_source(),
                 commands=[
                     'npm install -g aws-cdk',
-                    'python -m pip install -r requirements.txt --root-user-action=ignore',
+                    'pip install --upgrade pip --root-user-action=ignore',
+                    'pip install -r requirements.txt --root-user-action=ignore',
                     'cdk synth'
                 ],
             ),
@@ -199,24 +188,13 @@ class PipelineStack(cdk.Stack):
         Pipelines.CodePipelineSource
             CodePipeline source repository object
         """
-        if self.mappings[DEPLOYMENT][GITHUB_REPOSITORY_NAME]:
-            # Github
-            return Pipelines.CodePipelineSource.git_hub(
-                    repo_string=f'{self.mappings[DEPLOYMENT][GITHUB_REPOSITORY_OWNER_NAME]}/'
-                        f'{self.mappings[DEPLOYMENT][GITHUB_REPOSITORY_NAME]}',
-                    branch=self.target_branch,
-                    authentication=cdk.SecretValue.secrets_manager(
-                        self.mappings[DEPLOYMENT][GITHUB_TOKEN]
-                    ),
-                    trigger=CodePipelineActions.GitHubTrigger.POLL,
-                )
-        if self.mappings[DEPLOYMENT][CODESTAR_REPOSITORY_NAME]:
-            # CodeStar
+        if self.mappings[DEPLOYMENT][CODECONNECTIONS_REPOSITORY_NAME]:
+            # CodeConnections
             return Pipelines.CodePipelineSource.connection(
-                repo_string=f'{self.mappings[DEPLOYMENT][CODESTAR_REPOSITORY_OWNER_NAME]}/' \
-                    f'{self.mappings[DEPLOYMENT][CODESTAR_REPOSITORY_NAME]}',
+                repo_string=f'{self.mappings[DEPLOYMENT][CODECONNECTIONS_REPOSITORY_OWNER_NAME]}/' \
+                    f'{self.mappings[DEPLOYMENT][CODECONNECTIONS_REPOSITORY_NAME]}',
                 branch=self.target_branch,
-                connection_arn=self.mappings[DEPLOYMENT][CODESTAR_CONNECTION_ARN],
+                connection_arn=self.mappings[DEPLOYMENT][CODECONNECTIONS_ARN],
             )
         else:
             # CodeCommit

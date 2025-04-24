@@ -2,7 +2,7 @@
 title: Data Quality
 parent: User Documentation
 nav_order: 5
-last_modified_date: 2024-09-26
+last_modified_date: 2025-03-21
 ---
 # Data Quality with AWS Glue Data Quality Reference
 {: .no_toc }
@@ -208,6 +208,16 @@ An example data quality configuration file follows:
 
 * Refer to [Measure performance of AWS Glue Data Quality for ETL pipelines](https://aws.amazon.com/blogs/big-data/measure-performance-of-aws-glue-data-quality-for-etl-pipelines/) for detailed information on data quality rule performance and cost.
 
+* Example CustomSQL expression to evaluate a rolling 90 day average
+    ```json
+    {
+        "after_sparksql": {
+            "warn_rules": [
+                "CustomSql 'SELECT avg(WrittenPremiumAmount) FROM primary WHERE EffectiveDate >= now() - interval 90 days' between 5000 and 500000"
+            ]
+        }
+    }
+    ```
 
 ## Using Data Freshness to Manage Dependent Workflows
 

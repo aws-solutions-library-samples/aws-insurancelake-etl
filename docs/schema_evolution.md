@@ -2,7 +2,7 @@
 title: Schema Evolution
 parent: User Documentation
 nav_order: 6
-last_modified_date: 2024-09-26
+last_modified_date: 2025-01-15
 ---
 # InsuranceLake Schema Evolution Documentation
 {: .no_toc }
@@ -88,7 +88,7 @@ By default, the Collect-to-Cleanse and Cleanse-to-Consume InsuranceLake AWS Glue
 
 If an unsupported change is published to the data lake, queries across partitions with those schema differences will fail. You can work around this issue by selectively querying specific partitions, but some partitions will always trigger the schema merge failure. This is because Athena and Spark will always use the schema in the Data Catalog as the target for schema merges.
 
-Tables created by the ETL use **read-by-name** by default. This means that reordering columns, adding columns in any location, and removing columns is supported; however, renaming column in place is not supported.
+Tables created by the ETL use **read-by-name** by default. This means that reordering columns, adding columns in any location, and removing columns is supported; however, renaming a column in place is not supported. Renaming a column in place will be recognized as a column addition and a column removal at the same time.
 
 When columns are missing from a partition, rows from that partition will have null values in the missing columns.
 

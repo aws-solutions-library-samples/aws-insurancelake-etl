@@ -68,7 +68,7 @@ def mock_table_exists_true(database_name, table_name):
 
 
 @mock_glue_job(etl_consume_entity_match)
-def test_entity_primary_table_write(monkeypatch):
+def test_entity_primary_table_write(monkeypatch, capsys):
     monkeypatch.setattr(sys, 'argv', mock_args)
     monkeypatch.setattr(etl_consume_entity_match, 'table_exists', mock_table_exists_false)
     write_local_file(f'{mock_scripts_bucket}/etl/transformation-spec', f'{mock_database_name}-entitymatch.json', json.dumps(mock_simple_spec_file))
@@ -85,7 +85,7 @@ def test_entity_primary_table_write(monkeypatch):
 
 
 @mock_glue_job(etl_consume_entity_match)
-def test_missing_argument_exception(monkeypatch):
+def test_missing_argument_exception(monkeypatch, capsys):
     """
     Check error is raised if table_name argument is missing
     """

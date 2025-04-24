@@ -11,6 +11,7 @@ import aws_cdk.aws_lambda as _lambda
 import aws_cdk.aws_s3 as s3
 import aws_cdk.aws_s3_notifications as s3_notifications
 import aws_cdk.aws_sns as sns
+import aws_cdk.aws_sns_subscriptions as subscriptions
 import aws_cdk.aws_stepfunctions as stepfunctions
 import aws_cdk.aws_stepfunctions_tasks as stepfunctions_tasks
 from cdk_nag import NagSuppressions
@@ -68,7 +69,7 @@ class StepFunctionsStack(cdk.Stack):
             self.removal_policy = cdk.RemovalPolicy.DESTROY
             self.log_retention = logs.RetentionDays.ONE_MONTH
 
-        buckets = ImportedBuckets(self, logical_id_suffix='StepFunctionsStack')
+        self.buckets = ImportedBuckets(self, logical_id_suffix='StepFunctionsStack')
 
         cloudwatch_step_function_log_group = logs.LogGroup(
             self,
@@ -82,7 +83,7 @@ class StepFunctionsStack(cdk.Stack):
             f'{target_environment}{self.logical_id_prefix}EtlNotificationTopic',
             topic_name=f'{target_environment.lower()}-{self.resource_name_prefix}-etl-notification-topic',
             display_name='InsuranceLake ETL Notifications Topic',
-            master_key=buckets.s3_kms_key,
+            master_key=self.buckets.s3_kms_key,
         )
 
         status_function = self.lambda_function_for_etl(
@@ -194,7 +195,7 @@ class StepFunctionsStack(cdk.Stack):
             f'{target_environment}{self.logical_id_prefix}EtlStateMachine',
             state_machine_name=f'{target_environment.lower()}-{self.resource_name_prefix}-etl-state-machine',
             tracing_enabled=True,
-            definition=machine_definition,
+            definition_body=stepfunctions.DefinitionBody.from_chainable(machine_definition),
             logs=stepfunctions.LogOptions(
                 destination=cloudwatch_step_function_log_group,
                 level=stepfunctions.LogLevel.ALL,
@@ -208,7 +209,7 @@ class StepFunctionsStack(cdk.Stack):
                     'kms:GenerateDataKey',
                     'kms:Decrypt',
                 ],
-                resources=[buckets.s3_kms_key.key_arn],
+                resources=[self.buckets.s3_kms_key.key_arn],
             )
         )
 
@@ -240,7 +241,7 @@ class StepFunctionsStack(cdk.Stack):
 
         # Will create CustomResource and Lambda to add event handler to imported bucket
         # TODO: Apply rotation and retention policies to Custom Resource Lambda log group
-        buckets.raw.add_event_notification(
+        self.buckets.raw.add_event_notification(
             s3.EventType.OBJECT_CREATED,
             s3_notifications.LambdaDestination(trigger_function),
         )
@@ -255,6 +256,22 @@ class StepFunctionsStack(cdk.Stack):
                 'reason': 'Bucket Notification CustomResource used only during stack deployment and deletion'
             },
         ], apply_to_children=True)
+
+
+        dependency_function = self.lambda_function_for_etl(
+            logical_id_suffix='EtlDependencyTrigger',
+            resource_name_suffix='etl-dependency-trigger',
+            function_description='Dependency handler for SNS topic to trigger dependent workflows',
+            lambda_code_relative_path='dependency_trigger',
+            lambda_environment={
+                'DYNAMODB_TABLE_NAME': job_audit_table.table_name,
+                'SFN_STATE_MACHINE_ARN': machine.state_machine_arn,
+            },
+            job_audit_table=job_audit_table,
+            state_machine=machine,
+        )
+        notification_topic.add_subscription(subscriptions.LambdaSubscription(dependency_function))
+
 
         cdk.CfnOutput(
             self,
@@ -301,15 +318,15 @@ class StepFunctionsStack(cdk.Stack):
         }
 
         merged_arguments = {
-                # These arguments overlay and/or override base arguments from the Glue Job definition
-                '--state_machine_name.$': '$$.StateMachine.Name',
-                '--execution_id.$': '$.execution_id',
-                '--source_key.$': '$.source_key',
-                '--table_name.$': '$.table_name',
-                '--p_year.$': '$.p_year',
-                '--p_month.$': '$.p_month',
-                '--p_day.$': '$.p_day',
-            }
+            # These arguments overlay and/or override base arguments from the Glue Job definition
+            '--state_machine_name.$': '$$.StateMachine.Name',
+            '--execution_id.$': '$.execution_id',
+            '--source_key.$': '$.source_key',
+            '--table_name.$': '$.table_name',
+            '--p_year.$': '$.p_year',
+            '--p_month.$': '$.p_month',
+            '--p_day.$': '$.p_day',
+        }
         merged_arguments.update(arguments)
 
         glue_task = stepfunctions_tasks.GlueStartJobRun(
@@ -342,9 +359,9 @@ class StepFunctionsStack(cdk.Stack):
         Parameters
         ----------
         logical_id_suffix
-            Suffix to append to Logical ID of IAM Role to differentiate between Lambdas
+            Suffix to append to Logical ID of IAM role to differentiate between Lambdas
         resource_name_suffix
-            Suffix to append to IAM Role name to differentiate between Lambdas
+            Suffix to append to IAM role name to differentiate between Lambdas
         log_group
             Log group for the Lambda function
         job_audit_table
@@ -374,8 +391,9 @@ class StepFunctionsStack(cdk.Stack):
                 iam.PolicyStatement(
                     effect=iam.Effect.ALLOW,
                     actions=[
-                        'dynamodb:PutItem',
                         'dynamodb:GetItem',
+                        'dynamodb:Scan',
+                        'dynamodb:PutItem',
                         'dynamodb:UpdateItem',
                     ],
                     resources=[job_audit_table.table_arn]
@@ -399,15 +417,29 @@ class StepFunctionsStack(cdk.Stack):
 
         if glue_scripts_bucket is not None:
             policies.update({
-                # Decryption not needed because we just use ListObjects (requires ListBucket permission)
                 'EtlScriptsS3Access':
                 iam.PolicyDocument(statements=[
                     iam.PolicyStatement(
                         effect=iam.Effect.ALLOW,
                         actions=[
                             's3:ListBucket',
+                            's3:GetObject',
                         ],
-                        resources=[glue_scripts_bucket.bucket_arn]
+                        resources=[
+                            glue_scripts_bucket.bucket_arn,
+                            glue_scripts_bucket.arn_for_objects('*')
+                        ]
+                    )
+                ]),
+                # This is required due to bucket level encryption on all S3 Buckets
+                'KmsAccess':
+                iam.PolicyDocument(statements=[
+                    iam.PolicyStatement(
+                        effect=iam.Effect.ALLOW,
+                        actions=[ 'kms:Decrypt' ],
+                        resources=[
+                            self.buckets.s3_kms_key.key_arn,
+                        ]
                     )
                 ]),
             })
@@ -438,9 +470,9 @@ class StepFunctionsStack(cdk.Stack):
         Parameters
         ----------
         logical_id_suffix
-            Suffix to append to Logical ID of IAM Role to differentiate between Lambdas
+            Suffix to append to Logical ID of IAM role to differentiate between Lambdas
         resource_name_suffix
-            Suffix to append to IAM Role name to differentiate between Lambdas
+            Suffix to append to IAM role name to differentiate between Lambdas
         function_description
             Description of Lambda to use for deployment
         lambda_code_relative_path

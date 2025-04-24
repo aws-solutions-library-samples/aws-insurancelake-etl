@@ -58,12 +58,12 @@ def test_resource_types_and_counts(monkeypatch):
 		template = Template.from_stack(step_functions_stacks[environment])
 
 		template.resource_count_is('AWS::StepFunctions::StateMachine', 1)
-		# ETL Trigger, Job Audit Log, S3 Deployment CustomResource handler
-		template.resource_count_is('AWS::Lambda::Function', 3)
-		# 2 Lambda logs, 1 Statemachine log (future: include the CustomResource lambda log)
-		template.resource_count_is('AWS::Logs::LogGroup', 3)
-		# 3 Lambda roles, 1 Statemachine role
-		template.resource_count_is('AWS::IAM::Role', 4)
+		# ETL Trigger, Job Audit Log, Dependency Trigger, S3 Deployment CustomResource handler
+		template.resource_count_is('AWS::Lambda::Function', 4)
+		# 3 Lambda logs, 1 Statemachine log (future: include the CustomResource lambda log)
+		template.resource_count_is('AWS::Logs::LogGroup', 4)
+		# 4 Lambda roles, 1 Statemachine role
+		template.resource_count_is('AWS::IAM::Role', 5)
 
 
 def test_stack_has_correct_outputs(monkeypatch):

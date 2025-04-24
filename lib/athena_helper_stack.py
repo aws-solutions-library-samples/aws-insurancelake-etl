@@ -20,7 +20,7 @@ class AthenaHelperStack(cdk.Stack):
             glue_scripts_temp_bucket: s3.Bucket,
             **kwargs
         ):
-        """CloudFormation stack to create DynamoDB Tables
+        """CloudFormation stack to create Athena workgroup
 
         Parameters
         ----------

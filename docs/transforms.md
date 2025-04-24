@@ -430,7 +430,7 @@ Add or replace a column using a regular expression group match pattern applied t
 
 ### hash
 {: .no_toc }
-Apply a SHA256 hash function to specified column values.
+Apply a SHA256 hash function to specified column values. This transform implements vaultless tokenization.
 
 |Parameter    |Type    |Description
 |---	|---	|---
@@ -466,7 +466,7 @@ Redact or replace specified column values using supplied redaction string.
 
 ### tokenize
 {: .no_toc }
-Replace the specified column values with a SHA256 hash and store original values in a DynamoDB table.
+Replace the specified column values with a SHA256 hash and store original values in a DynamoDB table. This transform implements vaulted tokenization.
 
 |Parameter    |Type    |Description
 |---	|---	|---

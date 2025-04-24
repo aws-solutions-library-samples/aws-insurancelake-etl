@@ -1,23 +1,40 @@
 # Copyright Amazon.com and its affiliates; all rights reserved. This file is Amazon Web Services Content and may not be duplicated or distributed without permission.
 # SPDX-License-Identifier: MIT-0
-import boto3
 import sys
-import time
 import os
 import re
 import json
 
 from pyspark.context import SparkContext
 
-from awsglue.utils import getResolvedOptions
+from awsglue.utils import getResolvedOptions, GlueArgumentError
 from awsglue.context import GlueContext
 from awsglue.job import Job
 
 # For running in local Glue container
 sys.path.append(os.path.dirname(__file__) + '/lib')
 from glue_catalog_helpers import upsert_catalog_table
+from dataquery import athena_execute_query, redshift_execute_query
 from datalineage import DataLineageGenerator
 from dataquality_check import DataQualityCheck
+
+
+def get_redshift_connection_parameter(args: list):
+    connection_types = {
+        'redshift_cluster_id': 'cluster_id',        # provisioned
+        'redshift_workgroup_name': 'workgroup_name' # serverless
+    }
+
+    for arg_name, param_name in connection_types.items():
+        if arg_name in args:
+            if 'redshift_database' not in args:
+                raise GlueArgumentError(f'argument --redshift_database is required when using --{arg_name}')
+
+            return { param_name: args[arg_name] }
+
+    raise GlueArgumentError('argument --redshift_cluster_id or --redshift_workgroup_name is'
+                            ' required when executing Amazon Redshift SQL')
+
 
 expected_arguments = [
     'JOB_NAME',
@@ -40,64 +57,25 @@ expected_arguments = [
     'p_day',
 ]
 
-# Handle optional arguments
-for arg in sys.argv:
-    if '--data_lineage_table' in arg:
-        expected_arguments.append('data_lineage_table')
-
-
-def athena_execute_query(database: str, query: str, result_bucket: str, max_attempts: int = 15) -> str:
-    """Function to execute query using Athena boto client, loop until
-    result is returned, and return status.
-
-    Parameters
-    ----------
-    aws_account_id
-        AWS Account ID
-    database
-        Athena database in which to run the query
-    query
-        Single or multi-line query to run
-    max_attempts
-        Number of loops (1s apart) to attempt to get query status
-
-    Returns
-    -------
-    str
-        Status of query result execution
-    """
-    athena = boto3.client('athena')
-
-    query_response = athena.start_query_execution(
-            QueryExecutionContext = {'Database': database.lower()},
-            QueryString = query,
-            ResultConfiguration = {'OutputLocation': result_bucket + '/'}
-        )
-    print(f'Executed query response: {query_response}')
-
-    # Valid "state" Values: QUEUED | RUNNING | SUCCEEDED | FAILED | CANCELLED
-    attempts = max_attempts
-    status = 'QUEUED'
-    while status in [ 'QUEUED', 'RUNNING' ]:
-        if attempts == 0:
-            raise RuntimeError('athena_execute_query() exceeded max_attempts waiting for query')
-
-        query_details = athena.get_query_execution(QueryExecutionId = query_response['QueryExecutionId'])
-        print(f'Get query execution response: {query_details}')
-        status = query_details['QueryExecution']['Status']['State']
-        if status in [ 'FAILED', 'CANCELED' ]:
-            # Raise errors that are not raised from StartQueryExecution
-            raise RuntimeError("athena_execute_query() failed with query engine error: "
-                f"{query_details['QueryExecution']['Status'].get('StateChangeReason', '')}")
-        if status != 'SUCCEEDED':
-            time.sleep(1)   # nosemgrep
-        attempts -= 1
-
-    return status
+optional_arguments = [
+    'data_lineage_table',
+    'redshift_cluster_id',
+    'redshift_workgroup_name',
+    'redshift_database',
+]
 
 
 def main():
-    args = getResolvedOptions(sys.argv, expected_arguments)
+    # Make a local copy to help unit testing (the global is shared across tests)
+    local_expected_arguments = expected_arguments.copy()
+
+    # Handle optional arguments
+    for arg in sys.argv:
+        for optional_arg in optional_arguments:
+            if f'--{optional_arg}' in arg:
+                local_expected_arguments.append(optional_arg)
+
+    args = getResolvedOptions(sys.argv, local_expected_arguments)
 
     sc = SparkContext()
     glueContext = GlueContext(sc)
@@ -129,7 +107,6 @@ def main():
         print(f'No data quality rules file exists or error reading: {e.java_exception.getMessage()}, skipping')
         rules_json_data = {}
 
-    # TODO: Check if Lakeformation permissions break Spark SQL query and find workaround
     spark_sql_key = sql_prefix[1:] + 'spark-' + source_key_dashes + '.sql'
     print(f'Using Spark SQL transformation from: {spark_sql_key}')
     try:
@@ -237,6 +214,27 @@ def main():
                 status = athena_execute_query(
                     args['target_database_name'], sql.format(**substitution_data), args['TempDir'])
                 print(f'Athena query execution status: {status}')
+
+    # Amazon Redshift SQL is used to create views and RMS tables as external schema
+    redshift_sql_key = sql_prefix[1:] + 'redshift-' + source_key_dashes + '.sql'
+    print(f'Using Amazon Redshift SQL transformation from: {redshift_sql_key}')
+    try:
+        redshift_sql_data = sc.textFile(f"{args['txn_bucket']}/{redshift_sql_key}")
+        # Format with line breaks and preserve whitespace between lines so logging is easier to read
+        redshift_sql = '\n'.join(redshift_sql_data.collect())
+    except Exception as e:
+        message = e.java_exception.getMessage() if hasattr(e, 'java_exception') else str(e)
+        print(f'No Amazon Redshift SQL transformation exists or error reading: {message}, skipping')
+        redshift_sql = None
+
+    if redshift_sql:
+        redshift_connection_parameter = get_redshift_connection_parameter(args)
+        print(f'Executing Amazon Redshift SQL: {redshift_sql.format(**substitution_data)}')
+        status = redshift_execute_query(
+            database=args['redshift_database'],
+            query=redshift_sql.format(**substitution_data),
+            **redshift_connection_parameter)
+        print(f'Amazon Redshift query execution status: {status}')
 
     job.commit()
     print('Job complete')

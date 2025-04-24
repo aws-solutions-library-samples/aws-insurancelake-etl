@@ -55,14 +55,16 @@ def test_table_exists_false(monkeypatch):
 def test_create_database(monkeypatch):
     monkeypatch.setenv('AWS_DEFAULT_REGION', mock_region)
     glue_client = boto3.client('glue')
-    create_database(mock_database_name)
-    assert glue_client.get_database(Name=mock_database_name)
+    create_database(mock_database_name, mock_database_uri)
+    database_detail = glue_client.get_database(Name=mock_database_name)
+    assert 'Database' in database_detail
+    assert database_detail['Database'].get('LocationUri') == mock_database_uri
 
 @mock_aws
 def test_create_database_with_description(monkeypatch):
     monkeypatch.setenv('AWS_DEFAULT_REGION', mock_region)
     glue_client = boto3.client('glue')
-    create_database(mock_database_name, 'Test Description')
+    create_database(mock_database_name, mock_database_uri, 'Test Description')
     database_detail = glue_client.get_database(Name=mock_database_name)
     assert 'Database' in database_detail
     assert database_detail['Database'].get('Description') == 'Test Description'

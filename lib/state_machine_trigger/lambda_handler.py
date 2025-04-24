@@ -7,8 +7,6 @@ import os
 import logging
 import uuid
 import re
-from datetime import datetime
-import dateutil.tz
 from dateutil import parser as dateparser
 from urllib.parse import unquote_plus
 
@@ -17,47 +15,14 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 
-def record_etl_job_run(
-        audit_table_name: str,
-        sfn_arn: str,
-        execution_id: str,
-        execution_name: str,
-        execution_input: str,
-        principal_id: str,
-        source_ipaddress: str,
-    ):
-    """
-    Function to insert entry in dynamodb table for audit trail
+def record_etl_job_run(audit_table_name: str, item: dict):
+    """Function to insert entry in dynamodb table for audit trail
 
     table_name
         DynamoDB table name to use for job audit data
-    sfn_arn
-        AWS ARN of state machine being triggered
-    execution_id
-        State Machine execution unique ID
-    execution_name
-        Name of Step Functions State Machine being triggered
-    execution_input
-        State Machine execution input parameters
-    principal_id
-        S3 event principalId from userIdentity record
-    source_ipaddress
-        S3 event sourceIPAddress from requestParameters record
+    item
+        Dictionary of parameters to record in table
     """
-    now = datetime.now(tz=dateutil.tz.gettz('UTC'))
-    record_time = now.strftime('%Y-%m-%d %H:%M:%S.%f')
-    item = {
-        'execution_id': execution_id,
-        'sfn_execution_name': execution_name,
-        'sfn_arn': sfn_arn,
-        'sfn_input': execution_input,
-        'job_latest_status': 'STARTED',
-        'job_start_date': record_time,
-        'job_last_updated_timestamp': record_time,
-        'principal_id': principal_id,
-        'source_ipaddress': source_ipaddress,
-    }
-
     dynamo_client = boto3.resource('dynamodb')
     try:
         table = dynamo_client.Table(audit_table_name)
@@ -65,8 +30,7 @@ def record_etl_job_run(
     except botocore.exceptions.ClientError as error:
         raise RuntimeError(f'record_etl_job_run() DynamoDB put_item failed: {error}')
 
-    logger.info('record_etl_job_run() execution completed successfully')
-    print('Job audit record insert completed successfully')
+    logger.info('record_etl_job_run() completed successfully')
 
 
 def lambda_handler(event: dict, _) -> dict:
@@ -84,12 +48,13 @@ def lambda_handler(event: dict, _) -> dict:
     dict
         Lambda result dictionary
     """
+    s3_client = boto3.client('s3')
     sfn_client = boto3.client('stepfunctions')
     sfn_arn = os.environ['SFN_STATE_MACHINE_ARN']
     audit_table_name = os.environ['DYNAMODB_TABLE_NAME']
     glue_scripts_bucket_name = os.environ['GLUE_SCRIPTS_BUCKET_NAME']
 
-    print(event)
+    logger.debug(event)
     lambda_message = event['Records'][0]
     source_bucket_name = lambda_message['s3']['bucket']['name']
     object_full_path = unquote_plus(lambda_message['s3']['object']['key'])
@@ -134,14 +99,21 @@ def lambda_handler(event: dict, _) -> dict:
         pass
 
     entity_match_spec = 'etl/transformation-spec/' + object_source_system_name + '-' + 'entitymatch.json'
-    s3_client = boto3.client('s3')
     result = s3_client.list_objects_v2(Bucket=glue_scripts_bucket_name, Prefix=entity_match_spec)
+    entity_match = False
     if 'Contents' in result:
         entity_match = True
-        print(f'Entity Match JSON {entity_match_spec} found; enabling Entity Match job')
-    else:
-        entity_match = False
-        print(f'Entity Match JSON {entity_match_spec} not found; skipping Entity Match job')
+        logger.info(f'Entity Match JSON {entity_match_spec} found; enabling Entity Match job')
+
+    dependent_workflow_spec = \
+        f'etl/transformation-spec/{object_source_system_name}-{object_table_name}-dependent.json'
+    try:
+        dependency_result = s3_client.get_object(Bucket=glue_scripts_bucket_name, Key=dependent_workflow_spec)
+        if 'Body' in dependency_result:
+            dependencies = json.loads(dependency_result['Body'].read().decode('utf-8')).get('depends_on')
+            logger.info(f'Dependent Workflow JSON {dependent_workflow_spec} found; queuing job execution')
+    except s3_client.exceptions.NoSuchKey:
+        dependencies = {}
 
     logger.info(f'Bucket: {source_bucket_name}')
     logger.info(f'Key: {object_source_system_name}/{object_table_name}')
@@ -157,7 +129,6 @@ def lambda_handler(event: dict, _) -> dict:
     # Max length of execution name is 80 characters, and 21 will be added, so truncate to 59
     execution_name = f"{safe_object_base_file_name[:59]}-{event_time.strftime('%Y%m%d%H%M%S%f')}"
     logger.info(f'Step Function Execution Name: {execution_name}')
-    print('Executing step function')
     execution_id = str(uuid.uuid4())
     execution_input = json.dumps(
         {
@@ -174,20 +145,41 @@ def lambda_handler(event: dict, _) -> dict:
             'entity_match': entity_match,
         }
     )
-    print(f'SFN Input: {execution_input}')
-    try:
-        sfn_response = sfn_client.start_execution(
-            stateMachineArn=sfn_arn,
-            name=execution_name,
-            input=execution_input,
-        )
-        print(f'SFN Reponse: {sfn_response}')
-    except botocore.exceptions.ClientError as error:
-        raise RuntimeError(f'Step Function StartExecution failed: {error}')
+    logger.info(f'SFN Input: {execution_input}')
 
-    record_etl_job_run(audit_table_name, sfn_arn, execution_id, execution_name, execution_input, principal_id, source_ipaddress)
+    if not dependencies:
+        try:
+            sfn_response = sfn_client.start_execution(
+                stateMachineArn=sfn_arn,
+                name=execution_name,
+                input=execution_input,
+            )
+            logger.debug(f'SFN Reponse: {sfn_response}')
+        except botocore.exceptions.ClientError as error:
+            raise RuntimeError(f'Step Function StartExecution failed: {error}')
+        status = 'STARTED'
+        return_message = f'Step function triggered successfully'
+    else:
+        status = 'QUEUED'
+        return_message = f'Step function execution queued due to dependent workflow'
+
+    item = {
+        'execution_id': execution_id,
+        'sfn_execution_name': execution_name,
+        'sfn_arn': sfn_arn,
+        'sfn_input': execution_input,
+        'source_key': f'{object_source_system_name}/{object_table_name}',
+        'job_latest_status': status,
+        'job_start_date': event_time.strftime('%Y-%m-%d %H:%M:%S.%f'),
+        'job_last_updated_timestamp': event_time.strftime('%Y-%m-%d %H:%M:%S.%f'),
+        'principal_id': principal_id,
+        'source_ipaddress': source_ipaddress,
+        # TODO: Add support for multiple dependencies, including how to ensure that all of them are met
+        'dependency_key': list(dependencies)[0] if dependencies else None,
+    }
+    record_etl_job_run(audit_table_name, item)
 
     return {
         'statusCode': 200,
-        'body': json.dumps('Step function triggered successfully')
+        'body': json.dumps(return_message)
     }

@@ -85,8 +85,7 @@ test_context = {
 }
 
 
-def mock_record_etl_job_run(audit_table_name: str, sfn_arn: str, execution_id: str,
-        execution_name: str, execution_input: str, principal_id: str, source_ipaddress: str):
+def mock_record_etl_job_run(audit_table_name: str, item: dict):
     # Mock function does not need to do any work
     pass
 
@@ -164,11 +163,39 @@ def test_handler_folder_putobject_returns_400(monkeypatch):
 
 
 @mock_aws
+def test_handler_dependency_workflow(monkeypatch, caplog):
+    monkeypatch.setattr(lambda_handler, 'record_etl_job_run', mock_record_etl_job_run)
+    monkeypatch.setenv('DYNAMODB_TABLE_NAME', test_table_name)
+    monkeypatch.setenv('SFN_STATE_MACHINE_ARN', test_state_machine_arn)
+    monkeypatch.setenv('GLUE_SCRIPTS_BUCKET_NAME', test_scripts_bucket)
+    monkeypatch.setenv('AWS_DEFAULT_REGION', mock_region)
+
+    s3_client = boto3.client('s3')
+    s3_client.create_bucket(Bucket=test_scripts_bucket)
+
+    s3_client.put_object(
+        Bucket=test_scripts_bucket,
+        Key='etl/transformation-spec/level1-level2-dependent.json',
+        Body='{ "depends_on": { "anotherdb/anothertable": 1 }}')
+
+    result = lambda_handler.lambda_handler(test_success_event, test_context)
+
+    assert result['statusCode'] == 200
+    with caplog.at_level(logging.INFO):
+        assert caplog.text.find('Dependent Workflow JSON') != -1
+
+
+@mock_aws
 def test_record_etl_job_run_records_status(monkeypatch, use_moto):
     monkeypatch.setenv('AWS_DEFAULT_REGION', mock_region)
     table = use_moto()
 
-    lambda_handler.record_etl_job_run(test_table_name, test_state_machine_arn, test_execution_id, 'test-execution', '{}', 'testUser', 'testipaddress')
+    item = { 
+        'execution_id': test_execution_id,
+        'sfn_arn': test_state_machine_arn,
+        'job_latest_status': 'STARTED'
+    }
+    lambda_handler.record_etl_job_run(test_table_name, item)
 
     item = table.get_item(
         TableName=test_table_name,
@@ -183,6 +210,11 @@ def test_record_etl_jon_run_logs_no_table(monkeypatch, caplog):
     # Purposely do not call use_moto() to create the table
 
     with pytest.raises(RuntimeError) as e_info:
-        lambda_handler.record_etl_job_run(test_table_name, test_state_machine_arn, test_execution_id, 'test-execution', '{}', 'testUser', 'testipaddress')
+        item = { 
+            'execution_id': test_execution_id,
+            'sfn_arn': test_state_machine_arn,
+            'job_latest_status': 'STARTED'
+        }
+        lambda_handler.record_etl_job_run(test_table_name, item)
 
     assert e_info.match('ResourceNotFoundException'), 'Expected Boto3 Client Error not raised'

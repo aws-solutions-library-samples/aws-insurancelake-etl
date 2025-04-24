@@ -323,6 +323,7 @@ The following people are involved in the design, architecture, development, test
 
 * **Cory Visi**, Senior Solutions Architect, Amazon Web Services
 * **Ratnadeep Bardhan Roy**, Senior Solutions Architect, Amazon Web Services
+* **George Gallo**, Senior Solutions Architect, Amazon Web Services
 * **Jose Guay**, Enterprise Support, Amazon Web Services
 * **Isaiah Grant**, Cloud Consultant, 2nd Watch, Inc.
 * **Muhammad Zahid Ali**, Data Architect, Amazon Web Services

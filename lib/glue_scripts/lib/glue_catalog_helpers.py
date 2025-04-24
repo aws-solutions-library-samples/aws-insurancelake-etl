@@ -4,6 +4,7 @@ import io
 import csv
 from urllib.parse import urlparse
 import re
+import os
 import boto3
 import botocore
 from pyspark.context import SparkContext
@@ -36,13 +37,15 @@ def table_exists(target_database: str, table_name: str) -> bool:
         pass
 
 
-def create_database(database_name: str, database_description: str = None):
+def create_database(database_name: str, database_uri: str, database_description: str = None):
     """Function to create catalog database if does not exists
 
     Parameters
     ----------
     database_name
         Glue Catalog database name for creating or confirming existance
+    database_uri
+        S3 path to database location
     database_description
         Description of the database to set in Glue Catalog
     """
@@ -59,7 +62,7 @@ def create_database(database_name: str, database_description: str = None):
         else:
             raise RuntimeError(f"Error getting database {database_name}: {error.response['Error']['Message']}")
 
-    database_input = { 'Name': database_name }
+    database_input = { 'Name': database_name, 'LocationUri': database_uri }
     if database_description:
         database_input.update({ 'Description': database_description })
 
@@ -202,7 +205,8 @@ def upsert_catalog_table(
         Schema evolution setting to be used by check_schema_change()
     """
     # Always run this because most save operations do not create the database
-    create_database(target_database, database_description)
+    database_uri = os.path.split(storage_location)[0]
+    create_database(target_database, database_uri, database_description)
 
     schema = []
     partition_schema = []

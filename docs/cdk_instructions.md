@@ -43,10 +43,10 @@ After the initialization process completes and the virtual environment is create
 source .venv/bin/activate
 ```
 
-If you are using a Windows platform, activate the virtual environment as shown below:
+If you are using a Windows platform and the above command does not work for you, activate the virtual environment as shown below:
 
-```bash
-% .venv\Scripts\activate.bat
+```bat
+.venv\Scripts\activate.bat
 ```
 
 Once the virtual environment is activated, you can install the required dependencies.
@@ -76,7 +76,7 @@ To add additional dependencies, for example other CDK libraries, add them to the
 
 For more details refer to the [AWS CDK CLI Reference](https://docs.aws.amazon.com/cdk/latest/guide/cli.html).
 
- ---
+---
 
 ## Visual Studio Code Debugging
 

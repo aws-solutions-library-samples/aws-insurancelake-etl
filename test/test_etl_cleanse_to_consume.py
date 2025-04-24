@@ -2,9 +2,9 @@
 # SPDX-License-Identifier: MIT-0
 import pytest
 import sys
+import os
 from urllib.parse import urlparse
 import shutil
-from moto import mock_aws
 from test.boto_mocking_helper import *
 
 try:
@@ -56,35 +56,38 @@ mock_create_table_spark_sql_file = """create table differenttable as
     1234 as data
     """
 
-mock_athena_sql_file = """create view test_view as
+mock_sql_view_file = """create view test_view as
     select
     1 as c1,
     2 as c2
     """
 
-
 @mock_glue_job(etl_cleanse_to_consume)
-def test_job_execution_and_commit(monkeypatch):
+def test_job_execution_and_commit(monkeypatch, capsys):
     monkeypatch.setattr(sys, 'argv', mock_args)
     etl_cleanse_to_consume.main()
 
 
 @mock_glue_job(etl_cleanse_to_consume)
-def test_consume_bucket_write(monkeypatch):
+def test_consume_bucket_write(monkeypatch, capsys):
     monkeypatch.setattr(sys, 'argv', mock_args)
-    write_local_file(f'{mock_scripts_bucket}/etl/transformation-sql', f'spark-{mock_database_name}-{mock_table_name}.sql', mock_spark_sql_file)
+    file = write_local_file(
+        f'{mock_scripts_bucket}/etl/transformation-sql',
+        f'spark-{mock_database_name}-{mock_table_name}.sql',
+        mock_spark_sql_file)
 
     consume_path = f'{mock_consume_bucket}/{mock_database_name}/{mock_table_name}'
     parsed_uri = urlparse(consume_path)
     shutil.rmtree(parsed_uri.path, ignore_errors=True)
 
     etl_cleanse_to_consume.main()
+    os.remove(file)
     assert os.path.isdir(parsed_uri.path), \
         'Cleanse-to-Consume Glue job failed to write to Consume bucket with supplied Spark SQL'
 
 
 @mock_glue_job(etl_cleanse_to_consume)
-def test_missing_argument_exception(monkeypatch):
+def test_missing_argument_exception(monkeypatch, capsys):
     """
     Check error is raised if base_file_name argument is missing
     """
@@ -95,35 +98,67 @@ def test_missing_argument_exception(monkeypatch):
         etl_cleanse_to_consume.main()
 
 
-@mock_aws()
-def test_athena_execute_query_success(monkeypatch):
-    """
-    Test simple create view and expect success
-    """
-    monkeypatch.setenv('AWS_DEFAULT_REGION', mock_region)
-    result = etl_cleanse_to_consume.athena_execute_query(mock_database_name, mock_athena_sql_file, mock_temp_bucket)
-    assert result == 'SUCCEEDED'
-
-
-@mock_aws
-def test_athena_execute_query_max_retries_error(monkeypatch):
-    """
-    Provide 0 attempts and expect failure from exceeding max attempts
-    """
-    monkeypatch.setenv('AWS_DEFAULT_REGION', mock_region)
+@mock_glue_job(etl_cleanse_to_consume)
+def test_athena_view_create(monkeypatch, capsys):
     monkeypatch.setattr(sys, 'argv', mock_args)
-    with pytest.raises(RuntimeError) as e_info:
-        etl_cleanse_to_consume.athena_execute_query(mock_database_name, mock_athena_sql_file, mock_temp_bucket, max_attempts = 0)
-    assert e_info.match('exceeded max_attempts')
+    file = write_local_file(
+        f'{mock_scripts_bucket}/etl/transformation-sql',
+        f'athena-{mock_database_name}-{mock_table_name}.sql',
+        mock_sql_view_file)
+
+    etl_cleanse_to_consume.main()
+    captured = capsys.readouterr()
+    os.remove(file)
+    assert 'Athena query execution status' in captured.out
 
 
-def test_athena_execute_query_fail(monkeypatch):
+@mock_glue_job(etl_cleanse_to_consume)
+def test_redshift_view_create(monkeypatch, capsys):
+    mock_args_with_redshift = mock_args.copy()
+    mock_args_with_redshift.extend([
+        '--redshift_workgroup_name=default',
+        '--redshift_database=dev'])
+    monkeypatch.setattr(sys, 'argv', mock_args_with_redshift)
+    file = write_local_file(
+        f'{mock_scripts_bucket}/etl/transformation-sql',
+        f'redshift-{mock_database_name}-{mock_table_name}.sql',
+        mock_sql_view_file)
+
+    etl_cleanse_to_consume.main()
+    captured = capsys.readouterr()
+    os.remove(file)
+    assert 'Redshift query execution status' in captured.out
+
+
+@mock_glue_job(etl_cleanse_to_consume)
+def test_missing_redshift_parameter(monkeypatch, capsys):
     """
-    Test simple create table and expect failure
-    Mock API directly because there is no way to generate a failure with moto's athena mock
+    Check error is raised if redshift_database argument is missing
+    """
+    mock_args_with_redshift = mock_args.copy()
+    mock_args_with_redshift.append('--redshift_workgroup_name=default')
+    monkeypatch.setattr(sys, 'argv', mock_args_with_redshift)
+    file = write_local_file(
+        f'{mock_scripts_bucket}/etl/transformation-sql',
+        f'redshift-{mock_database_name}-{mock_table_name}.sql',
+        mock_sql_view_file)
+
+    with pytest.raises(GlueArgumentError):
+        etl_cleanse_to_consume.main()
+    os.remove(file)
+
+
+@mock_glue_job(etl_cleanse_to_consume)
+def test_missing_all_redshift_parameters(monkeypatch, capsys):
+    """
+    Check error is raised if all redshift job arguments are missed
     """
     monkeypatch.setattr(sys, 'argv', mock_args)
-    monkeypatch.setattr(etl_cleanse_to_consume.boto3, 'client', mock_boto3_client)
-    with pytest.raises(RuntimeError) as e_info:
-        etl_cleanse_to_consume.athena_execute_query(mock_database_name, mock_athena_sql_file, mock_temp_bucket)
-    assert e_info.match('failed with query engine error')
+    file = write_local_file(
+        f'{mock_scripts_bucket}/etl/transformation-sql',
+        f'redshift-{mock_database_name}-{mock_table_name}.sql',
+        mock_sql_view_file)
+
+    with pytest.raises(GlueArgumentError):
+        etl_cleanse_to_consume.main()
+    os.remove(file)

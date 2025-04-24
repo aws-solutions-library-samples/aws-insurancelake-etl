@@ -121,7 +121,7 @@ Follow these instructions for quickly creating a data profile for the Data Catal
 1. Enter `Profiler` as the role suffix.
 
     {: .note }
-	This creates a new IAM Role called AWSGlueDataBrewServiceRole-Profiler.
+	This creates a new IAM role called AWSGlueDataBrewServiceRole-Profiler.
 
 1. Select `Create and run job`.
 

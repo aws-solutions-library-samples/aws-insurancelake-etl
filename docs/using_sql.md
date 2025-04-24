@@ -2,7 +2,7 @@
 title: SQL Usage
 parent: User Documentation
 nav_order: 7
-last_modified_date: 2024-09-26
+last_modified_date: 2025-03-21
 ---
 # InsuranceLake Cleanse-to-Consume SQL Usage Documentation
 {: .no_toc }
@@ -11,9 +11,11 @@ The InsuranceLake ETL uses SQL to define the views of data created in the Cleans
 
 * **Spark SQL**: Executed by the Spark session within AWS Glue and used to create a partitioned copy of the data in the Consume Amazon S3 bucket and Data Catalog database
 
-* **Athena SQL**: Executed through an Athena API and used to create views based off the data in the Consume Amazon S3 bucket and Data Catalog database
+* **Athena SQL**: Executed through the Athena API and used to create views based off the data in the Consume or Cleanse Amazon S3 bucket and Data Catalog database
 
-While the ETL recommends certain approaches for the use of Spark and Athena SQL, there are no absolute restrictions on how the SQL is used. Particularly, Athena SQL can be used for any SQL query that Athena supports.
+* **Amazon Redshift SQL**: Executed through the Amazon Redshift Data API and used to create views based off the data in the Consume or Cleanse Amazon S3 bucket and Data Catalog database
+
+While the ETL recommends certain approaches for the use of Spark, Athena, and Amazon Redshift SQL, there are no absolute restrictions on how the SQL is used. Particularly, Athena SQL can be used for any SQL query that Athena supports. Amazon Redshift SQL can be used for any SQL query that Amazon Redshift supports, including creation of materialized views, external schemas, and tables using Amazon Redshift Managed Storage.
 
 Both SQL files are **optional** in a data pipeline. A pipeline can succeed with no SQL files defined.
 
@@ -117,6 +119,41 @@ Example patterns using Athena SQL:
 * [Partition Snapshot View](#partition-snapshot-view)
 * [Key Value Pivot](#key-value-pivot)
 * [Athena Fixed Width View](#athena-fixed-width-view)
+
+
+## Amazon Redshift SQL
+
+Amazon Redshift SQL is defined in a file following the naming convention of `redshift-<database name>-<table name>.sql` and is stored in the `/etl/transformation-sql` folder in the `etl-scripts` bucket. When using AWS CDK for deployment, the contents of the `/lib/glue_scripts/lib/transformation-sql` directory will be automatically deployed to this location.
+
+Amazon Redshift is based on PostgreSQL. However, the specialized data storage schema and query execution engine that Amazon Redshift uses are completely different from the PostgreSQL implementation. Many Amazon Redshift SQL language elements have different performance characteristics and use syntax and semantics and that are quite different from the equivalent PostgreSQL implementation. For details and a full reference guide, refer to the following AWS documentation sections:
+- [Amazon Redshift features that are implemented differently](https://docs.aws.amazon.com/redshift/latest/dg/c_redshift-sql-implementated-differently.html)
+- [Unsupported PostgreSQL features](https://docs.aws.amazon.com/redshift/latest/dg/c_unsupported-postgresql-features.html)
+- [Unsupported PostgreSQL data types](https://docs.aws.amazon.com/redshift/latest/dg/c_unsupported-postgresql-datatypes.html)
+- [Unsupported PostgreSQL functions](https://docs.aws.amazon.com/redshift/latest/dg/c_unsupported-postgresql-functions.html)
+- [Amazon Redshift Database Developer Guide SQL commands](https://docs.aws.amazon.com/redshift/latest/dg/c_SQL_commands.html)
+
+Refer to the [Amazon Redshift Integration Guide](redshift_integration_guide.md) for instructions on granting InsuranceLake AWS Glue jobs correct permissions to Amazon Redshift resources.
+
+The following are considerations and requirements for InsuranceLake's integration with Amazon Redshift SQL:
+
+* You can create views directly on the Amazon S3 data using the `awsdatacatalog` prefix to databases and tables. These views will run directly on the S3 data lake and can only be read-only.
+    ```sql
+    SELECT * FROM awsdatacatalog.<Data Catalog database name>.<Data Catalog table name>;
+    ```
+
+* [Materialized views in Amazon Redshift](https://docs.aws.amazon.com/redshift/latest/dg/materialized-view-overview.html) can only be created on external schemas. InsuranceLake does not automatically create an external schema connected to the data lake. You can create external schemas outside of the InsuranceLake workflow to allow creation of materialized views in the workflow and improve performance of queries on the view. See [Create materialized views in Amazon Redshift](redshift_integration_guide.md#create-materialized-views-in-amazon-redshift) for instructions.
+
+* Multiple statements can be separated by semi-colons `;`. The entire SQL file is sent to Amazon Redshift via API and is limited by [Amazon Redshift's maximum size for a single SQL statement](https://docs.aws.amazon.com/redshift/latest/dg/c_redshift-sql.html).
+
+* The Cleanse-to-Consume AWS Glue ETL job requires 2 extra parameters and additional IAM permissions for executing Amazon Redshift SQL. See [Create data lake views in Amazon Redshift](redshift_integration_guide.md#create-data-lake-views-in-amazon-redshift) for details. If your workflow uses an Amazon Redshift SQL configuration file, but you have not modified the AWS Glue ETL job details to specify the extra parameters, you will see the following error:
+
+    ```log
+    awsglue.utils.GlueArgumentError: argument --redshift_cluster_id or --redshift_workgroup_name is required when executing Amazon Redshift SQL
+    ```
+
+Example patterns using Amazon Redshift SQL:
+* [Simple Amazon Redshift Materialized View](#simple-amazon-redshift-materialized-view)
+* [Box Plot Amazon Redshift View](#box-plot-amazon-redshift-spectrum-view)
 
 
 ## Variable Substitution
@@ -390,7 +427,7 @@ We recommend performing this operation in the Cleanse-to-Consume AWS Glue job, s
 This unpivot operation can be accomplished using the [Spark stack generator function](https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.functions.stack.html).
 
 {: .note }
-An alternative approach, which would better self-document your intent, is to use the [Spark unpivot function](https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.DataFrame.unpivot.html). However, this function was introduced in Spark 3.4.0, which is not yet supported by AWS Glue.
+An alternative approach, which would better self-document your intent, is to use the [Spark unpivot function](https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.DataFrame.unpivot.html). This function is available in AWS Glue v5.
 
 ```sql
 SELECT
@@ -562,4 +599,45 @@ SELECT
         , lpad(coalesce(type_of_loss, ' '), 2, ' ')
     ) AS fwf_line
 FROM syntheticgeneraldata.stat_data
+```
+
+
+### Simple Amazon Redshift Materialized View
+
+This example assumes you have created an external schema outside the InsuranceLake workflow and assigned appropriate permissions to the workgroup or cluster default IAM role. For instructions, refer to the [Amazon Redshift integration guide](redshift_integration_guide.md).
+
+The following Amazon Redshift SQL runs within the workflow to create the view:
+
+```sql
+DROP MATERIALIZED VIEW IF EXISTS "general_insurance_redshift_materialized";
+
+CREATE MATERIALIZED VIEW "general_insurance_redshift_materialized"
+BACKUP NO
+DISTKEY ( policynumber )
+AUTO REFRESH NO
+AS
+SELECT *
+FROM redshift_external_schema.policydata;
+```
+
+
+### Box Plot Amazon Redshift Spectrum View
+
+This Amazon Redshift Spectrum query calculates the data for a box plot of incurred claim amounts for the commercial auto line of business using analytics functions:
+
+```sql
+SELECT
+    MIN(CAST(amt AS DECIMAL(38,2))) as minimum,
+    PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY CAST(amt AS DECIMAL(38,2))) as q1,
+    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY CAST(amt AS DECIMAL(38,2))) as median,
+    PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY CAST(amt AS DECIMAL(38,2))) as q3,
+    MAX(CAST(amt AS DECIMAL(38,2))) as maximum,
+    AVG(CAST(amt AS DECIMAL(38,2))) as mean,
+    STDDEV(CAST(amt AS DECIMAL(38,2))) as std_dev
+FROM (
+    SELECT
+        "accidentyeartotalincurredamount" as amt
+    FROM awsdatacatalog.syntheticgeneraldata_consume.policydata
+    WHERE lobcode = 'AUTO'
+);
 ```

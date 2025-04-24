@@ -1,4 +1,5 @@
 -e .
+setuptools>65.3
 aws-cdk-lib
 boto3
 cdk-nag

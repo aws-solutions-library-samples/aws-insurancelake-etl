@@ -47,7 +47,8 @@ class DynamoDbStack(cdk.Stack):
             partition_key=dynamodb.Attribute(name='execution_id', type=dynamodb.AttributeType.STRING),
             billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
             encryption=dynamodb.TableEncryption.DEFAULT,
-            point_in_time_recovery=True,
+            point_in_time_recovery_specification=dynamodb.PointInTimeRecoverySpecification(
+                point_in_time_recovery_enabled=True),
             removal_policy=self.removal_policy,
             deletion_protection=True if self.removal_policy == cdk.RemovalPolicy.RETAIN else False,
         )
@@ -62,7 +63,8 @@ class DynamoDbStack(cdk.Stack):
             billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
             encryption=dynamodb.TableEncryption.CUSTOMER_MANAGED,
             encryption_key=buckets.s3_kms_key,
-            point_in_time_recovery=True,
+            point_in_time_recovery_specification=dynamodb.PointInTimeRecoverySpecification(
+                point_in_time_recovery_enabled=True),
             removal_policy=self.removal_policy,
             deletion_protection=True if self.removal_policy == cdk.RemovalPolicy.RETAIN else False,
         )
@@ -77,7 +79,8 @@ class DynamoDbStack(cdk.Stack):
             sort_key=dynamodb.Attribute(name='column_name', type=dynamodb.AttributeType.STRING),
             billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
             encryption=dynamodb.TableEncryption.DEFAULT,
-            point_in_time_recovery=True,
+            point_in_time_recovery_specification=dynamodb.PointInTimeRecoverySpecification(
+                point_in_time_recovery_enabled=True),
             removal_policy=self.removal_policy,
             deletion_protection=True if self.removal_policy == cdk.RemovalPolicy.RETAIN else False,
         )
@@ -94,7 +97,8 @@ class DynamoDbStack(cdk.Stack):
             sort_key=dynamodb.Attribute(name='lookup_item', type=dynamodb.AttributeType.STRING),
             billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
             encryption=dynamodb.TableEncryption.DEFAULT,
-            point_in_time_recovery=True,
+            point_in_time_recovery_specification=dynamodb.PointInTimeRecoverySpecification(
+                point_in_time_recovery_enabled=True),
             removal_policy=self.removal_policy,
             deletion_protection=True if self.removal_policy == cdk.RemovalPolicy.RETAIN else False,
         )
@@ -108,7 +112,8 @@ class DynamoDbStack(cdk.Stack):
             sort_key=dynamodb.Attribute(name='job_id_action_rule', type=dynamodb.AttributeType.STRING),
             billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
             encryption=dynamodb.TableEncryption.DEFAULT,
-            point_in_time_recovery=True,
+            point_in_time_recovery_specification=dynamodb.PointInTimeRecoverySpecification(
+                point_in_time_recovery_enabled=True),
             removal_policy=self.removal_policy,
             deletion_protection=True if self.removal_policy == cdk.RemovalPolicy.RETAIN else False,
         )
@@ -123,7 +128,8 @@ class DynamoDbStack(cdk.Stack):
                 sort_key=dynamodb.Attribute(name='job_id_operation_seq', type=dynamodb.AttributeType.STRING),
                 billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
                 encryption=dynamodb.TableEncryption.DEFAULT,
-                point_in_time_recovery=True,
+                point_in_time_recovery_specification=dynamodb.PointInTimeRecoverySpecification(
+                    point_in_time_recovery_enabled=True),
                 removal_policy=self.removal_policy,
                 deletion_protection=True if self.removal_policy == cdk.RemovalPolicy.RETAIN else False,
             )
