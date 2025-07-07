@@ -5,7 +5,7 @@ import time
 
 
 def athena_execute_query(database: str, query: str, result_bucket: str,
-        max_attempts: int = 15) -> str:
+        max_attempts: int = 30) -> str:
     """Function to execute query using Athena boto client, loop until
     result is returned, and return status.
 
@@ -18,7 +18,7 @@ def athena_execute_query(database: str, query: str, result_bucket: str,
     result_bucket
         S3 bucket path to store query results
     max_attempts
-        Number of loops (1s apart) to attempt to get query status
+        Number of loops (1s apart) to attempt to get query status, default 30
 
     Returns
     -------
@@ -28,9 +28,9 @@ def athena_execute_query(database: str, query: str, result_bucket: str,
     athena = boto3.client('athena')
 
     query_response = athena.start_query_execution(
-            QueryExecutionContext={'Database': database.lower()},
+            QueryExecutionContext={ 'Database': database.lower() },
             QueryString=query,
-            ResultConfiguration={'OutputLocation': result_bucket + '/'}
+            ResultConfiguration={ 'OutputLocation': result_bucket }
         )
     print(f'Executed query response: {query_response}')
 
@@ -56,8 +56,9 @@ def athena_execute_query(database: str, query: str, result_bucket: str,
     return status
 
 
-def redshift_execute_query(database: str, query: str,
-        cluster_id: str = '', workgroup_name: str = '', max_attempts: int = 30) -> str:
+def redshift_execute_query(database: str, query: str, # nosec B107
+        cluster_id: str = None, workgroup_name: str = None, secret_arn: str = None,
+        max_attempts: int = 60) -> str:
     """Function to execute query using Redshift Data API, loop until
     result is returned, and return status.
 
@@ -71,8 +72,10 @@ def redshift_execute_query(database: str, query: str,
         Redshift cluster identifier (required if not using workgroup_name)
     workgroup_name
         Redshift Serverless workgroup name (required if not using cluster_id)
+    secret_arn
+        Secrets Manager secret to use for authentication (optional, otherwise IAM permissions are used)
     max_attempts
-        Number of loops (1s apart) to attempt to get query status
+        Number of loops (1s apart) to attempt to get query status, default 60
 
     Returns
     -------
@@ -85,6 +88,8 @@ def redshift_execute_query(database: str, query: str,
     auth_parameters = { 'WorkgroupName': workgroup_name }
     if cluster_id:
         auth_parameters = { 'ClusterIdentifier': cluster_id }
+    if secret_arn:
+        auth_parameters['SecretArn'] = secret_arn
 
     query_response = redshift_data.execute_statement(
         Database=database,

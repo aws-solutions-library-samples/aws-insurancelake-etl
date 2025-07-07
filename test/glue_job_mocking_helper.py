@@ -13,7 +13,8 @@ mock_database_name = 'TestGlueCatalogDatabase'
 mock_table_name = 'TestGlueCatalogTable'
 
 mock_resource_prefix = 'unittest-insurancelake'
-mock_temp_bucket = f'file:///tmp/{mock_resource_prefix}-temp-bucket'
+# Temp bucket should have a trailing /
+mock_temp_bucket = f'file:///tmp/{mock_resource_prefix}-temp-bucket/'
 mock_scripts_bucket = f'file:///tmp/{mock_resource_prefix}-etl-scripts-bucket'
 mock_collect_bucket = f'file:///tmp/{mock_resource_prefix}-collect-bucket'
 mock_cleanse_bucket = f'file:///tmp/{mock_resource_prefix}-cleanse-bucket'

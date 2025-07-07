@@ -254,7 +254,7 @@ def main():
                 input_spec.get('strict_schema_mapping'))
             print('Performed field mapping')
         else:
-            generated_map_path = args['TempDir'] + '/' + source_key_dashes + '.csv'
+            generated_map_path = args['TempDir'] + source_key_dashes + '.csv'
             print(f'No mapping found, generated recommended mapping to: {generated_map_path}')
             initial_df, generated_mapping_data = clean_column_names(initial_df)
             put_s3_object(generated_map_path, generated_mapping_data)
@@ -287,7 +287,7 @@ def main():
             )
             print(f'Performed {transform} transform')
     else:
-        generated_spec_path = args['TempDir'] + '/' + source_key_dashes + '.json'
+        generated_spec_path = args['TempDir'] + source_key_dashes + '.json'
         print(f'No transformation specification found, generating recommended spec to: {generated_spec_path}')
         generated_spec_data = generate_spec(totransform_df, ext)
         put_s3_object(generated_spec_path, json.dumps(generated_spec_data, indent=4))

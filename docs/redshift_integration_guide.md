@@ -112,7 +112,7 @@ AWS Glue ETL jobs must have the correct permissions to access your Amazon Redshi
 1. Run the following SQL to grant the InsuranceLake AWS Glue ETL jobs role access to your Amazon Redshift database and the Data Catalog through Amazon Redshift Spectrum.
 
     {: .note }
-    In the below SQL, you will explicitly create the Amazon Redshift user for the AWS Glue job IAM role so the `GRANT` statements succeed. Normally, the first connection by the role to Amazon Redshift would create the user automatically; however, the first run will fail due to missing permissions.
+    In the below SQL, you will explicitly create the Amazon Redshift user for the AWS Glue job IAM role so the `GRANT` statements succeed. Normally, the first connection by the role to Amazon Redshift would create the user automatically; however, the first run will fail due to missing permissions and these instructions show you how to avoid that.
 
     {: .important }
     Adjust the following SQL statements to use the correct AWS Glue role name and Amazon Redshift database name.

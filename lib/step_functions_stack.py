@@ -120,7 +120,10 @@ class StepFunctionsStack(cdk.Stack):
             f'{target_environment}{self.logical_id_prefix}EtlFailurePublishTask',
             topic=notification_topic,
             subject='Job Failed',
-            message=stepfunctions.TaskInput.from_json_path_at('$')
+            message=stepfunctions.TaskInput.from_json_path_at('$'),
+            message_attributes={
+                "status": stepfunctions_tasks.MessageAttribute(value='FAILED'),
+            }
         )
         failure_function_task.next(failure_notification_task)
         failure_notification_task.next(fail_state)
@@ -140,7 +143,10 @@ class StepFunctionsStack(cdk.Stack):
             f'{target_environment}{self.logical_id_prefix}EtlSuccessPublishTask',
             topic=notification_topic,
             subject='Job Completed',
-            message=stepfunctions.TaskInput.from_json_path_at('$')
+            message=stepfunctions.TaskInput.from_json_path_at('$'),
+            message_attributes={
+                "status": stepfunctions_tasks.MessageAttribute(value='SUCCEEDED'),
+            }
         )
         success_function_task.next(success_task)
         success_task.next(success_state)
@@ -270,7 +276,13 @@ class StepFunctionsStack(cdk.Stack):
             job_audit_table=job_audit_table,
             state_machine=machine,
         )
-        notification_topic.add_subscription(subscriptions.LambdaSubscription(dependency_function))
+        notification_topic.add_subscription(
+            subscriptions.LambdaSubscription(dependency_function,
+                filter_policy={
+                    "status": sns.SubscriptionFilter.string_filter(allowlist=['SUCCEEDED']),
+                }
+            )
+        )
 
 
         cdk.CfnOutput(

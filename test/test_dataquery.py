@@ -10,7 +10,8 @@ from lib.glue_scripts.lib.dataquery import *
 mock_database_name = 'TestGlueCatalogDatabase'
 mock_table_name = 'TestGlueCatalogTable'
 mock_resource_prefix = 'unittest-insurancelake'
-mock_temp_bucket = f'file:///tmp/{mock_resource_prefix}-temp-bucket'
+# Temp bucket should have a trailing /
+mock_temp_bucket = f'file:///tmp/{mock_resource_prefix}-temp-bucket/'
 
 mock_args = {
     'source_key': mock_database_name + '/' + mock_table_name,

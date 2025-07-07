@@ -124,12 +124,6 @@ def lambda_handler(event: dict, _) -> dict:
 
     logger.info(f'Received ETL workflow notification for {source_key}, subject: {message_subject}')
 
-    if 'Completed' not in lambda_message['Sns']['Subject']:
-        return {
-            'statusCode': 400,
-            'body': f'Ignoring not completed job message'
-         }
-
     jobs = get_queued_jobs(audit_table_name, source_key)
     if not jobs:
         return {

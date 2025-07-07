@@ -6,7 +6,7 @@ import aws_cdk.aws_s3 as s3
 import aws_cdk.aws_logs as logs
 import aws_cdk.aws_glue as glue
 import aws_cdk.aws_iam as iam
-import aws_cdk.aws_kms as kms
+#import aws_cdk.aws_kms as kms
 import aws_cdk.aws_dynamodb as dynamodb
 import aws_cdk.aws_s3_deployment as s3_deployment
 import os
@@ -130,6 +130,7 @@ class GlueStack(cdk.Stack):
         common_default_arguments = {
                 '--enable-auto-scaling': 'true',
                 '--enable-continuous-cloudwatch-log': 'true',
+                '--enable-continuous-log-filter': 'true',
                 '--enable-metrics': 'true',
                 '--enable-observability-metrics': 'true',
                 '--enable-spark-ui': 'true',
@@ -517,7 +518,9 @@ class GlueStack(cdk.Stack):
                             'athena:GetQueryResults',
                             'athena:StartQueryExecution',
                         ],
-                        resources=[ '*' ]
+                        resources=[
+                            f'arn:aws:athena:{self.region}:{self.account}:workgroup/*',
+                        ]
                     )
                 ]),
             },
@@ -583,41 +586,70 @@ class GlueStack(cdk.Stack):
                     ]
                 ),
                 iam.PolicyStatement(
-                    sid='AthenaAccess',
+                    sid='AthenaWildcardResourceAccess',
                     effect=iam.Effect.ALLOW,
                     actions=[
-                        'athena:ListDataCatalogs',
-                        'athena:ListDatabases',
-                        'athena:BatchGetQueryExecution',
-                        'athena:GetQueryExecution',
-                        'athena:GetQueryResults',
-                        'athena:GetQueryResultsStream',
-                        'athena:ListQueryExecutions',
-                        'athena:StartQueryExecution',
-                        'athena:StopQueryExecution',
                         'athena:ListWorkGroups',
-                        'athena:GetWorkGroup',
-                        'athena:GetDataCatalog',
-                        'athena:GetDatabase',
-                        'athena:GetTableMetadata',
-                        'athena:ListTableMetadata',
+                        'athena:ListDataCatalogs',
+                        'athena:GetCatalogs',
+                        'athena:GetNamespaces',
+                        'athena:GetExecutionEngine',
+                        'athena:GetExecutionEngines',
+                        'athena:GetTables',
+                        'athena:GetTable',
                     ],
                     resources=[
                         '*',
                     ]
                 ),
                 iam.PolicyStatement(
+                    sid='AthenaWorkgroupAccess',
+                    effect=iam.Effect.ALLOW,
+                    actions=[
+                        'athena:GetWorkGroup',
+                        'athena:StartQueryExecution',
+                        'athena:GetQueryExecution',
+                        'athena:BatchGetQueryExecution',
+                        'athena:ListQueryExecutions',
+                        'athena:StopQueryExecution',
+                        'athena:GetQueryResults',
+                        'athena:GetQueryResultsStream',
+                        'athena:DeleteNamedQuery',
+                        'athena:GetNamedQuery',
+                        'athena:ListNamedQueries',
+                        'athena:CreateNamedQuery',
+                        'athena:BatchGetNamedQuery',
+                    ],
+                    resources=[
+                        f'arn:aws:athena:{self.region}:{self.account}:workgroup/*',
+                    ]
+                ),
+                iam.PolicyStatement(
+                    sid='AthenaDataCatalogAccess',
+                    effect=iam.Effect.ALLOW,
+                    actions=[
+                        'athena:ListDatabases',
+                        'athena:GetDataCatalog',
+                        'athena:GetDatabase',
+                        'athena:GetTableMetadata',
+                        'athena:ListTableMetadata',
+                    ],
+                    resources=[
+                        f'arn:aws:athena:{self.region}:{self.account}:datacatalog/*',
+                    ],
+                ),
+                iam.PolicyStatement(
                     sid='GlueCatalogReadAccess',
                     effect=iam.Effect.ALLOW,
                     actions=[
-                        'lakeformation:GetDataAccess',
-                        'glue:GetDatabase',
-                        'glue:GetDatabases',
-                        'glue:GetTable',
-                        'glue:GetTables',
-                        'glue:GetPartition',
-                        'glue:GetPartitions',
-                        'glue:BatchGetPartition',
+                        'lakeformation:GetDataAccess',  # *
+                        'glue:GetDatabase',             # catalog/database
+                        'glue:GetDatabases',            # catalog/database
+                        'glue:GetTable',                # catalog/database/table
+                        'glue:GetTables',               # catalog/database/table
+                        'glue:GetPartition',            # catalog/database/table
+                        'glue:GetPartitions',           # catalog/database/table
+                        'glue:BatchGetPartition',       # catalog/database/table
                     ],
                     resources=[
                         '*',
@@ -639,6 +671,7 @@ class GlueStack(cdk.Stack):
                     ],
                     resources=[
                         self.glue_scripts_temp_bucket.bucket_arn,
+                        self.glue_scripts_temp_bucket.arn_for_objects('*'),
                     ]
                 ),
             ]),
