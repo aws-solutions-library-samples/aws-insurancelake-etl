@@ -450,7 +450,7 @@ class GlueStack(cdk.Stack):
             role_name=f'{self.target_environment.lower()}-{self.resource_name_prefix}-{self.region}-glue-role',
             assumed_by=iam.ServicePrincipal('glue.amazonaws.com'),
             inline_policies={
-                'S3BucketReadAccess':
+                'S3BucketAccess':
                 iam.PolicyDocument(statements=[
                     iam.PolicyStatement(
                         effect=iam.Effect.ALLOW,
@@ -461,11 +461,8 @@ class GlueStack(cdk.Stack):
                             's3:GetBucketLocation',
                         ],
                         resources=bucket_resources
-                    )
-                ]),
-                # TODO: Remove glue scripts bucket from the resource list
-                'S3BucketObjectReadWriteAccess':
-                iam.PolicyDocument(statements=[
+                    ),
+                    # TODO: Remove glue-scripts bucket from the resource list
                     iam.PolicyStatement(
                         effect=iam.Effect.ALLOW,
                         actions=[
@@ -476,11 +473,9 @@ class GlueStack(cdk.Stack):
                             's3:DeleteObject',
                         ],
                         resources=bucket_object_resources
-                    )
-                ]),
-                # This is required due to bucket level encryption on S3 Buckets
-                'KmsAccess':
-                iam.PolicyDocument(statements=[
+                    ),
+                    # This is required due to bucket level encryption on S3 Buckets
+                    # TODO: key_arn is optional in the parent stack, make this conditional
                     iam.PolicyStatement(
                         effect=iam.Effect.ALLOW,
                         actions=[
@@ -507,6 +502,19 @@ class GlueStack(cdk.Stack):
                             'dynamodb:Query',
                         ],
                         resources=dynamodb_resources,
+                    )
+                ]),
+                # This is required to emit lineage events to a DataZone domain
+                'DataZoneAccess':
+                iam.PolicyDocument(statements=[
+                    iam.PolicyStatement(
+                        effect=iam.Effect.ALLOW,
+                        actions=[
+                            'datazone:PostLineageEvent',
+                        ],
+                        resources=[
+                            f'arn:aws:datazone:{self.region}:{self.account}:domain/*',
+                        ]
                     )
                 ]),
                 'AthenaAccess':

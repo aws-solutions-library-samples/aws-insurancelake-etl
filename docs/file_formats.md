@@ -236,7 +236,7 @@ The following compression formats are supported transparently: uncompressed, sna
 
 ### Handling Multi-file Data Sets
 
-In the future, handling of multi-file Parquet data sources will be better integrated into InsuranceLake. The instructions in this section will detail how to modify the source code of the Collect-to-Cleanse AWS Glue job, and the etl-trigger Lambda function to support multi-file Parquet data sources.
+The instructions in this section will detail how to modify the source code of the Collect-to-Cleanse AWS Glue job, and the etl-trigger Lambda function to support multi-file Parquet data sources. In the future, you will be able to enable handling of multi-file Parquet data sources using InsuranceLake configuration files.
 
 Multi-file incoming data sets are often landed in the Collect S3 bucket in a nested folder structure. A nested folder structure for a Parquet data set could look similar to a partition override folder structure. For this reason, you must comment out and disable the partition override support in the [etl-trigger Lambda function on line 127](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/lib/state_machine_trigger/lambda_handler.py#L127) as follows:
 

@@ -50,7 +50,7 @@ This section describes each of the user-configured data transforms provided with
 |[expandpolicymonths](#expandpolicymonths)	|Expand dataset to one row for each month the policy is active with a calculated earned premium
 |[policymonths](#policymonths)	|Calculate number of months between policy start and end dates
 
-|Structured Data	|Description
+|Nested Data	|Description
 |---	|---
 |[jsonexpandarray](#jsonexpandarray)    |Expand array type columns from JSON files into multiple rows
 |[jsonexpandmap](#jsonexpandmap)    |Expand struct or map type columns from JSON files into multiple rows
@@ -657,7 +657,7 @@ Calculate the number of months between policy start and end dates.
 
 ---
 
-## Structured Data
+## Nested Data
 
 ### jsonexpandarray
 {: .no_toc }
