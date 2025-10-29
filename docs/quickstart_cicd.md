@@ -103,6 +103,7 @@ You can now make changes locally, commit them to the repository, and CodePipelin
 
 ## Further Reading
 
+- [Deployment Validation](quickstart_deployment_validation.md)
 - [Local AWS Glue and Apache Spark Development](developer_guide.md#local-aws-glue-and-apache-spark-development)
 - [InsuranceLake Code Quality](developer_guide.md#code-quality)
 - [Unit Testing](developer_guide.md#unit-testing)

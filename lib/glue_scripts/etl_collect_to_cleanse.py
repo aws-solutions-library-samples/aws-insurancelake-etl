@@ -72,6 +72,9 @@ def main():
     job = Job(glueContext)
     job.init(args['JOB_NAME'], args)
 
+    # Use the Spark DataFrame to Pandas DataFrame optimized conversion
+    spark.conf.set('spark.sql.execution.arrow.pyspark.enabled', True)
+
     _, ext = os.path.splitext(args['base_file_name'])
     source_path = args['source_bucket'] + '/' + args['source_path'] + '/' + args['base_file_name']
     source_key_dashes = args['target_database_name'] + '-' + args['table_name']

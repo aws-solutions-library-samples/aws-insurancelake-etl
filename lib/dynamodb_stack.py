@@ -53,6 +53,26 @@ class DynamoDbStack(cdk.Stack):
             deletion_protection=True if self.removal_policy == cdk.RemovalPolicy.RETAIN else False,
         )
 
+        # NOTE: These GSIs may break future stack updates to the table
+        # Reference: https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-dynamodb-table.html
+
+        # No other tables require indexes, so there is no need for extra dependencies
+        self.job_audit_table.add_global_secondary_index(
+            index_name='source_key-job_start_date_int-index',
+            partition_key=dynamodb.Attribute(name='source_key', type=dynamodb.AttributeType.STRING),
+            sort_key=dynamodb.Attribute(name='job_start_date_int', type=dynamodb.AttributeType.NUMBER),
+            projection_type=dynamodb.ProjectionType.INCLUDE,
+            non_key_attributes=['job_latest_status']
+        )
+
+        self.job_audit_table.add_global_secondary_index(
+            index_name='job_latest_status-dependency_key-index',
+            partition_key=dynamodb.Attribute(name='job_latest_status', type=dynamodb.AttributeType.STRING),
+            sort_key=dynamodb.Attribute(name='dependency_key', type=dynamodb.AttributeType.STRING),
+            projection_type=dynamodb.ProjectionType.INCLUDE,
+            non_key_attributes=['execution_id', 'sfn_execution_name', 'sfn_input', 'source_key']
+        )
+
         # DynamoDB table to store raw data to hash value mapping
         # raw data stored in 'raw_data' column
         self.hash_values_table = dynamodb.Table(

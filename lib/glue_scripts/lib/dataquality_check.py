@@ -66,6 +66,7 @@ class DataQualityCheck:
             Spark Context class from the calling job
         """
         self.dq_rules = dq_rules
+        self.convert_single_quotes = dq_rules.get('convert_single_quotes', True)
         self.partition = partition
         self.args = args
         self.lineage = lineage
@@ -82,9 +83,10 @@ class DataQualityCheck:
         ruleset_name
             Name of rule set in dq_rules that is being used
         """
-        return 'Rules = [ ' \
-            + ','.join(self.dq_rules[ruleset_name][rule_action]).replace("'", '"') \
-            + ' ]'
+        rules_string = ','.join(self.dq_rules[ruleset_name][rule_action])
+        if self.convert_single_quotes:
+            rules_string = rules_string.replace("'", '"')
+        return 'Rules = [ ' + rules_string + ' ]'
 
 
     def _write_results_to_dynamodb(self, results_dyf: DynamicFrame, ruleset_name: str, rule_action: str):

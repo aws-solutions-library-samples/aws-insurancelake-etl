@@ -58,7 +58,7 @@ def athena_execute_query(database: str, query: str, result_bucket: str,
 
 def redshift_execute_query(database: str, query: str, # nosec B107
         cluster_id: str = None, workgroup_name: str = None, secret_arn: str = None,
-        max_attempts: int = 60) -> str:
+        max_attempts: int = 120) -> str:
     """Function to execute query using Redshift Data API, loop until
     result is returned, and return status.
 

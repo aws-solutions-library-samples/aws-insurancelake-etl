@@ -7,7 +7,7 @@ last_modified_date: 2024-09-26
 
 This solution uses the following services: [Amazon S3](https://aws.amazon.com/s3/pricing/), [AWS Glue](https://aws.amazon.com/glue/pricing/), [AWS Step Functions](https://aws.amazon.com/step-functions/pricing/), [Amazon DynamoDB](https://aws.amazon.com/dynamodb/pricing/), [AWS Lambda](https://aws.amazon.com/lambda/pricing/), [Amazon CloudWatch](https://aws.amazon.com/cloudwatch/pricing/), [Amazon Athena](https://aws.amazon.com/athena/pricing/), and [AWS CodePipeline](https://aws.amazon.com/codepipeline/pricing/) for continuous integration and continuous deployment (CI/CD) installation only.
 
-An estimated cost for following the [Quickstart](#quickstart) and [Quickstart with CI/CD](quickstart_cicd.md) instructions, assuming a total of 8 Glue DPU hours and cleaning all resources when finished, **your cost will not be higher than $2**. This cost could be less as some services are included in the [Free Tier](https://aws.amazon.com/free/).
+For following the [Quickstart](#quickstart) and [Quickstart with CI/CD](quickstart_cicd.md) instructions, assuming a total of 8 Glue DPU hours and cleaning all resources when finished, **your cost will not be higher than $4**. This cost could be less as some services are included in the [Free Tier](https://aws.amazon.com/free/).
 
 _We recommend creating a [Budget](https://docs.aws.amazon.com/cost-management/latest/userguide/budgets-managing-costs.html) through [AWS Cost Explorer](https://aws.amazon.com/aws-cost-management/aws-cost-explorer/) to help manage costs. Prices are subject to change. For full details, refer to the pricing webpage for each AWS service used in this solution._
 

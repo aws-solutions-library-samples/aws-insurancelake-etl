@@ -83,6 +83,9 @@ def main():
     job = Job(glueContext)
     job.init(args['JOB_NAME'], args)
 
+    # Use the Spark DataFrame to Pandas DataFrame optimized conversion
+    spark.conf.set('spark.sql.execution.arrow.pyspark.enabled', True)
+
     # Hive database and table names are case insensitive
     target_table = args['table_name']
     substitution_data = args.copy()

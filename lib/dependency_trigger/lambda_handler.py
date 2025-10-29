@@ -6,7 +6,6 @@ import logging
 from dateutil import parser as dateparser
 import boto3
 import botocore
-from boto3.dynamodb.conditions import Attr
 
 # Logger initiation
 logger = logging.getLogger()
@@ -65,8 +64,8 @@ def get_queued_jobs(audit_table_name: str, dependency_key: str):
     ----------
     audit_table_name : str
         Name of DynamoDB table
-    source_key : str
-        Source key of the dependent workflow to match
+    dependency_key : str
+        Source key of the workflow dependency to match
 
     Returns
     -------
@@ -79,16 +78,20 @@ def get_queued_jobs(audit_table_name: str, dependency_key: str):
     """
     dynamo_client = boto3.resource('dynamodb')
     try:
-        # Update audit table
+        # Query audit table
         table = dynamo_client.Table(audit_table_name)
-        result = table.scan(
-            FilterExpression=
-                Attr('job_latest_status').eq('QUEUED') & \
-                Attr('dependency_key').eq(dependency_key),
-            ProjectionExpression='execution_id, sfn_execution_name, sfn_input, source_key',
+        result = table.query(
+            IndexName='job_latest_status-dependency_key-index',
+            Select='ALL_PROJECTED_ATTRIBUTES',
+            KeyConditionExpression=
+                'dependency_key = :dependency_key AND job_latest_status = :status',
+            ExpressionAttributeValues={
+                ':dependency_key': dependency_key,
+                ':status': 'QUEUED'
+            }
         )
     except botocore.exceptions.ClientError as error:
-        raise RuntimeError(f'DynamoDB table scan failed: {error}')
+        raise RuntimeError(f'DynamoDB table query failed: {error}')
 
     logger.info(f'Get queued jobs completed successfully with {result['Count']} jobs matched')
     return result['Items']

@@ -1,6 +1,6 @@
 # Copyright Amazon.com and its affiliates; all rights reserved. This file is Amazon Web Services Content and may not be duplicated or distributed without permission.
 # SPDX-License-Identifier: MIT-0
-import datetime
+from datetime import datetime
 from dateutil import tz
 
 mock_account_id = 'notrealaccountid'
@@ -34,8 +34,8 @@ mock_athena_get_query_execute_failed_response =  {
         'Status': {
             'State': 'FAILED',
             'StateChangeReason': "line 3:3: Column 'generatedate' cannot be resolved",
-            'SubmissionDateTime': datetime.datetime(2022, 9, 22, 15, 29, 51, 159000, tzinfo=tz.tzlocal()),
-            'CompletionDateTime': datetime.datetime(2022, 9, 22, 15, 29, 51, 535000, tzinfo=tz.tzlocal())
+            'SubmissionDateTime': datetime(2022, 9, 22, 15, 29, 51, 159000, tzinfo=tz.tzlocal()),
+            'CompletionDateTime': datetime(2022, 9, 22, 15, 29, 51, 535000, tzinfo=tz.tzlocal())
         },
         'Statistics': {'EngineExecutionTimeInMillis': 246, 'DataScannedInBytes': 0, 'TotalExecutionTimeInMillis': 376, 'QueryQueueTimeInMillis': 102, 'ServiceProcessingTimeInMillis': 28},
         'WorkGroup': 'primary',
@@ -45,7 +45,7 @@ mock_athena_get_query_execute_failed_response =  {
 
 
 mock_redshift_execute_statement_response = {
-    'CreatedAt': datetime.datetime(2022, 1, 13, 21, 42, 8, 544000, tzinfo=tz.tzlocal()),
+    'CreatedAt': datetime(2022, 1, 13, 21, 42, 8, 544000, tzinfo=tz.tzlocal()),
     'Database': 'dev',
     'DbUser': 'IAMR:TestUser',
     'Id': '1a6e0fba-e7cc-446b-a800-f72e66c8a993',
@@ -53,7 +53,7 @@ mock_redshift_execute_statement_response = {
 } | mock_response_metadata
 
 mock_redshift_describe_statement_response = {
-    'CreatedAt': datetime.datetime(2022, 1, 13, 20, 37, 6, 837000, tzinfo=tz.tzlocal()),
+    'CreatedAt': datetime(2022, 1, 13, 20, 37, 6, 837000, tzinfo=tz.tzlocal()),
     'Database': 'dev',
     'DbUser': 'IAMR:TestUser',
     'Duration': 553161143,
@@ -66,14 +66,14 @@ mock_redshift_describe_statement_response = {
     'ResultRows': 0,
     'ResultSize': 0,
     'Status': 'FINISHED',
-    'UpdatedAt': datetime.datetime(2022, 1, 13, 20, 37, 7, 781000, tzinfo=tz.tzlocal()),
+    'UpdatedAt': datetime(2022, 1, 13, 20, 37, 7, 781000, tzinfo=tz.tzlocal()),
     'WorkgroupName': 'default-workgroup',
 } | mock_response_metadata
 
 mock_redshift_failed_statement_id = 'edd703ee-7314-4a24-bcf3-059a69b46254'
 
 mock_redshift_describe_statement_failed_response = {
-    'CreatedAt': datetime.datetime(2022, 1, 13, 20, 11, 11, 451000, tzinfo=tz.tzlocal()),
+    'CreatedAt': datetime(2022, 1, 13, 20, 11, 11, 451000, tzinfo=tz.tzlocal()),
     'Database': 'dev',
     'DbUser': 'IAMR:TestUser',
     'Duration': -1,
@@ -87,7 +87,7 @@ mock_redshift_describe_statement_failed_response = {
     'ResultRows': -1,
     'ResultSize': -1,
     'Status': 'FAILED',
-    'UpdatedAt': datetime.datetime(2022, 1, 13, 20, 11, 12, 18000, tzinfo=tz.tzlocal()),
+    'UpdatedAt': datetime(2022, 1, 13, 20, 11, 12, 18000, tzinfo=tz.tzlocal()),
     'WorkgroupName': 'default-workgroup',
 } | mock_response_metadata
 

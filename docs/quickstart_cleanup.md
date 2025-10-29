@@ -17,9 +17,18 @@ This page explains how to clean up resources and data from an InsuranceLake depl
 
 ## Clean-up Workflow-created Resources
 
+1. If you have not previously set the default AWS region for your session, you must set it now.
+
+    {: .note }
+    The default region for InsuranceLake is `us-east-2`.
+
+    ```bash
+    export AWS_DEFAULT_REGION=<replace with your region>
+    ```
+
 1. Use the `etl_cleanup.py` script to clear the S3 buckets, Data Catalog entries, logs, and DynamoDB tables:
    ```bash
-   AWS_DEFAULT_REGION=us-east-2 resources/etl_cleanup.py --mode allbuckets
+   resources/etl_cleanup.py --mode allbuckets
    ```
 
    You can also manually empty all six InsuranceLake S3 buckets (cleanse, collect, consume, etl-scripts, glue-temp, access-logs) before cleaning up the stacks (as detailed below).

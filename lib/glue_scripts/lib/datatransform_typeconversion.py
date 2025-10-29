@@ -68,17 +68,6 @@ def transform_timestamp(df: DataFrame, timestamp_formats: list, args: dict, line
     return df.withColumns(cols_map)
 
 
-def transform_decimal(df: DataFrame, decimal_formats: list, args: dict, lineage, *extra) -> DataFrame:
-    print('WARNING: decimal transform is deprecated and will be removed in the future; '
-          'replace with changetype transform')
-    return transform_changetype(
-        df,
-        { spec['field']: f"decimal({spec['format']})" for spec in decimal_formats },
-        args,
-        lineage
-    )
-
-
 def transform_changetype(df: DataFrame, field_types: dict, args: dict, lineage, *extra) -> DataFrame:
     """Cast columns to specified data type
 

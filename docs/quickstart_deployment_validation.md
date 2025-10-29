@@ -7,15 +7,27 @@ last_modified_date: 2024-09-26
 ---
 # InsuranceLake Deployment Validation
 
+1. If you have not previously set the default AWS region for your session, you must set it now.
+
+    {: .note }
+    The default region for InsuranceLake is `us-east-2`.
+
+    ```bash
+    export AWS_DEFAULT_REGION=<replace with your region>
+    ```
+
 1. Transfer the sample claim data to the Collect bucket (Source system: SyntheticData, Table: ClaimData).
-   ```bash
-   aws s3 cp resources/syntheticgeneral-claim-data.csv s3://<Collect S3 bucket>/SyntheticGeneralData/ClaimData/
-   ```
+    ```bash
+    export AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+    aws s3 cp resources/syntheticgeneral-claim-data.csv s3://dev-insurancelake-${AWS_ACCOUNT_ID}-${AWS_DEFAULT_REGION}-collect/SyntheticGeneralData/ClaimData/
+    ```
+
+1. The claim data workflow must complete loading of the data into the Cleanse bucket to successfully load the policy data in the following step.
 
 1. Transfer the sample policy data to the Collect bucket (Source system: SyntheticData, Table: PolicyData).
-   ```bash
-   aws s3 cp resources/syntheticgeneral-policy-data.csv s3://<Collect S3 bucket>/SyntheticGeneralData/PolicyData/
-   ```
+    ```bash
+    aws s3 cp resources/syntheticgeneral-policy-data.csv s3://dev-insurancelake-${AWS_ACCOUNT_ID}-${AWS_DEFAULT_REGION}-collect/SyntheticGeneralData/PolicyData/
+    ```
 
 1. Upon successful transfer of the file, an event notification from S3 will trigger the state-machine-trigger Lambda function.
 
@@ -44,7 +56,6 @@ last_modified_date: 2024-09-26
 1. An Amazon Simple Notification Service (Amazon SNS) notification will be sent to all subscribed users.
 
 1. To validate the data load, use Athena and execute the following query:
-
     ```sql
     select * from syntheticgeneraldata_consume.policydata limit 100
     ```

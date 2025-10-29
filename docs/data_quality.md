@@ -39,7 +39,7 @@ Consider the following steps for building and testing new data quality rules:
 1. Insert recommendations, create your own rules, and test run the rules using the console interface.
     - For more details, see the AWS Glue documentation [Getting started with AWS Glue Data Quality for the Data Catalog](https://docs.aws.amazon.com/glue/latest/dg/data-quality-getting-started.html).
 1. Copy and paste the rules into the `dq-rules` [configuration file](#configuration) for your dataset.
-1. Replace double quotes in the rule definitions with single quotes so that you have valid JSON.
+1. Replace double quotes in the rule definitions with single quotes or escape the double quotes so that you have valid JSON.
 
 You can also refer to the [Getting started with AWS Glue Data Quality for ETL Pipelines](https://aws.amazon.com/blogs/big-data/getting-started-with-aws-glue-data-quality-for-etl-pipelines/) blog for guidance and examples.
 
@@ -51,6 +51,14 @@ Data quality in InsuranceLake is provided using AWS Glue Data Quality rules mana
 The filename of the workflow's data quality rules configuration file follows the convention of `dq-<database name>-<table name>.json` and is stored in the `/etl/dq-rules` folder in the `etl-scripts` bucket. When using AWS CDK for deployment, the contents of the `/lib/glue_scripts/lib/dq-rules` directory will be automatically deployed to this location.
 
 The ETL's AWS Glue Data Quality integration uses the [AWS Glue Data Quality Definition Language (DQDL)](https://docs.aws.amazon.com/glue/latest/dg/dqdl.html) to describe rules. The rules in the InsuranceLake ETL data quality configuration should be expressed in the same format (except for the JSON requirements around double quotes).
+
+To help make DQDL expressions more readable in the JSON configuration file, InsuranceLake automatically converts single quotes to double quotes. This avoids needing to escape the double quotes with a backslash (in other words, `\"`). If you need to include single quotes in your DQDL expression, you can disable this behavior by using the following configuration in your data quality rules configuration:
+
+```json
+{
+    "convert_single_quotes": false,
+}
+```
 
 ### When to run data quality rules
 
@@ -214,6 +222,19 @@ An example data quality configuration file follows:
         "after_sparksql": {
             "warn_rules": [
                 "CustomSql 'SELECT avg(WrittenPremiumAmount) FROM primary WHERE EffectiveDate >= now() - interval 90 days' between 5000 and 500000"
+            ]
+        }
+    }
+    ```
+
+* Example CustomSQL expression to exclude home owners insurance line of business from the claim limit check:
+    ```json
+    {
+        "convert_single_quotes": false,
+
+        "after_sparksql": {
+            "quarantine_rules": [
+                "CustomSql \"SELECT PolicyNumber FROM primary WHERE accidentyeartotalincurredamount <= claimlimit OR accidentyeartotalincurredamount is null OR lobcode = 'HOME'\""
             ]
         }
     }

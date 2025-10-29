@@ -404,11 +404,11 @@ class StepFunctionsStack(cdk.Stack):
                     effect=iam.Effect.ALLOW,
                     actions=[
                         'dynamodb:GetItem',
-                        'dynamodb:Scan',
+                        'dynamodb:Query',
                         'dynamodb:PutItem',
                         'dynamodb:UpdateItem',
                     ],
-                    resources=[job_audit_table.table_arn]
+                    resources=[ job_audit_table.table_arn, job_audit_table.table_arn + '/index/*' ]
                 )
             ]),
         }
@@ -456,7 +456,7 @@ class StepFunctionsStack(cdk.Stack):
                 ]),
             })
 
-        return iam.Role(
+        iam_role = iam.Role(
             self,
             f'{self.target_environment}{self.logical_id_prefix}{logical_id_suffix}LambdaRole',
             description='Role for InsuranceLake ETL Lambda Functions',
@@ -464,6 +464,14 @@ class StepFunctionsStack(cdk.Stack):
             assumed_by=iam.ServicePrincipal('lambda.amazonaws.com'),
             inline_policies=policies,
         )
+        NagSuppressions.add_resource_suppressions(iam_role, [
+            {
+                'id': 'AwsSolutions-IAM5',
+                'reason': 'DynamoDB resource with wildcard is used to specify all indexes for a specific table'
+            },
+        ], apply_to_children=True)
+
+        return iam_role
 
 
     def lambda_function_for_etl(

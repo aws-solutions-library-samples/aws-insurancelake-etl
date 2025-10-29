@@ -72,7 +72,8 @@ aux_links:
     - "https://github.com/aws-solutions-library-samples/aws-insurancelake-etl"
   "Quickstart Workshop":
     - "https://catalog.workshops.aws/insurancelake"
-
+  "SMUS for FSI Insurance Workshop":
+    - "https://catalog.workshops.aws/fsi-insurance-with-sagemaker"
 
 # Makes Aux links open in a new tab. Default is false
 aux_links_new_tab: true

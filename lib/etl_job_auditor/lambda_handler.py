@@ -5,7 +5,6 @@ import boto3
 import botocore
 import os
 import logging
-import os.path
 from datetime import datetime
 import dateutil.tz
 

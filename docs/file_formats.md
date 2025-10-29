@@ -38,7 +38,7 @@ Example of other data pipeline configuration parameters:
 
 ```json
 {
-	"input_spec": {
+    "input_spec": {
 
         "table_description": "Description will only apply to cleanse bucket",
 

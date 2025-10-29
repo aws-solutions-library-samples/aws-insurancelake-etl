@@ -2,4 +2,4 @@
 -r requirements.txt
 pytest
 pytest-cov
-moto[dynamodb,glue,athena,s3]
+moto[dynamodb,glue,athena,s3,stepfunctions]

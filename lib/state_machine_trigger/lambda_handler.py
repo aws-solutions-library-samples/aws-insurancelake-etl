@@ -7,8 +7,10 @@ import os
 import logging
 import uuid
 import re
-from dateutil import parser as dateparser
+from datetime import datetime
+from dateutil import parser as dateparser, relativedelta
 from urllib.parse import unquote_plus
+from boto3.dynamodb.conditions import Attr
 
 # Logger initiation
 logger = logging.getLogger()
@@ -31,6 +33,53 @@ def record_etl_job_run(audit_table_name: str, item: dict):
         raise RuntimeError(f'record_etl_job_run() DynamoDB put_item failed: {error}')
 
     logger.info('record_etl_job_run() completed successfully')
+
+
+def dependency_job_lookback(audit_table_name: str, source_key: str, lookback: str):
+    """Function to look for dependency jobs successfully completed in the lookback period
+
+    Parameters
+    ----------
+    audit_table_name : str
+        Name of DynamoDB table
+    source_key : str
+        Source key of the workflow dependency to match
+    lookback : dict
+        Lookback interval expressed using dateutil relativedelta parameters
+
+    Returns
+    -------
+    bool : dependency job was successfully completed in the lookback period
+
+    Raises
+    ------
+    RuntimeError
+        If DynamoDB table scan fails for any reason
+    """
+    # Calculate the lookback date/time using the specified interval
+    lookback_time = datetime.now() - relativedelta.relativedelta(**lookback)
+
+    dynamo_client = boto3.resource('dynamodb')
+    try:
+        # Query audit table
+        table = dynamo_client.Table(audit_table_name)
+        result = table.query(
+            IndexName='source_key-job_start_date_int-index',
+            Select='COUNT',
+            KeyConditionExpression=
+                'source_key = :source_key AND job_start_date_int > :lookback_time',
+            ExpressionAttributeValues={
+                ':source_key': source_key,
+                ':lookback_time': int(lookback_time.timestamp())
+            },
+            FilterExpression=Attr('job_latest_status').eq('SUCCEEDED'),
+            ScanIndexForward=False,     # Most recent first
+        )
+    except botocore.exceptions.ClientError as error:
+        raise RuntimeError(f'DynamoDB table query failed: {error}')
+
+    logger.info(f'Get dependency job lookback completed successfully with {result['Count']} jobs matched')
+    return result['Count'] > 0
 
 
 def lambda_handler(event: dict, _) -> dict:
@@ -105,13 +154,26 @@ def lambda_handler(event: dict, _) -> dict:
         entity_match = True
         logger.info(f'Entity Match JSON {entity_match_spec} found; enabling Entity Match job')
 
+    queue_job = False
     dependent_workflow_spec = \
         f'etl/transformation-spec/{object_source_system_name}-{object_table_name}-dependent.json'
     try:
         dependency_result = s3_client.get_object(Bucket=glue_scripts_bucket_name, Key=dependent_workflow_spec)
         if 'Body' in dependency_result:
-            dependencies = json.loads(dependency_result['Body'].read().decode('utf-8')).get('depends_on')
-            logger.info(f'Dependent Workflow JSON {dependent_workflow_spec} found; queuing job execution')
+            dependency_data = json.loads(dependency_result['Body'].read().decode('utf-8'))
+            dependencies = dependency_data.get('depends_on')
+            queue_job = bool(dependencies)
+
+            lookback = dependency_data.get('lookback')
+            if lookback:
+                # TODO: Add support for multiple dependencies
+                queue_job = not dependency_job_lookback(audit_table_name, list(dependencies)[0], lookback)
+
+            if queue_job:
+                logger.info(f'Dependent workflow JSON {dependent_workflow_spec} found; queuing job execution')
+            else:
+                logger.info(f'Dependent workflow JSON {dependent_workflow_spec} found; starting job execution due to {lookback} lookback success')
+
     except s3_client.exceptions.NoSuchKey:
         dependencies = {}
 
@@ -147,7 +209,7 @@ def lambda_handler(event: dict, _) -> dict:
     )
     logger.info(f'SFN Input: {execution_input}')
 
-    if not dependencies:
+    if not queue_job:
         try:
             sfn_response = sfn_client.start_execution(
                 stateMachineArn=sfn_arn,
@@ -171,11 +233,13 @@ def lambda_handler(event: dict, _) -> dict:
         'source_key': f'{object_source_system_name}/{object_table_name}',
         'job_latest_status': status,
         'job_start_date': event_time.strftime('%Y-%m-%d %H:%M:%S.%f'),
+        'job_start_date_int': int(event_time.timestamp()),
         'job_last_updated_timestamp': event_time.strftime('%Y-%m-%d %H:%M:%S.%f'),
         'principal_id': principal_id,
         'source_ipaddress': source_ipaddress,
         # TODO: Add support for multiple dependencies, including how to ensure that all of them are met
-        'dependency_key': list(dependencies)[0] if dependencies else None,
+        # dependency_key is the partition key for a GSI and cannot be null
+        'dependency_key': list(dependencies)[0] if dependencies else 'None',
     }
     record_etl_job_run(audit_table_name, item)
 

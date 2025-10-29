@@ -1,0 +1,9 @@
+{
+	"description": "CombinedData workflow Redshift SQL uses PolicyData consume for its data source",
+	"depends_on": {
+		"SyntheticGeneralData/PolicyData": 1
+	},
+	"lookback": {
+		"days": 1
+	}
+}

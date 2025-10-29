@@ -23,7 +23,7 @@ If you'd like to get started quickly transforming some sample raw insurance data
 1. Open the AWS Console in the `us-east-2 (Ohio)` Region.
 
     {: .note }
-    InsuranceLake uses `us-east-2` by default. To change the Region, refer to the [Quickstart with CI/CD](quickstart_cicd.md).
+    InsuranceLake uses `us-east-2` by default. To change the Region, refer to steps 5 - 8 in the [Quickstart with CI/CD](quickstart_cicd.md).
 
 1. Select AWS `CloudShell` at the bottom of the page and wait for a few seconds until it is available for use.
 1. Ensure you are using the latest version of the AWS SDK for Node.js and AWS CDK.
@@ -67,7 +67,7 @@ If you'd like to get started quickly transforming some sample raw insurance data
 ## Deploy the Application
 
 {:style="counter-reset:none"}
-1. Confirm you are still in the `aws-insurancelake-infrastructure` directory.
+1. Confirm you are still in the `aws-insurancelake-infrastructure` directory (for example, use the `pwd` command).
 1. Deploy infrastructure resources in the development environment (one stack).
     ```bash
     cdk deploy Dev-InsuranceLakeInfrastructurePipeline/Dev/InsuranceLakeInfrastructureS3BucketZones
@@ -99,16 +99,19 @@ If you'd like to get started quickly transforming some sample raw insurance data
     ```
 1. Transfer the sample claim data to the Collect bucket.
     ```bash
-    aws s3 cp resources/syntheticgeneral-claim-data.csv s3://<Collect S3 bucket>/SyntheticGeneralData/ClaimData/
-    ```
-1. Transfer the sample policy data to the Collect bucket.
-    ```bash
-    aws s3 cp resources/syntheticgeneral-policy-data.csv s3://<Collect S3 bucket>/SyntheticGeneralData/PolicyData/
+    export AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+    aws s3 cp resources/syntheticgeneral-claim-data.csv s3://dev-insurancelake-${AWS_ACCOUNT_ID}-${AWS_DEFAULT_REGION}-collect/SyntheticGeneralData/ClaimData/
     ```
 1. Open [Step Functions](https://console.aws.amazon.com/states/home) in the AWS Console and select `dev-insurancelake-etl-state-machine`.
     ![Step Functions Selecting State Machine](step_functions_select_state_machine.png)
 1. Open the state machine execution in progress and monitor the status until complete.
     ![Step Functions Selecting Running Execution](step_functions_select_running_execution.png)
+1. Transfer the sample policy data to the Collect bucket.
+    ```bash
+    aws s3 cp resources/syntheticgeneral-policy-data.csv s3://dev-insurancelake-${AWS_ACCOUNT_ID}-${AWS_DEFAULT_REGION}-collect/SyntheticGeneralData/PolicyData/
+    ```
+1. Use the back button to return to the list of state machine executions. You should see a second execution running.
+1. Open the state machine execution in progress and monitor the status until complete.
 1. Open [Athena](https://console.aws.amazon.com/athena/home) in the AWS Console.
 1. Select `Launch Query Editor`, and change the Workgroup to `insurancelake`.
 1. Run the following query to view a sample of prepared data in the consume bucket:
