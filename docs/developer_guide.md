@@ -33,7 +33,7 @@ For detailed instructions on setting up a local AWS Glue and Apache Spark enviro
 
 * [AWS Developer Guide: Developing and testing AWS Glue job scripts locally](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-libraries.html)
 * [Develop and test AWS Glue 5.0 jobs locally using a Docker container](https://aws.amazon.com/blogs/big-data/develop-and-test-aws-glue-5-0-jobs-locally-using-a-docker-container/)
-* [Developing AWS Glue ETL jobs locally using a container](https://aws.amazon.com/blogs/big-data/developing-aws-glue-etl-jobs-locally-using-a-container)
+* [Developing AWS Glue ETL jobs locally using a container](https://aws.amazon.com/blogs/big-data/developing-aws-glue-etl-jobs-locally-using-a-container) (Older versions of AWS Glue)
 
 {: .note }
 AWS Glue Data Quality is not available in the AWS Glue Docker images.
@@ -128,9 +128,11 @@ The table below explains how this source code is structured.
 | [pipeline_stack](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/lib/pipeline_stack.py) | CodePipeline stack entry point
 | [pipeline_deploy_stage](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/lib/pipeline_deploy_stage.py) | CodePipeline deploy stage entry point
 | [dynamodb_stack](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/lib/dynamodb_stack.py) | Stack to create DynamoDB tables for job auditing and ETL transformation rules
-| [glue_stack](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/lib/glue_stack.py) | Stack to create AWS Glue jobs and supporting resources such as AWS Glue Connections, S3 Buckets (script and temporary), and an IAM execution role
+| [glue_buckets_stack](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/lib/glue_buckets_stack.py) | Stack to create S3 buckets used by Glue jobs (script and temporary storage)
+| [glue_jobs_stack](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/lib/glue_jobs_stack.py) | Stack to create AWS Glue jobs and supporting resources such as AWS Glue Connections and an IAM execution role
+| [data_lake_consumer_stack](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/lib/data_lake_consumer_stack.py) | Stack to create IAM policy for data lake consumers
 | [step_functions_stack](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/lib/step_functions_stack.py) | Stack to create an ETL Step Function State Machine which invokes AWS Glue jobs and supporting Lambda functions (state machine trigger and status notification)
-| [athena_helper_stack](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/lib/athena_helper_stack.py) | Stack to create an Athena workgroup with query results bucket ready for demonstration SQL queries
+| [athena_workgroup_stack](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/lib/athena_workgroup_stack.py) | Stack to create an Athena workgroup with query results bucket ready for demonstration SQL queries
 | [Collect-to-Cleanse AWS Glue Script](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/lib/glue_scripts/etl_collect_to_cleanse.py) | AWS Glue PySpark job data processing logic for Collect bucket data, which stores results in the Cleanse bucket
 | [Cleanse-to-Consume AWS Glue Script](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/lib/glue_scripts/etl_cleanse_to_consume.py) | AWS Glue PySpark job data processing logic for Cleanse bucket data, which stores results in the Consume bucket
 | [Entity Match AWS Glue Script](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/lib/glue_scripts/etl_consume_entity_match.py) | AWS Glue PySpark job data processing logic for entity matching, which stores results in the Consume bucket
@@ -309,14 +311,14 @@ The following are additional code considerations:
 * The majority of InsuranceLake operations are done using Spark-native DataFrames because conversions to AWS Glue DynamicFrames and Pandas DataFrames come with a cost. InsuranceLake was also designed to be as portable as possible to other Spark environments (with the exception of AWS Glue Data Quality). **We recommend you follow the practice of avoiding DataFrame conversions in your AWS Glue jobs**.
 
 * When there is functionality needed from Pandas that is not available in Spark, there are three methods to consider:
-    - [Pandas-on-Spark DataFrame](https://spark.apache.org/docs/latest/api/python/user_guide/pandas_on_spark/pandas_pyspark.html#pyspark)
+    - [Pandas-on-Spark DataFrame](https://spark.apache.org/docs/latest/api/python/tutorial/pandas_on_spark/pandas_pyspark.html#pyspark)
 
         Using the `DataFrame.pandas_api()` is performant because the data and operations are distributed. Avoid operations like `DataFrame.to_numpy()` that require the data to be collected on the driver (non-distributed). The Pandas API on Spark does not target 100% compatibility, so you may experience errors running your workflow.
 
     - [Pandas UDFs](https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.functions.pandas_udf.html)
         Pandas user-defined functions (UDFs) are executed by Spark using Apache Arrow to transfer data and Pandas to work with the data. When used in combination with `withColumn` or `select`, a Pandas UDF can perform Pandas library vectorized operations in a distributed manner on individual columns supplied as arguments.
 
-    - [PyArrow for Conversions](https://spark.apache.org/docs/latest/api/python/user_guide/sql/arrow_pandas.html)
+    - [PyArrow for Conversions](https://spark.apache.org/docs/latest/api/python/tutorial/sql/arrow_pandas.html)
 
         If full conversion to a Pandas DataFrame is needed, ensure your AWS Glue job enables Apache Arrow support for data conversion as follows:
 

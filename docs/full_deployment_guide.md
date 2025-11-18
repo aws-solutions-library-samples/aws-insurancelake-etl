@@ -513,17 +513,23 @@ Integration between AWS CodePipeline and Github, Gitlab, or Atlassian Bitbucket 
     Test-InsuranceLakeEtlPipeline
     Prod-InsuranceLakeEtlPipeline
     Dev-InsuranceLakeEtlPipeline/Dev/InsuranceLakeEtlDynamoDb
-    Dev-InsuranceLakeEtlPipeline/Dev/InsuranceLakeEtlGlue
+    Dev-InsuranceLakeEtlPipeline/Dev/InsuranceLakeEtlGlueBuckets
+    Dev-InsuranceLakeEtlPipeline/Dev/InsuranceLakeEtlAthenaWorkgroup
+    Dev-InsuranceLakeEtlPipeline/Dev/InsuranceLakeEtlDataLakeConsumer
+    Dev-InsuranceLakeEtlPipeline/Dev/InsuranceLakeEtlGlueJobs
     Dev-InsuranceLakeEtlPipeline/Dev/InsuranceLakeEtlStepFunctions
-    Dev-InsuranceLakeEtlPipeline/Dev/InsuranceLakeEtlAthenaHelper
     Test-InsuranceLakeEtlPipeline/Test/InsuranceLakeEtlDynamoDb
-    Test-InsuranceLakeEtlPipeline/Test/InsuranceLakeEtlGlue
+    Test-InsuranceLakeEtlPipeline/Test/InsuranceLakeEtlGlueBuckets
+    Test-InsuranceLakeEtlPipeline/Test/InsuranceLakeEtlAthenaWorkgroup
+    Test-InsuranceLakeEtlPipeline/Test/InsuranceLakeEtlDataLakeConsumer
+    Test-InsuranceLakeEtlPipeline/Test/InsuranceLakeEtlGlueJobs
     Test-InsuranceLakeEtlPipeline/Test/InsuranceLakeEtlStepFunctions
-    Test-InsuranceLakeEtlPipeline/Test/InsuranceLakeEtlAthenaHelper
     Prod-InsuranceLakeEtlPipeline/Prod/InsuranceLakeEtlDynamoDb
-    Prod-InsuranceLakeEtlPipeline/Prod/InsuranceLakeEtlGlue
+    Prod-InsuranceLakeEtlPipeline/Prod/InsuranceLakeEtlGlueBuckets
+    Prod-InsuranceLakeEtlPipeline/Prod/InsuranceLakeEtlAthenaWorkgroup
+    Prod-InsuranceLakeEtlPipeline/Prod/InsuranceLakeEtlDataLakeConsumer
+    Prod-InsuranceLakeEtlPipeline/Prod/InsuranceLakeEtlGlueJobs
     Prod-InsuranceLakeEtlPipeline/Prod/InsuranceLakeEtlStepFunctions
-    Prod-InsuranceLakeEtlPipeline/Prod/InsuranceLakeEtlAthenaHelper
     ```
 
 1. Run the command `cdk deploy --all`.

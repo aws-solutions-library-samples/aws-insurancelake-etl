@@ -62,6 +62,7 @@ optional_arguments = [
     'redshift_cluster_id',
     'redshift_workgroup_name',
     'redshift_database',
+    'athena_workgroup',
 ]
 
 
@@ -209,13 +210,16 @@ def main():
         athena_sql = None
 
     if athena_sql:
+        if 'athena_workgroup' not in args:
+            raise GlueArgumentError('argument --athena_workgroup is required when executing Amazon Athena SQL')
+
         for sql in athena_sql.split(';'):
             sql = sql.strip()
             # Check if there is actual SQL content since split will return an element after the final ;
             if sql:
                 print(f'Executing Athena SQL: {sql.format(**substitution_data)}')
                 status = athena_execute_query(
-                    args['target_database_name'], sql.format(**substitution_data), args['TempDir'])
+                    args['target_database_name'], sql.format(**substitution_data), args['athena_workgroup'])
                 print(f'Athena query execution status: {status}')
 
     # Amazon Redshift SQL is used to create views and RMS tables as external schema

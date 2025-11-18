@@ -74,21 +74,21 @@ If you'd like to get started quickly transforming some sample raw insurance data
     ```
 1. Review and accept AWS Identity and Access Management (IAM) credential creation for the S3 bucket stack.
     - Wait for deployment to finish (approximately 5 minutes).
-1. Copy the S3 bucket name for the Collect bucket to use later.
+1. Take note of the S3 bucket name for the Collect bucket.
     - Bucket name will be in the form: `dev-insurancelake-<AWS Account ID>-<Region>-collect`.
 1. Switch the working directory to the location of the _etl_ code.
     ```bash
     cd ../aws-insurancelake-etl
     ```
-1. Deploy the ETL resources in the development environment (four stacks).
+1. Deploy the ETL resources in the development environment (six stacks).
     ```bash
-    cdk deploy Dev-InsuranceLakeEtlPipeline/Dev/InsuranceLakeEtlDynamoDb Dev-InsuranceLakeEtlPipeline/Dev/InsuranceLakeEtlGlue Dev-InsuranceLakeEtlPipeline/Dev/InsuranceLakeEtlStepFunctions Dev-InsuranceLakeEtlPipeline/Dev/InsuranceLakeEtlAthenaHelper
+    cdk deploy Dev-InsuranceLakeEtlPipeline/Dev/*
     ```
-    - Wait for approximately 1 minute for DynamoDB deployment to finish.
+    - Wait for approximately 7 minutes for the Glue job buckets, DynamoDB tables, Data Lake Consumer IAM managed policy, and Athena workgroup deployment to finish.
 1. Review and accept IAM credential creation for the AWS Glue jobs stack.
-    - Wait approximately 3 minutes for deployment to finish.
+    - Wait approximately 4 minutes for deployment to finish.
 1. Review and accept IAM credential creation for the Step Functions stack.
-    - Wait approximately 7 minutes for deployment of Step Functions and Athena Helper stacks to finish.
+    - Wait approximately 4 minutes for deployment of Step Functions and Athena Helper stacks to finish.
 
 ## Try out the ETL Process
 

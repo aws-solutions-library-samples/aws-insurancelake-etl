@@ -70,7 +70,9 @@ def test_job_execution_and_commit(monkeypatch, capsys):
 
 @mock_glue_job(etl_cleanse_to_consume)
 def test_consume_bucket_write(monkeypatch, capsys):
-    monkeypatch.setattr(sys, 'argv', mock_args)
+    mock_args_with_athena = mock_args.copy()
+    mock_args_with_athena.extend(['--athena_workgroup=workgroup'])
+    monkeypatch.setattr(sys, 'argv', mock_args_with_athena)
     file = write_local_file(
         f'{mock_scripts_bucket}/etl/transformation-sql',
         f'spark-{mock_database_name}-{mock_table_name}.sql',
@@ -100,7 +102,9 @@ def test_missing_argument_exception(monkeypatch, capsys):
 
 @mock_glue_job(etl_cleanse_to_consume)
 def test_athena_view_create(monkeypatch, capsys):
-    monkeypatch.setattr(sys, 'argv', mock_args)
+    mock_args_with_athena = mock_args.copy()
+    mock_args_with_athena.extend(['--athena_workgroup=workgroup'])
+    monkeypatch.setattr(sys, 'argv', mock_args_with_athena)
     file = write_local_file(
         f'{mock_scripts_bucket}/etl/transformation-sql',
         f'athena-{mock_database_name}-{mock_table_name}.sql',

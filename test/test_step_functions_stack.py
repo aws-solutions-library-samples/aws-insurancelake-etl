@@ -7,7 +7,9 @@ from aws_cdk.assertions import Template
 from test.boto_mocking_helper import *
 from lib.step_functions_stack import StepFunctionsStack
 from lib.dynamodb_stack import DynamoDbStack
-from lib.glue_stack import GlueStack
+from lib.glue_jobs_stack import GlueJobsStack
+from lib.glue_buckets_stack import GlueBucketsStack
+from lib.athena_workgroup_stack import AthenaWorkgroupStack
 
 import lib.configuration as configuration
 from lib.configuration import (
@@ -28,16 +30,34 @@ def test_resource_types_and_counts(monkeypatch):
 		target_environment='Dev'
 	)
 
-	# Use one GlueStack stack for all 3 environments since it is not
-	# the test subject
-	glue_stack = GlueStack(
+	# Use one GlueBucketsStack stack for all 3 environments
+	glue_buckets_stack = GlueBucketsStack(
 		app,
-		'GlueStackForTests',
+		'GlueBucketsStackForTests',
+		target_environment='Dev',
+	)
+
+	# Use one AthenaWorkgroupStack stack for all 3 environments
+	athena_workgroup_stack = AthenaWorkgroupStack(
+		app,
+		'AthenaWorkgroupStackForTests',
+		target_environment='Dev',
+		glue_scripts_temp_bucket=glue_buckets_stack.glue_scripts_temp_bucket,
+	)
+
+	# Use one GlueJobsStack stack for all 3 environments
+	glue_jobs_stack = GlueJobsStack(
+		app,
+		'GlueJobsStackForTests',
 		target_environment='Dev',
         hash_values_table=dynamodb_stack.hash_values_table,
         value_lookup_table=dynamodb_stack.value_lookup_table,
         multi_lookup_table=dynamodb_stack.value_lookup_table,
 		dq_results_table=dynamodb_stack.dq_results_table,
+		data_lineage_table=dynamodb_stack.data_lineage_table,
+		glue_scripts_bucket=glue_buckets_stack.glue_scripts_bucket,
+		glue_scripts_temp_bucket=glue_buckets_stack.glue_scripts_temp_bucket,
+		athena_workgroup=athena_workgroup_stack.athena_workgroup,
 	)
 
 	step_functions_stacks = {}
@@ -46,11 +66,11 @@ def test_resource_types_and_counts(monkeypatch):
 			app,
 			f'{environment}-StepFunctionsStackForTests',
 			target_environment=environment,
-			collect_to_cleanse_job=glue_stack.collect_to_cleanse_job,
-			cleanse_to_consume_job=glue_stack.cleanse_to_consume_job,
-			consume_entity_match_job=glue_stack.consume_entity_match_job,
+			collect_to_cleanse_job=glue_jobs_stack.collect_to_cleanse_job,
+			cleanse_to_consume_job=glue_jobs_stack.cleanse_to_consume_job,
+			consume_entity_match_job=glue_jobs_stack.consume_entity_match_job,
 			job_audit_table=dynamodb_stack.job_audit_table,
-			glue_scripts_bucket=glue_stack.glue_scripts_bucket,
+			glue_scripts_bucket=glue_buckets_stack.glue_scripts_bucket,
 		)
 
 	# All stacks should be generated before calling Template methods
@@ -79,27 +99,45 @@ def test_stack_has_correct_outputs(monkeypatch):
 		target_environment='Dev'
 	)
 
-	# Use one GlueStack stack for all 3 environments since it is not
-	# the test subject
-	glue_stack = GlueStack(
+	# Use one GlueBucketsStack for all 3 environments
+	glue_buckets_stack = GlueBucketsStack(
 		app,
-		'GlueStackForTests',
+		'GlueBucketsStackForTests',
+		target_environment='Dev',
+	)
+
+	# Use one AthenaWorkgroupStack for all 3 environments
+	athena_workgroup_stack = AthenaWorkgroupStack(
+		app,
+		'AthenaWorkgroupStackForTests',
+		target_environment='Dev',
+		glue_scripts_temp_bucket=glue_buckets_stack.glue_scripts_temp_bucket,
+	)
+
+	# Use one GlueJobsStack stack for all 3 environments
+	glue_jobs_stack = GlueJobsStack(
+		app,
+		'GlueJobsStackForTests',
 		target_environment='Dev',
         hash_values_table=dynamodb_stack.hash_values_table,
         value_lookup_table=dynamodb_stack.value_lookup_table,
         multi_lookup_table=dynamodb_stack.value_lookup_table,
 		dq_results_table=dynamodb_stack.dq_results_table,
+		data_lineage_table=dynamodb_stack.data_lineage_table,
+		glue_scripts_bucket=glue_buckets_stack.glue_scripts_bucket,
+		glue_scripts_temp_bucket=glue_buckets_stack.glue_scripts_temp_bucket,
+		athena_workgroup=athena_workgroup_stack.athena_workgroup,
 	)
 
 	step_functions_stack = StepFunctionsStack(
 		app,
 		'Dev-StepFunctionsStackForTests',
 		target_environment='Dev',
-		collect_to_cleanse_job=glue_stack.collect_to_cleanse_job,
-		cleanse_to_consume_job=glue_stack.cleanse_to_consume_job,
-		consume_entity_match_job=glue_stack.consume_entity_match_job,
+		collect_to_cleanse_job=glue_jobs_stack.collect_to_cleanse_job,
+		cleanse_to_consume_job=glue_jobs_stack.cleanse_to_consume_job,
+		consume_entity_match_job=glue_jobs_stack.consume_entity_match_job,
 		job_audit_table=dynamodb_stack.job_audit_table,
-		glue_scripts_bucket=glue_stack.glue_scripts_bucket,
+		glue_scripts_bucket=glue_buckets_stack.glue_scripts_bucket,
 	)
 
 	template = Template.from_stack(step_functions_stack)

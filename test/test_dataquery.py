@@ -10,8 +10,7 @@ from lib.glue_scripts.lib.dataquery import *
 mock_database_name = 'TestGlueCatalogDatabase'
 mock_table_name = 'TestGlueCatalogTable'
 mock_resource_prefix = 'unittest-insurancelake'
-# Temp bucket should have a trailing /
-mock_temp_bucket = f'file:///tmp/{mock_resource_prefix}-temp-bucket/'
+mock_workgroup = f'{mock_resource_prefix}-workgroup'
 
 mock_args = {
     'source_key': mock_database_name + '/' + mock_table_name,
@@ -29,7 +28,19 @@ def test_athena_execute_query_success(monkeypatch):
     Test simple create view and expect success
     """
     monkeypatch.setenv('AWS_DEFAULT_REGION', mock_region)
-    result = athena_execute_query(mock_database_name, mock_sql_file, mock_temp_bucket)
+
+    athena_client = boto3.client('athena', region_name=mock_region)
+    athena_client.create_work_group(
+        Name=mock_workgroup,
+        Description='Test workgroup for unit tests',
+        Configuration={
+            'ResultConfiguration': {
+                'OutputLocation': 's3://test-bucket/results/'
+            }
+        }
+    )
+
+    result = athena_execute_query(mock_database_name, mock_sql_file, mock_workgroup)
     assert result == 'SUCCEEDED'
 
 @mock_aws
@@ -39,8 +50,20 @@ def test_athena_execute_query_max_retries_error(monkeypatch):
     """
     monkeypatch.setenv('AWS_DEFAULT_REGION', mock_region)
     monkeypatch.setattr(sys, 'argv', mock_args)
+
+    athena_client = boto3.client('athena', region_name=mock_region)
+    athena_client.create_work_group(
+        Name=mock_workgroup,
+        Description='Test workgroup for unit tests',
+        Configuration={
+            'ResultConfiguration': {
+                'OutputLocation': 's3://test-bucket/results/'
+            }
+        }
+    )
+
     with pytest.raises(RuntimeError) as e_info:
-        athena_execute_query(mock_database_name, mock_sql_file, mock_temp_bucket, max_attempts = 0)
+        athena_execute_query(mock_database_name, mock_sql_file, mock_workgroup, max_attempts = 0)
     assert e_info.match('exceeded max_attempts')
 
 def test_athena_execute_query_fail(monkeypatch):
@@ -51,7 +74,7 @@ def test_athena_execute_query_fail(monkeypatch):
     monkeypatch.setattr(sys, 'argv', mock_args)
     monkeypatch.setattr(boto3, 'client', mock_boto3_client)
     with pytest.raises(RuntimeError) as e_info:
-        athena_execute_query(mock_database_name, mock_sql_file, mock_temp_bucket)
+        athena_execute_query(mock_database_name, mock_sql_file, mock_workgroup)
     assert e_info.match('failed with query engine error')
 
 def test_redshift_execute_query_success(monkeypatch):

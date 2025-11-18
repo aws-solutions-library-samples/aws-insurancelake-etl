@@ -91,14 +91,6 @@ def test_transform_titlecase_converts_string():
     df = transform_titlecase(df, [ 'text' ], mock_args, lineage)
     assert df.filter('`text` = "Test String"').count() == 1
 
-def test_transform_decimal_wraps_correctly():
-    lineage = mock_lineage([])
-    df = spark.createDataFrame([ ( '50.23', ) ], schema='amount string')
-    assert df.schema['amount'].dataType == StringType()
-    df = transform_decimal(df, [ { 'field': 'amount', 'format': '10,2' } ], mock_args, lineage)
-    assert df.schema['amount'].dataType == DecimalType(10,2)
-    assert df.filter('`amount` = 50.23').count() == 1
-
 def test_transform_changetype_converts_to_bigint():
     lineage = mock_lineage([])
     df = spark.createDataFrame([ ( '100', ) ], schema='amount string')

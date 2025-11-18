@@ -110,7 +110,7 @@ class mock_client_sfn:
 # There's no way to use moto's athena mock to cause a failed query
 class mock_client_athena:
     @staticmethod
-    def start_query_execution(QueryExecutionContext: dict, QueryString: str, ResultConfiguration: dict):
+    def start_query_execution(QueryExecutionContext: dict, QueryString: str, WorkGroup: str):
         return mock_athena_execute_query_response
 
     @staticmethod

@@ -58,14 +58,14 @@ _We recommend creating a [Budget](https://docs.aws.amazon.com/cost-management/l
 
 ### Sample Cost Table
 
-The following table provides a sample cost breakdown for deploying this Guidance with the default parameters in the US East (Ohio) Region for one month with pricing as of _2 October 2024_.
+The following table provides a sample cost breakdown for deploying this Guidance with the default parameters in the US East (Ohio) Region for one month with pricing as of _29 October 2025_.
 
 |AWS service    |Dimensions |Cost [USD]
 |---    |---    |---
 |AWS Glue   |per DPU-Hour for each Apache Spark or Spark Streaming job, billed per second with a 1-minute minimum   |$0.44
 |Amazon S3  |per GB of storage used, Frequent Access Tier, first 50 TB per month<br>PUT, COPY, POST, LIST requests (per 1,000 requests)<br>GET, SELECT, and all other requests (per 1,000 requests)   |$0.023<br>$0.005<br>$0.0004
 |Amazon Athena  |per TB of data scanned   |$5.00
-|Amazon DynamoDB    |per GB-month of storage, over 25 GB<br>per million Write Request Units (WRU)<br>per million Read Request Units (RRU)  |$0.25<br>$1.25<br>$0.25
+|Amazon DynamoDB    |per GB-month of storage, over 25 GB<br>per million Write Request Units (WRU)<br>per million Read Request Units (RRU)  |$0.25<br>$0.625<br>$0.125
 
 ## Quickstart
 
@@ -117,21 +117,21 @@ If you'd like to get started quickly transforming some sample raw insurance data
     ```
 1. Review and accept AWS Identity and Access Management (IAM) credential creation for the S3 bucket stack.
     - Wait for deployment to finish (approximately 5 minutes).
-1. Copy the S3 bucket name for the Collect bucket to use later.
+1. Take note of the S3 bucket name for the Collect bucket.
     - Bucket name will be in the form: `dev-insurancelake-<AWS Account ID>-<Region>-collect`.
 1. Switch the working directory to the location of the _etl_ code.
     ```bash
     cd ../aws-insurancelake-etl
     ```
-1. Deploy the ETL resources in the development environment (four stacks).
+1. Deploy the ETL resources in the development environment (six stacks).
     ```bash
-    cdk deploy Dev-InsuranceLakeEtlPipeline/Dev/InsuranceLakeEtlDynamoDb Dev-InsuranceLakeEtlPipeline/Dev/InsuranceLakeEtlGlue Dev-InsuranceLakeEtlPipeline/Dev/InsuranceLakeEtlStepFunctions Dev-InsuranceLakeEtlPipeline/Dev/InsuranceLakeEtlAthenaHelper
+    cdk deploy Dev-InsuranceLakeEtlPipeline/Dev/*
     ```
-    - Wait for approximately 1 minute for DynamoDB deployment to finish.
+    - Wait for approximately 7 minutes for the Glue job buckets, DynamoDB tables, Data Lake Consumer IAM managed policy, and Athena workgroup deployment to finish.
 1. Review and accept IAM credential creation for the AWS Glue jobs stack.
-    - Wait approximately 3 minutes for deployment to finish.
+    - Wait approximately 4 minutes for deployment to finish.
 1. Review and accept IAM credential creation for the Step Functions stack.
-    - Wait approximately 7 minutes for deployment of Step Functions and Athena Helper stacks to finish.
+    - Wait approximately 4 minutes for deployment of Step Functions and Athena Helper stacks to finish.
 
 ### Try out the ETL Process
 
@@ -141,16 +141,19 @@ If you'd like to get started quickly transforming some sample raw insurance data
     ```
 1. Transfer the sample claim data to the Collect bucket.
     ```bash
-    aws s3 cp resources/syntheticgeneral-claim-data.csv s3://<Collect S3 bucket>/SyntheticGeneralData/ClaimData/
-    ```
-1. Transfer the sample policy data to the Collect bucket.
-    ```bash
-    aws s3 cp resources/syntheticgeneral-policy-data.csv s3://<Collect S3 bucket>/SyntheticGeneralData/PolicyData/
+    export AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+    aws s3 cp resources/syntheticgeneral-claim-data.csv s3://dev-insurancelake-${AWS_ACCOUNT_ID}-${AWS_DEFAULT_REGION}-collect/SyntheticGeneralData/ClaimData/
     ```
 1. Open [Step Functions](https://console.aws.amazon.com/states/home) in the AWS Console and select `dev-insurancelake-etl-state-machine`.
     ![Step Functions Selecting State Machine](https://raw.githubusercontent.com/aws-solutions-library-samples/aws-insurancelake-etl/main/docs/step_functions_select_state_machine.png)
 1. Open the state machine execution in progress and monitor the status until complete.
     ![Step Functions Selecting Running Execution](https://raw.githubusercontent.com/aws-solutions-library-samples/aws-insurancelake-etl/main/docs/step_functions_select_running_execution.png)
+1. Transfer the sample policy data to the Collect bucket.
+    ```bash
+    aws s3 cp resources/syntheticgeneral-policy-data.csv s3://dev-insurancelake-${AWS_ACCOUNT_ID}-${AWS_DEFAULT_REGION}-collect/SyntheticGeneralData/PolicyData/
+    ```
+1. Use the back button to return to the list of state machine executions. You should see a second execution running.
+1. Open the state machine execution in progress and monitor the status until complete.
 1. Open [Athena](https://console.aws.amazon.com/athena/home) in the AWS Console.
 1. Select `Launch Query Editor`, and change the Workgroup to `insurancelake`.
 1. Run the following query to view a sample of prepared data in the consume bucket:
@@ -170,14 +173,17 @@ If you'd like to get started quickly transforming some sample raw insurance data
 ## Deployment Validation
 
 1. Transfer the sample claim data to the Collect bucket (Source system: SyntheticData, Table: ClaimData).
-   ```bash
-   aws s3 cp resources/syntheticgeneral-claim-data.csv s3://<Collect S3 bucket>/SyntheticGeneralData/ClaimData/
-   ```
+    ```bash
+    export AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+    aws s3 cp resources/syntheticgeneral-claim-data.csv s3://dev-insurancelake-${AWS_ACCOUNT_ID}-${AWS_DEFAULT_REGION}-collect/SyntheticGeneralData/ClaimData/
+    ```
+
+1. The claim data workflow must complete loading of the data into the Cleanse bucket to successfully load the policy data in the following step.
 
 1. Transfer the sample policy data to the Collect bucket (Source system: SyntheticData, Table: PolicyData).
-   ```bash
-   aws s3 cp resources/syntheticgeneral-policy-data.csv s3://<Collect S3 bucket>/SyntheticGeneralData/PolicyData/
-   ```
+    ```bash
+    aws s3 cp resources/syntheticgeneral-policy-data.csv s3://dev-insurancelake-${AWS_ACCOUNT_ID}-${AWS_DEFAULT_REGION}-collect/SyntheticGeneralData/PolicyData/
+    ```
 
 1. Upon successful transfer of the file, an event notification from S3 will trigger the state-machine-trigger Lambda function.
 

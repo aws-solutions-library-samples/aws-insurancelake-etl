@@ -52,7 +52,7 @@ Ensure you have followed the [CDK Instructions](cdk_instructions.md) for local d
 
 AWS Glue ETL jobs must have the correct permissions to access your Amazon Redshift resources and execute SQL statements. Follow the below steps to adjust the InsuranceLake AWS Glue stack so that the IAM role used by ETL jobs has these permissions.
 
-1. Add the following policy document to `get_glue_role` starting at line 502 in [glue_stack.py](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/lib/glue_stack.py#L502), the InsuranceLake AWS Glue stack.
+1. Add the following policy document to `get_glue_role` starting at line 371 in [glue_jobs_stack.py](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/lib/glue_jobs_stack.py#L371), the InsuranceLake AWS Glue jobs stack.
 
     {: .important}
     Modify the below code to use the correct ARN for your Amazon Redshift Serverless workgroup or cluster.
@@ -94,16 +94,16 @@ AWS Glue ETL jobs must have the correct permissions to access your Amazon Redshi
                     ]),
     ```
 
-1. Using CDK, redeploy the AWS Glue stack.
+1. Using CDK, redeploy the AWS Glue jobs stack.
 
     ```bash
-    cdk deploy Dev-InsuranceLakeEtlPipeline/Dev/InsuranceLakeEtlGlue
+    cdk deploy Dev-InsuranceLakeEtlPipeline/Dev/InsuranceLakeEtlGlueJobs
     ```
 
 1. Identify the IAM role for the InsuranceLake AWS Glue ETL jobs, which follows the naming convention `<environment>-insurancelake-<region>-glue-role`.
 
     1. If you do not know the name of the role, you can find it in the [CloudFormation console](https://console.aws.amazon.com/cloudformation).
-    1. Select the InsuranceLake AWS Glue stack, `<Environment>-InsuranceLakeEtlGlue`.
+    1. Select the InsuranceLake AWS Glue stack, `<Environment>-InsuranceLakeEtlGlueJobs`.
     1. Select the `Outputs` tab.
     1. Find the value for the export named `<Environment>InsuranceLakeGlueRole`. This is the IAM role for AWS Glue ETL jobs.
 
@@ -140,7 +140,7 @@ Your Amazon Redshift workgroup or cluster must have the correct permissions to a
 1. Search for the InsuranceLake customer-managed policy, which follows the naming convention `<environment>-insurancelake-<region>-consumer-policy`, and select the checkbox to the left of the InsuranceLake.
 
     1. If you do not know the name of the policy, you can find it in the [CloudFormation console](https://console.aws.amazon.com/cloudformation).
-    1. Select the InsuranceLake AWS Glue stack, `<Environment>-InsuranceLakeEtlGlue`.
+    1. Select the InsuranceLake AWS Glue stack, `<Environment>-InsuranceLakeEtlDataLakeConsumer`.
     1. Select the `Outputs` tab.
     1. Find the value for the export named `<Environment>InsuranceLakeConsumerPolicy`. This is the customer-managed policy to attach.
 
@@ -405,9 +405,9 @@ The following instructions use a Data Catalog Connection for the connectivity to
 
 In this section, you will modify the InsuranceLake Cleanse-to-Consume ETL job to write to Amazon Redshift Managed Storage instead of Amazon S3.
 
-1. Edit the [Cleanse-to-Consume AWS Glue script](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/lib/glue_scripts/etl_cleanse_to_consume.py#L158) starting on line 158.
+1. Edit the [Cleanse-to-Consume AWS Glue script](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/lib/glue_scripts/etl_cleanse_to_consume.py#L162) starting on line 162.
 
-    1. Comment or delete the code on lines 158 - 191. This section of the code sets the storage location, updates the Data Catalog, purges the S3 path, sets Spark write parameters, and writes the data to S3.
+    1. Comment or delete the code on lines 162 - 195. This section of the code sets the storage location, updates the Data Catalog, purges the S3 path, sets Spark write parameters, and writes the data to S3.
 
     1. Add the following replacement code, which is used to write data directly to Amazon Redshift.
 
@@ -436,10 +436,10 @@ In this section, you will modify the InsuranceLake Cleanse-to-Consume ETL job to
         from awsglue.dynamicframe import DynamicFrame
         ```
 
-1. Using CDK, redeploy the AWS Glue stack.
+1. Using CDK, redeploy the AWS Glue jobs stack.
 
     ```bash
-    cdk deploy Dev-InsuranceLakeEtlPipeline/Dev/InsuranceLakeEtlGlue
+    cdk deploy Dev-InsuranceLakeEtlPipeline/Dev/InsuranceLakeEtlGlueJobs
     ```
 
 

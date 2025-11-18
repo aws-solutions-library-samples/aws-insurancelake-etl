@@ -78,7 +78,7 @@ def dependency_job_lookback(audit_table_name: str, source_key: str, lookback: st
     except botocore.exceptions.ClientError as error:
         raise RuntimeError(f'DynamoDB table query failed: {error}')
 
-    logger.info(f'Get dependency job lookback completed successfully with {result['Count']} jobs matched')
+    logger.info(f"Get dependency job lookback completed successfully with {result['Count']} jobs matched")
     return result['Count'] > 0
 
 

@@ -112,7 +112,7 @@ The following are considerations and requirements for InsuranceLake's integratio
 
     ```python
     status = athena_execute_query(
-        args['target_database_name'], sql.format(**substitution_data), args['TempDir'], max_attempts=30)
+        args['target_database_name'], sql.format(**substitution_data), args['athena_workgroup'], max_attempts=30)
     ```
 
 Example patterns using Athena SQL:

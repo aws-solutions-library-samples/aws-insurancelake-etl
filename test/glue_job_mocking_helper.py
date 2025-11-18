@@ -69,7 +69,7 @@ def mock_purge_s3_path(self, path: str, options: dict = {}):
     # Not implemented/needed for mocks
     pass
 
-def mock_athena_execute_query(database: str, query: str, max_attempts: int = 15) -> str:
+def mock_athena_execute_query(database: str, query: str, workgroup: str, max_attempts: int = 15) -> str:
     return 'SUCCEEDED'
 
 def mock_redshift_execute_query(database: str, query: str,

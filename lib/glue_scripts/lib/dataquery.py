@@ -4,7 +4,7 @@ import boto3
 import time
 
 
-def athena_execute_query(database: str, query: str, result_bucket: str,
+def athena_execute_query(database: str, query: str, workgroup: str,
         max_attempts: int = 30) -> str:
     """Function to execute query using Athena boto client, loop until
     result is returned, and return status.
@@ -15,8 +15,8 @@ def athena_execute_query(database: str, query: str, result_bucket: str,
         Athena database in which to run the query
     query
         Single or multi-line query to run
-    result_bucket
-        S3 bucket path to store query results
+    workgroup
+        Athena workgroup name to use for query execution
     max_attempts
         Number of loops (1s apart) to attempt to get query status, default 30
 
@@ -30,7 +30,7 @@ def athena_execute_query(database: str, query: str, result_bucket: str,
     query_response = athena.start_query_execution(
             QueryExecutionContext={ 'Database': database.lower() },
             QueryString=query,
-            ResultConfiguration={ 'OutputLocation': result_bucket }
+            WorkGroup=workgroup
         )
     print(f'Executed query response: {query_response}')
 

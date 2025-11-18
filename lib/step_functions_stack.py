@@ -511,7 +511,6 @@ class StepFunctionsStack(cdk.Stack):
         """
         lambda_function_name = f'{self.target_environment.lower()}-{self.resource_name_prefix}-{resource_name_suffix}'
 
-        # Associate the Log group to the Lambda function by giving it the same name
         cloudwatch_log_group = logs.LogGroup(
             self,
             f'{self.target_environment}{self.logical_id_prefix}{logical_id_suffix}LambdaLogGroup',
@@ -525,12 +524,13 @@ class StepFunctionsStack(cdk.Stack):
             f'{self.target_environment}{self.logical_id_prefix}{logical_id_suffix}',
             function_name=lambda_function_name,
             description=function_description,
-            runtime=_lambda.Runtime.PYTHON_3_13,
+            runtime=_lambda.Runtime.PYTHON_3_14,
             handler='lambda_handler.lambda_handler',
             code=_lambda.Code.from_asset(f'{os.path.dirname(__file__)}/{lambda_code_relative_path}'),
             architecture=_lambda.Architecture.ARM_64,
             environment=lambda_environment,
             timeout=cdk.Duration.seconds(10),
+            log_group=cloudwatch_log_group,
             role=self.get_lambda_role(
                 logical_id_suffix,
                 resource_name_suffix,
