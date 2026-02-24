@@ -68,9 +68,3 @@ class AthenaWorkgroupStack(cdk.Stack):
                 )
             )
         )
-        NagSuppressions.add_resource_suppressions(athena_workgroup, [
-            {
-                'id': 'AwsSolutions-ATH1',
-                'reason': 'Glue Scripts Temp Bucket from Glue Stack has server-side encryption enabled; query results encryption would be redundant'
-            },
-        ])
