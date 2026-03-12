@@ -3,7 +3,7 @@ title: Quickstart
 parent: Getting Started
 nav_order: 1
 has_toc: false
-last_modified_date: 2024-10-15
+last_modified_date: 2026-03-11
 ---
 # InsuranceLake Quickstart Guide
 {: .no_toc }
@@ -35,7 +35,7 @@ If you'd like to get started quickly transforming some sample raw insurance data
     git clone https://github.com/aws-solutions-library-samples/aws-insurancelake-infrastructure.git
     git clone https://github.com/aws-solutions-library-samples/aws-insurancelake-etl.git
     ```
-1. Use a terminal or command prompt and change the working directory to the location of the _infrastructure_ code.
+1. Change the working directory to the location of the _infrastructure_ code.
     ```bash
     cd aws-insurancelake-infrastructure
     ```

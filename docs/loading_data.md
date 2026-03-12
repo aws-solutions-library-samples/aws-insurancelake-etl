@@ -2,7 +2,7 @@
 title: Loading Data
 nav_order: 1
 parent: User Documentation
-last_modified_date: 2024-10-21
+last_modified_date: 2026-03-11
 ---
 # Loading Data with InsuranceLake
 {: .no_toc }
@@ -66,7 +66,7 @@ This matching is **case sensitive** (Data Catalog database and table names will 
 |[Data Quality Rules](data_quality.md)   |/etl/dq-rules   |`dq-<database name>-<table name>.json`
 |[Spark SQL](using_sql.md#spark-sql)   |/etl/transformation-sql  |`spark-<database name>-<table name>.sql`
 |[Athena SQL](using_sql.md#athena-sql)  |/etl/transformation-sql  |`athena-<database name>-<table name>.sql`
-|[Entity Match Config](https://github.com/aws-solutions-library-samples/aws-insurancelake-etl/blob/main/lib/glue_scripts/transformation-spec/Customer-entitymatch.json)   |/etl/transformation-spec |`<database name>-entitymatch.json`
+|[Entity Match Config](entity_matching.md#configuration)   |/etl/transformation-spec |`<database name>-entitymatch.json`
 
 
 ## Configuration Recommendations

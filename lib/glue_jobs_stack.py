@@ -186,7 +186,7 @@ class GlueJobsStack(cdk.Stack):
             execution_property=glue.CfnJob.ExecutionPropertyProperty(
                 max_concurrent_runs=10,
             ),
-            glue_version='5.0',
+            glue_version='5.1',
             max_retries=0,
             # With auto-scaling, this represents the maximum number of workers
             # If using a Connection, there must be enough IP addresses for each worker
@@ -227,7 +227,7 @@ class GlueJobsStack(cdk.Stack):
             execution_property=glue.CfnJob.ExecutionPropertyProperty(
                 max_concurrent_runs=10,
             ),
-            glue_version='5.0',
+            glue_version='5.1',
             max_retries=0,
             # With auto-scaling, this represents the maximum number of workers
             # If using a Connection, there must be enough IP addresses for each worker

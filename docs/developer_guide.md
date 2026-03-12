@@ -2,7 +2,7 @@
 title: Developer Guide
 parent: Developer Documentation
 nav_order: 1
-last_modified_date: 2025-04-23
+last_modified_date: 2026-03-11
 ---
 # InsuranceLake Developer Guide
 {: .no_toc }
@@ -237,7 +237,7 @@ aws glue start-job-run --job-name dev-insurancelake-consume-entity-match-job --a
 }'
 ```
 
-The following are additional code considerations:
+### Additional Code Considerations
 
 * To include third party Python libraries, use the AWS Glue job parameter `--additional-python_modules` specified in the AWS Glue job definition in the AWS Glue stack. Review the [AWS Glue User Guide](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-python-libraries.html#extra-py-files-support) for more information.
 
@@ -461,7 +461,7 @@ To deploy the CodeCommit mirror repository stacks, follow these steps:
 
 * **S3 Object Lock**
 
-    Enabling [S3 Object Lock](https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lock.html) on the Cleanse or Consume S3 buckets breaks ETL data writes to the buckets. This is caused by known limitations to Hadoop's S3A driver used by Spark. These open issues are being tracked as [HADOOP-19080](https://issues.apache.org/jira/browse/HADOOP-19080) and [HADOOP-15224](https://issues.apache.org/jira/browse/HADOOP-15224). Enabling S3 Object Lock on these S3 buckets will result in an error similar to the following:
+    Enabling [S3 Object Lock](https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lock.html) on the Cleanse or Consume S3 buckets breaks ETL data writes to the buckets. This is caused by known limitations to Hadoop's S3A driver used by Spark. These issues were resolved in Hadoop and are being tracked as [HADOOP-19080](https://issues.apache.org/jira/browse/HADOOP-19080) and [HADOOP-15224](https://issues.apache.org/jira/browse/HADOOP-15224). However, the new Hadoop version is not yet available in AWS Glue. Enabling S3 Object Lock on these S3 buckets will result in an error similar to the following:
 
     ```log
     An error occurred while calling o237.saveAsTable. Content-MD5 OR x-amz-checksum- HTTP header is required for Put Object requests with Object Lock parameters (Service: Amazon S3; Status Code: 400; Error Code: InvalidRequest; Request ID: <request_id>; S3 Extended Request ID: <extended_request_id>; Proxy: null)
